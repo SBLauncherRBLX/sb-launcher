@@ -1,0 +1,32 @@
+{
+  "name": "@sb/desktop",
+  "version": "2.1.0",
+  "private": true,
+  "description": "SB Launcher React interface for the native Windows client",
+  "author": "SB Launcher",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build && powershell -ExecutionPolicy Bypass -File ../../scripts/sync-web-runtime.ps1",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "echo \"no lint configured\""
+  },
+  "dependencies": {
+    "@sb/contracts": "workspace:*",
+    "@sb/ui": "workspace:*",
+    "motion": "^12.42.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.2",
+    "vitest": "^3.0.9"
+  }
+}

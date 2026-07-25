@@ -1,0 +1,41 @@
+node_modules/
+dist/
+out/
+build/
+.next/
+.turbo/
+*.log
+.env
+.env.local
+.env.*.local
+*.db
+*.db-journal
+.DS_Store
+Thumbs.db
+coverage/
+.vscode/
+.idea/
+*.tsbuildinfo
+apps/desktop/release/
+apps/api/prisma/dev.db
+apps/api/prisma/dev.db-journal
+*.pem
+.cache/
+
+# Build artifacts / packaged binaries (not source)
+release/
+apps/native/bin/
+apps/native/obj/
+apps/native/runtime/
+apps/desktop/dist/
+docs/site/downloads/parts/
+docs/site/pages-upload/
+
+# Local editor / agent state
+.cursor/
+assets/
+
+# Stray local files
+*.tex
+api-err.log
+api-out.log

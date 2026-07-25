@@ -1,0 +1,19 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "services/*"
+
+shamefullyHoist: true
+strictPeerDependencies: false
+autoInstallPeers: true
+confirmModulesPurge: false
+
+allowBuilds:
+  electron: true
+  esbuild: true
+  "@prisma/client": true
+  "@prisma/engines": true
+  prisma: true
+  better-sqlite3: true
+  workerd: true
+  sharp: true

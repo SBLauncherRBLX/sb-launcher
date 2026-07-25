@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SB Launcher - Roblox desktop companion</title>
+    <meta
+      name="description"
+      content="Download SB Launcher 2.3.1 - a customizable Windows companion for Roblox."
+    />
+    <meta property="og:title" content="SB Launcher" />
+    <meta
+      property="og:description"
+      content="Windows Roblox companion. Discover, connect, and make the launcher yours."
+    />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/png" href="./logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="atmosphere" aria-hidden="true">
+      <div class="orb orb-a"></div>
+      <div class="orb orb-b"></div>
+      <div class="stars"></div>
+    </div>
+
+    <header class="top">
+      <a class="brand" href="./index.html">
+        <img src="./logo.png" alt="" width="36" height="36" />
+        <span>SB Launcher</span>
+      </a>
+      <nav class="top-nav">
+        <a href="#features">Features</a>
+        <a href="#download">Download</a>
+        <a href="./privacy.html">Privacy</a>
+        <a href="./terms.html">Terms</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <img
+          class="hero-mark"
+          src="./logo.png"
+          alt="SB Launcher"
+          width="128"
+          height="128"
+        />
+        <h1 class="hero-brand">SB Launcher</h1>
+        <p class="hero-lead">
+          A Windows companion for Roblox - discover experiences, stay with friends,
+          and shape every pixel of the interface.
+        </p>
+        <div class="hero-actions">
+          <a
+            class="btn btn-primary"
+            id="download-btn"
+            href="#download"
+            data-download-setup
+          >
+            Download for Windows
+          </a>
+          <a class="btn btn-ghost" href="#features">See what's inside</a>
+        </div>
+        <p class="hero-meta">Version 2.3.1 &middot; Windows 10/11 &middot; ~94 MB installer</p>
+        <p class="hero-hint" id="download-status">
+          Click Download - the site builds the installer from small parts (SHA-256 verified).
+        </p>
+      </section>
+
+      <section class="section" id="features">
+        <header class="section-head">
+          <h2>Built for the way you play</h2>
+          <p>One focused companion - not another cluttered overlay.</p>
+        </header>
+        <div class="feature-list">
+          <article>
+            <h3>Discover</h3>
+            <p>Search experiences and people, open details, and jump in fast.</p>
+          </article>
+          <article>
+            <h3>Friends</h3>
+            <p>See who's online and what they're playing when OAuth scopes allow.</p>
+          </article>
+          <article>
+            <h3>Visuals</h3>
+            <p>Themes, fonts, wallpapers, motion, and deep glass controls - yours.</p>
+          </article>
+          <article>
+            <h3>Local &amp; private</h3>
+            <p>Runs on your PC with a private local API. No Roblox password storage.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section download-band" id="download">
+        <header class="section-head">
+          <h2>Get SB Launcher 2.3.1</h2>
+          <p>
+            The installer is split into small parts on this site, then assembled in
+            your browser with integrity checks.
+          </p>
+        </header>
+        <div class="download-row">
+          <a
+            class="btn btn-primary btn-lg"
+            id="download-btn-2"
+            href="#download"
+            data-download-setup
+          >
+            Download Setup 2.3.1
+          </a>
+          <ul class="download-notes">
+            <li>Windows 10 or 11 (x64)</li>
+            <li>WebView2 is used automatically when available</li>
+            <li>Sign in with Roblox OAuth - no <code>.ROBLOSECURITY</code></li>
+            <li>SHA-256 verified download</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section disclaimer">
+        <p>
+          SB Launcher is not affiliated with, endorsed by, or sponsored by Roblox
+          Corporation. Use it in line with the Roblox Terms of Use.
+        </p>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="foot-brand">
+        <img src="./logo.png" alt="" width="28" height="28" />
+        <strong>SB Launcher</strong>
+      </div>
+      <div class="foot-links">
+        <a href="./privacy.html">Privacy Policy</a>
+        <a href="./terms.html">Terms of Use</a>
+        <a href="https://github.com/sblauncherrblx/SB-launcher-for-Roblox">GitHub</a>
+      </div>
+      <p class="foot-copy">&copy; 2026 SB Launcher</p>
+    </footer>
+    <script src="./download.js"></script>
+  </body>
+</html>

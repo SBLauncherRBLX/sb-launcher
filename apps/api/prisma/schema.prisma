@@ -1,0 +1,117 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id
+  username     String
+  displayName  String
+  avatarUrl    String?
+  profileUrl   String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  oauthGrant   OAuthGrant?
+  sessions     Session[]
+  favorites    Favorite[]
+  history      HistoryEntry[]
+  themePresets ThemePreset[]
+  outfits      OutfitPreset[]
+  preferences  UserPreferences?
+}
+
+model OAuthGrant {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessTokenEncrypted  String
+  refreshTokenEncrypted String?
+  idTokenEncrypted      String?
+  scope                 String
+  expiresAt             DateTime
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model OAuthState {
+  id                String   @id @default(cuid())
+  state             String   @unique
+  codeVerifier      String
+  desktopRedirect   String?
+  createdAt         DateTime @default(now())
+  expiresAt         DateTime
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  universeId String
+  placeId    String
+  name       String
+  iconUrl    String?
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, universeId])
+}
+
+model HistoryEntry {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  universeId String
+  placeId    String
+  name       String
+  iconUrl    String?
+  launchedAt DateTime @default(now())
+
+  @@index([userId, launchedAt])
+}
+
+model ThemePreset {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  payload   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OutfitPreset {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  assetIds  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserPreferences {
+  userId           String   @id
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeThemeJson  String
+  graphicsJson     String
+  updatedAt        DateTime @updatedAt
+}
+
+model CacheEntry {
+  key       String   @id
+  value     String
+  expiresAt DateTime
+}

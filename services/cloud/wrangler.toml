@@ -1,0 +1,17 @@
+name = "sb-launcher-cloud"
+main = "src/index.ts"
+compatibility_date = "2025-07-01"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "PLAYERS"
+id = "b4be214084a345eca8528796eb1b05d5"
+preview_id = "405854204a414c8db60a44a866fa71b3"
+
+[[kv_namespaces]]
+binding = "META"
+id = "b138f71147ac462eab9841b4429a5dc7"
+preview_id = "c4c00f0633624aeea39f2cb194b2f765"
+
+[vars]
+DEFAULT_DOWNLOAD_URL = "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/"

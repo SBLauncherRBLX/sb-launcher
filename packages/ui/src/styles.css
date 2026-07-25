@@ -1,0 +1,594 @@
+:root {
+  --sb-accent: #9a82db;
+  --sb-accent-secondary: #efb8c8;
+  --sb-bg: #141218;
+  --sb-surface: #1d1b20;
+  --sb-surface-elevated: #2b2930;
+  --sb-text: #e6e1e5;
+  --sb-text-muted: #cac4d0;
+  --sb-border: #49454f;
+  --sb-radius: 28px;
+  --sb-blur: 20px;
+  --sb-opacity: 1;
+  --sb-effect-glass: 0;
+  --sb-glass-blur: 20px;
+  --sb-glass-opacity: 0.52;
+  --sb-glass-saturate: 1.35;
+  --sb-glass-brightness: 1;
+  --sb-glass-contrast: 1;
+  --sb-glass-border: 0.42;
+  --sb-glass-specular: 0.28;
+  --sb-glass-shadow: 0.4;
+  --sb-glass-tint-strength: 0.15;
+  --sb-glass-tint: var(--sb-accent);
+  --sb-glass-cards: 0;
+  --sb-glass-sidebar: 0;
+  --sb-glass-topbar: 0;
+  --sb-gradient-from: #9a82db40;
+  --sb-gradient-to: #efb8c828;
+  --sb-font: "Figtree", "Segoe UI Variable", "Segoe UI", sans-serif;
+
+  /*
+   * Material You 3 motion tokens
+   * https://m3.material.io/styles/motion/easing-and-duration/tokens-specs
+   * Enter → decelerate, exit → accelerate, on-screen state → emphasized/standard.
+   */
+  --sb-motion-scale: 1;
+
+  --sb-dur-short1: calc(50ms * var(--sb-motion-scale));
+  --sb-dur-short2: calc(100ms * var(--sb-motion-scale));
+  --sb-dur-short3: calc(150ms * var(--sb-motion-scale));
+  --sb-dur-short4: calc(200ms * var(--sb-motion-scale));
+  --sb-dur-medium1: calc(250ms * var(--sb-motion-scale));
+  --sb-dur-medium2: calc(300ms * var(--sb-motion-scale));
+  --sb-dur-medium3: calc(350ms * var(--sb-motion-scale));
+  --sb-dur-medium4: calc(400ms * var(--sb-motion-scale));
+  --sb-dur-long1: calc(450ms * var(--sb-motion-scale));
+  --sb-dur-long2: calc(500ms * var(--sb-motion-scale));
+  --sb-dur-long3: calc(550ms * var(--sb-motion-scale));
+  --sb-dur-long4: calc(600ms * var(--sb-motion-scale));
+  --sb-dur-extra-long1: calc(700ms * var(--sb-motion-scale));
+  --sb-dur-extra-long2: calc(800ms * var(--sb-motion-scale));
+  --sb-dur-extra-long3: calc(900ms * var(--sb-motion-scale));
+  --sb-dur-extra-long4: calc(1000ms * var(--sb-motion-scale));
+
+  /* Default pairings used across chrome */
+  --sb-motion-duration: var(--sb-dur-medium2);
+  --sb-motion-duration-short: var(--sb-dur-short4);
+  --sb-motion-duration-enter: var(--sb-dur-medium4);
+  --sb-motion-duration-exit: var(--sb-dur-short4);
+  --sb-motion-duration-hover: var(--sb-dur-short4);
+  --sb-motion-duration-press: var(--sb-dur-short2);
+
+  --sb-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --sb-ease-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --sb-ease-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --sb-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --sb-ease-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+  --sb-ease-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --sb-ease-linear: cubic-bezier(0, 0, 1, 1);
+  /* Soft overshoot — pre-M3 expressive motion */
+  --sb-ease-expressive: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  --sb-shadow-1: 0 1px 2px #00000040, 0 1px 3px 1px #00000028;
+  --sb-shadow-2: 0 4px 8px 3px #00000030, 0 1px 3px #00000040;
+  --sb-shadow-3: 0 8px 12px 6px #00000028, 0 4px 4px #00000035;
+
+  /* Material You 3 roles (overridden at runtime by themeToCssVars) */
+  --sb-primary: var(--sb-accent);
+  --sb-on-primary: #211825;
+  --sb-primary-container: color-mix(in srgb, var(--sb-accent) 28%, var(--sb-surface-elevated));
+  --sb-on-primary-container: color-mix(in srgb, var(--sb-accent) 72%, #ffffff);
+  --sb-secondary: var(--sb-accent-secondary);
+  --sb-on-secondary: #211825;
+  --sb-secondary-container: color-mix(in srgb, var(--sb-accent-secondary) 22%, var(--sb-surface-elevated));
+  --sb-on-secondary-container: color-mix(in srgb, var(--sb-accent-secondary) 70%, #ffffff);
+  --sb-surface-dim: var(--sb-bg);
+  --sb-surface-bright: var(--sb-surface-elevated);
+  --sb-surface-container-lowest: color-mix(in srgb, var(--sb-bg) 88%, #000);
+  --sb-surface-container-low: var(--sb-surface);
+  --sb-surface-container: color-mix(in srgb, var(--sb-surface-elevated) 55%, var(--sb-surface));
+  --sb-surface-container-high: var(--sb-surface-elevated);
+  --sb-surface-container-highest: color-mix(in srgb, var(--sb-surface-elevated) 82%, var(--sb-text));
+  --sb-on-surface: var(--sb-text);
+  --sb-on-surface-variant: var(--sb-text-muted);
+  --sb-outline: var(--sb-border);
+  --sb-outline-variant: color-mix(in srgb, var(--sb-border) 55%, transparent);
+  --sb-shape-xs: 8px;
+  --sb-shape-sm: 12px;
+  --sb-shape-md: 16px;
+  --sb-shape-lg: var(--sb-radius);
+  --sb-shape-xl: calc(var(--sb-radius) * 1.15);
+  --sb-state-hover: 0.08;
+  --sb-state-focus: 0.12;
+  --sb-state-pressed: 0.12;
+}
+
+/* Anthropic Serif picker uses Source Serif 4 via the font stack fallback. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  font-family: var(--sb-font);
+  color: var(--sb-on-surface);
+  background: var(--sb-surface-dim);
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.sb-button {
+  position: relative;
+  isolation: isolate;
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  padding: 0.82rem 1.5rem;
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+  background: var(--sb-primary-container);
+  color: var(--sb-on-primary-container);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    transform var(--sb-motion-duration-hover) var(--sb-ease-emphasized),
+    background var(--sb-motion-duration) var(--sb-ease-standard),
+    box-shadow var(--sb-motion-duration) var(--sb-ease-standard),
+    color var(--sb-motion-duration) var(--sb-ease-standard),
+    opacity var(--sb-motion-duration-short) var(--sb-ease-standard);
+}
+
+.sb-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--sb-dur-short3) var(--sb-ease-standard);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sb-button > * {
+  position: relative;
+  z-index: 1;
+}
+
+.sb-button:hover:not(:disabled)::before {
+  opacity: var(--sb-state-hover);
+}
+
+.sb-button:focus-visible::before {
+  opacity: var(--sb-state-focus);
+}
+
+.sb-button:active:not(:disabled)::before {
+  opacity: var(--sb-state-pressed);
+}
+
+.app-root.button-style-gradient .sb-button:not(.secondary):not(.ghost) {
+  background: linear-gradient(135deg, var(--sb-primary), var(--sb-secondary));
+  color: var(--sb-on-primary);
+  box-shadow: var(--sb-shadow-1);
+}
+
+.app-root.button-style-solid .sb-button:not(.secondary):not(.ghost) {
+  background: var(--sb-primary);
+  color: var(--sb-on-primary);
+  box-shadow: var(--sb-shadow-1);
+}
+
+.app-root.button-style-tonal .sb-button:not(.secondary):not(.ghost) {
+  background: var(--sb-primary-container);
+  color: var(--sb-on-primary-container);
+  box-shadow: none;
+}
+
+.app-root.card-style-solid .sb-card {
+  backdrop-filter: var(--sb-glass-filter, none);
+  -webkit-backdrop-filter: var(--sb-glass-filter, none);
+  background: color-mix(
+    in srgb,
+    var(--sb-surface-container) calc((1 - var(--sb-glass-cards, 0) * (1 - var(--sb-glass-opacity))) * 100%),
+    color-mix(
+      in srgb,
+      var(--sb-glass-tint) calc(var(--sb-glass-tint-strength) * 100%),
+      transparent
+    )
+  );
+  box-shadow: var(--sb-shadow-1);
+}
+
+.app-root.card-style-outline .sb-card {
+  backdrop-filter: var(--sb-glass-filter, none);
+  -webkit-backdrop-filter: var(--sb-glass-filter, none);
+  background: color-mix(
+    in srgb,
+    var(--sb-surface-container-low) calc(var(--sb-glass-cards, 0) * var(--sb-glass-opacity) * 100%),
+    transparent
+  );
+  box-shadow: none;
+  border-color: color-mix(
+    in srgb,
+    var(--sb-outline-variant) calc(var(--sb-glass-border) * 100%),
+    transparent
+  );
+}
+
+.sb-button:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.sb-button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.sb-button:focus-visible,
+.sb-card:focus-visible,
+.chip:focus-visible,
+.nav a:focus-visible {
+  outline: none;
+}
+
+.sb-button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.sb-button.secondary {
+  background: var(--sb-surface-container-high);
+  color: var(--sb-on-surface);
+  box-shadow: var(--sb-shadow-1);
+}
+
+.sb-button.ghost {
+  background: transparent;
+  color: var(--sb-primary);
+  box-shadow: inset 0 0 0 1px var(--sb-outline);
+}
+
+.sb-button.ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--sb-primary) 8%, transparent);
+  box-shadow: inset 0 0 0 1px var(--sb-primary);
+}
+
+.sb-card {
+  position: relative;
+  --sb-glass-filter: blur(calc(var(--sb-glass-blur, var(--sb-blur)) * var(--sb-glass-cards, 0)))
+    saturate(calc(1 + (var(--sb-glass-saturate, 1) - 1) * var(--sb-glass-cards, 0)))
+    brightness(calc(1 + (var(--sb-glass-brightness, 1) - 1) * var(--sb-glass-cards, 0)))
+    contrast(calc(1 + (var(--sb-glass-contrast, 1) - 1) * var(--sb-glass-cards, 0)));
+  background: color-mix(
+    in srgb,
+    color-mix(
+      in srgb,
+      var(--sb-glass-tint, var(--sb-primary)) calc(var(--sb-glass-tint-strength, 0) * 100%),
+      color-mix(
+        in srgb,
+        var(--sb-surface-container) calc(var(--sb-glass-opacity, 0.52) * 100%),
+        transparent
+      )
+    )
+      calc(var(--sb-glass-cards, 0) * 100%),
+    var(--sb-surface-container)
+  );
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--sb-outline-variant) calc((0.35 + var(--sb-glass-border, 0.42) * 0.65) * 100%),
+      transparent
+    );
+  border-radius: var(--sb-shape-lg);
+  backdrop-filter: var(--sb-glass-filter);
+  -webkit-backdrop-filter: var(--sb-glass-filter);
+  overflow: hidden;
+  box-shadow:
+    0 calc(2px + 10px * var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0))
+      calc(8px + 24px * var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0))
+      color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0) * 45%), transparent),
+    var(--sb-shadow-1);
+  transition:
+    transform var(--sb-motion-duration-hover) var(--sb-ease-emphasized),
+    box-shadow var(--sb-motion-duration) var(--sb-ease-standard),
+    border-color var(--sb-motion-duration) var(--sb-ease-standard),
+    background var(--sb-motion-duration) var(--sb-ease-standard),
+    backdrop-filter var(--sb-motion-duration) var(--sb-ease-standard);
+}
+
+.sb-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 55%), transparent) 0%,
+    transparent 46%
+  );
+  opacity: calc(var(--sb-glass-cards, 0) * var(--sb-glass-specular, 0.28));
+  z-index: 0;
+}
+
+.sb-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.sb-muted {
+  color: var(--sb-on-surface-variant);
+}
+
+.sb-input {
+  width: 100%;
+  background: var(--sb-surface-container-highest);
+  border: none;
+  border-radius: var(--sb-shape-md);
+  color: var(--sb-on-surface);
+  padding: 0.95rem 1.15rem;
+  outline: none;
+  box-shadow: inset 0 -1px 0 var(--sb-outline);
+  transition:
+    box-shadow var(--sb-motion-duration) var(--sb-ease-standard),
+    background var(--sb-motion-duration) var(--sb-ease-standard),
+    border-radius var(--sb-motion-duration) var(--sb-ease-emphasized);
+}
+
+textarea.sb-input {
+  border-radius: var(--sb-shape-md);
+  padding: 0.95rem 1.05rem;
+  line-height: 1.5;
+  resize: vertical;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-variant-ligatures: none;
+}
+
+.sb-input:hover {
+  background: color-mix(in srgb, var(--sb-surface-container-highest) 88%, var(--sb-primary));
+}
+
+.sb-input:focus {
+  background: var(--sb-surface-container-highest);
+  box-shadow: inset 0 -2px 0 var(--sb-primary);
+  border-radius: var(--sb-shape-md) var(--sb-shape-md) var(--sb-shape-xs) var(--sb-shape-xs);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--sb-on-surface-variant) 40%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--sb-primary) 55%, transparent);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+input[type="checkbox"] {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  margin: 0;
+  border-radius: var(--sb-shape-xs);
+  border: 2px solid var(--sb-outline);
+  background: transparent;
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+  transition:
+    background var(--sb-motion-duration) var(--sb-ease-standard),
+    border-color var(--sb-motion-duration) var(--sb-ease-standard),
+    transform var(--sb-motion-duration-hover) var(--sb-ease-emphasized);
+}
+
+input[type="checkbox"]::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  transform: scale(0);
+  clip-path: polygon(14% 44%, 0 62%, 40% 100%, 100% 18%, 84% 2%, 39% 68%);
+  background: var(--sb-on-primary);
+  transition: transform var(--sb-dur-short4) var(--sb-ease-emphasized);
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--sb-primary);
+}
+
+input[type="checkbox"]:active {
+  transform: scale(0.9);
+}
+
+input[type="checkbox"]:checked {
+  background: var(--sb-primary);
+  border-color: var(--sb-primary);
+}
+
+input[type="checkbox"]:checked::before {
+  transform: scale(1);
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: none;
+}
+
+input[type="range"] {
+  accent-color: var(--sb-primary);
+}
+
+.sb-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.78rem;
+  border-radius: 999px;
+  background: var(--sb-secondary-container);
+  color: var(--sb-on-secondary-container);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.sb-empty,
+.sb-error,
+.sb-loading {
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: var(--sb-on-surface-variant);
+}
+
+.sb-loading {
+  width: 100%;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.35rem;
+  font-weight: 600;
+  color: var(--sb-on-surface);
+  position: relative;
+  z-index: 2;
+}
+
+.page-motion > .sb-loading,
+.page > .sb-loading {
+  min-height: min(70vh, 560px);
+}
+
+.app-boot-loading {
+  min-height: 100vh;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(700px 420px at 20% 10%, color-mix(in srgb, var(--sb-primary) 28%, transparent), transparent 60%),
+    radial-gradient(560px 360px at 85% 80%, color-mix(in srgb, var(--sb-secondary) 22%, transparent), transparent 55%),
+    var(--sb-surface-dim, var(--sb-bg));
+}
+
+.app-boot-loading .sb-loading {
+  min-height: auto;
+}
+
+.sb-loading-mark {
+  position: relative;
+  width: 128px;
+  height: 128px;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+}
+
+.sb-loading-ring {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.sb-loading-ring-track,
+.sb-loading-ring-snake {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sb-loading-ring-track {
+  stroke: color-mix(in srgb, var(--sb-accent) 26%, transparent);
+  stroke-width: 3.1;
+}
+
+.sb-loading-ring-snake {
+  /* Solid CSS stroke (not url(#grad)) — paint servers break under page transforms */
+  stroke: var(--sb-accent);
+  stroke-width: 3.4;
+  stroke-dasharray: 18 82;
+  animation: sbMarkSnake 1.35s linear infinite;
+}
+
+.sb-loading-label {
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  color: var(--sb-on-surface, var(--sb-text));
+  opacity: 0.85;
+}
+
+@keyframes sbMarkSnake {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+.sb-error {
+  color: #f2b8b5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-button,
+  .sb-input,
+  .sb-loading-label {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .sb-loading-ring-snake {
+    animation: none !important;
+    stroke-dasharray: 18 82;
+  }
+}
+
+.sb-empty h3,
+.sb-error h3 {
+  margin: 0 0 0.4rem;
+  color: var(--sb-on-surface);
+  font-size: 1.35rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.sb-empty p,
+.sb-error p {
+  margin: 0;
+  max-width: 36rem;
+  margin-inline: auto;
+  line-height: 1.55;
+}

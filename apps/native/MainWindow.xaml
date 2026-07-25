@@ -1,0 +1,126 @@
+<Window x:Class="SBLauncher.Native.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="SB Launcher"
+        Width="1360" Height="860"
+        MinWidth="1100" MinHeight="700"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        Background="#0B0D14"
+        Loaded="Window_Loaded"
+        StateChanged="Window_StateChanged"
+        Closing="Window_Closing">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="6"
+                            CornerRadius="0" GlassFrameThickness="0"/>
+    </shell:WindowChrome.WindowChrome>
+    <Window.Resources>
+        <SolidColorBrush x:Key="TitleButtonHoverBrush" Color="#267C5CFF"/>
+        <Storyboard x:Key="SplashMarkSnakeStoryboard" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="LogoSnake"
+                             Storyboard.TargetProperty="StrokeDashOffset"
+                             From="0" To="-280" Duration="0:0:1.4"/>
+        </Storyboard>
+        <Style x:Key="TitleButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#F4F6FB"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background"
+                                        Value="{DynamicResource TitleButtonHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.72"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="34"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border x:Name="TitleBar" Grid.Row="0" Background="#0B0D14"
+                MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid>
+                <TextBlock x:Name="TitleBarText" Text="SB Launcher"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="#F4F6FB" FontSize="12.5" FontWeight="SemiBold"/>
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <Button x:Name="MinimizeButton" Style="{StaticResource TitleButtonStyle}"
+                            Click="MinimizeButton_Click" ToolTip="Minimize">
+                        <Path x:Name="MinimizeIcon" Data="M 1,6 L 13,6"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                    </Button>
+                    <Button x:Name="MaximizeButton" Style="{StaticResource TitleButtonStyle}"
+                            Click="MaximizeButton_Click" ToolTip="Maximize">
+                        <Path x:Name="MaximizeIcon" Data="M 1.5,1.5 H 12.5 V 12.5 H 1.5 Z"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.35" StrokeLineJoin="Round"/>
+                    </Button>
+                    <Button x:Name="CloseButton" Style="{StaticResource TitleButtonStyle}"
+                            Click="CloseButton_Click" ToolTip="Close">
+                        <Path Data="M 1.5,1.5 L 12.5,12.5 M 12.5,1.5 L 1.5,12.5"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <wv2:WebView2 x:Name="Browser" Grid.Row="1" Visibility="Hidden" />
+
+        <Grid x:Name="Splash" Grid.Row="1">
+            <Grid.Background>
+                <RadialGradientBrush Center="0.28,0.18" GradientOrigin="0.28,0.18"
+                                     RadiusX="0.9" RadiusY="0.9">
+                    <GradientStop Color="#342968" Offset="0"/>
+                    <GradientStop Color="#151525" Offset="0.45"/>
+                    <GradientStop Color="#0B0D14" Offset="1"/>
+                </RadialGradientBrush>
+            </Grid.Background>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Grid x:Name="StartupProgress" Width="128" Height="128" HorizontalAlignment="Center">
+                    <Viewbox Width="128" Height="128" Stretch="Uniform">
+                        <Canvas Width="100" Height="100">
+                            <Path Stroke="#4A4458" StrokeThickness="3.1" Fill="Transparent"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                  Data="M 1.95,49.90 L 2.93,44.04 L 5.18,39.45 L 8.20,35.64 L 11.82,32.32 L 15.72,29.39 L 19.63,26.46 L 23.14,23.14 L 26.46,19.63 L 29.39,15.72 L 32.32,11.82 L 35.64,8.20 L 39.45,5.18 L 44.04,2.93 L 50.00,1.95 L 55.86,2.93 L 60.45,5.18 L 64.26,8.30 L 67.58,11.82 L 70.51,15.72 L 73.44,19.63 L 76.76,23.14 L 80.27,26.46 L 84.18,29.39 L 88.09,32.32 L 91.60,35.64 L 94.73,39.45 L 96.97,44.04 L 97.95,50.00 L 96.97,55.86 L 94.73,60.45 L 91.70,64.26 L 88.09,67.58 L 84.18,70.51 L 80.27,73.44 L 76.66,76.66 L 73.44,80.27 L 70.51,84.18 L 67.58,88.09 L 64.26,91.70 L 60.45,94.73 L 55.86,96.97 L 49.90,97.95 L 44.04,96.97 L 39.45,94.73 L 35.64,91.70 L 32.32,88.09 L 29.39,84.18 L 26.46,80.27 L 23.24,76.66 L 19.63,73.44 L 15.72,70.51 L 11.82,67.58 L 8.20,64.26 L 5.18,60.45 L 2.93,55.86 Z"/>
+                            <Path x:Name="LogoSnake" Stroke="#9A82DB" StrokeThickness="3.4" Fill="Transparent"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                  StrokeDashArray="48 232" StrokeDashOffset="0"
+                                  Data="M 1.95,49.90 L 2.93,44.04 L 5.18,39.45 L 8.20,35.64 L 11.82,32.32 L 15.72,29.39 L 19.63,26.46 L 23.14,23.14 L 26.46,19.63 L 29.39,15.72 L 32.32,11.82 L 35.64,8.20 L 39.45,5.18 L 44.04,2.93 L 50.00,1.95 L 55.86,2.93 L 60.45,5.18 L 64.26,8.30 L 67.58,11.82 L 70.51,15.72 L 73.44,19.63 L 76.76,23.14 L 80.27,26.46 L 84.18,29.39 L 88.09,32.32 L 91.60,35.64 L 94.73,39.45 L 96.97,44.04 L 97.95,50.00 L 96.97,55.86 L 94.73,60.45 L 91.70,64.26 L 88.09,67.58 L 84.18,70.51 L 80.27,73.44 L 76.66,76.66 L 73.44,80.27 L 70.51,84.18 L 67.58,88.09 L 64.26,91.70 L 60.45,94.73 L 55.86,96.97 L 49.90,97.95 L 44.04,96.97 L 39.45,94.73 L 35.64,91.70 L 32.32,88.09 L 29.39,84.18 L 26.46,80.27 L 23.24,76.66 L 19.63,73.44 L 15.72,70.51 L 11.82,67.58 L 8.20,64.26 L 5.18,60.45 L 2.93,55.86 Z"/>
+                        </Canvas>
+                    </Viewbox>
+                </Grid>
+                <TextBlock Text="SB Launcher" Foreground="#E6E1E5" FontSize="28"
+                           FontWeight="SemiBold" HorizontalAlignment="Center"
+                           Margin="0,22,0,4"/>
+                <TextBlock x:Name="StatusText" Text="Starting secure services…"
+                           Foreground="#CAC4D0" FontSize="14"
+                           HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                <Button x:Name="RetryButton" Content="Retry" Visibility="Collapsed"
+                        Width="110" Height="38" Margin="0,20,0,0"
+                        Click="RetryButton_Click"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
