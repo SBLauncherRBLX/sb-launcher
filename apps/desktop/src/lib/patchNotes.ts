@@ -19,6 +19,15 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "2.3.2",
+    title: "Banner & open source",
+    items: [
+      "New About banner — rebuilt as pixel-perfect vector art, crisp at any window size.",
+      "Banner press animation fixed: the art no longer separates from its frame when clicked.",
+      "SB Launcher is now open source — full code on GitHub.",
+    ],
+  },
+  {
     version: "2.3.1",
     title: "Animations & polish",
     items: [

@@ -33,7 +33,8 @@ docs/site/pages-upload/
 
 # Local editor / agent state
 .cursor/
-assets/
+# Cursor workspace scratch images (repo root only — not apps/*/src/assets)
+/assets/
 
 # Stray local files
 *.tex

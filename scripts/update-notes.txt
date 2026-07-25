@@ -1,5 +1,5 @@
-SB Launcher 2.3.1
+SB Launcher 2.3.2
 
-- Classic page animations are back — smooth springs instead of the new stiff transitions.
-- Loading screen reliably shows the snake spinner again (no more empty screen).
-- About page cleanup: original banner art restored, confetti removed.
+- New About banner — rebuilt as pixel-perfect vector art, crisp at any window size.
+- Banner press animation fixed: the art no longer separates from its frame when clicked.
+- SB Launcher is now open source — full code on GitHub.

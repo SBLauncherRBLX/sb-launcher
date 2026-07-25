@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import aboutBanner from "../assets/about-banner.png";
+import aboutBanner from "../assets/about-banner.svg?url";
 import { MAJOR_RELEASE, PATCH_NOTES } from "../lib/patchNotes";
 import { APP_VERSION } from "../lib/version";
 import { useAppStore } from "../store";

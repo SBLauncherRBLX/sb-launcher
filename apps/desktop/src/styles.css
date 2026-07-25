@@ -1243,9 +1243,16 @@ body,
   box-shadow:
     0 14px 34px rgba(0, 0, 0, 0.45),
     inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transform: translateZ(0) scale(1);
   transition:
+    transform var(--sb-dur-short3) var(--sb-ease-emphasized-decelerate),
     box-shadow var(--sb-dur-short3) var(--sb-ease-standard),
     border-color var(--sb-dur-short3) var(--sb-ease-standard);
+}
+
+.about-os-frame:has(.about-banner:active) {
+  transform: translateZ(0) scale(0.965);
+  transition-duration: var(--sb-motion-duration-press);
 }
 
 .about-os-frame:has(.about-banner:hover) {
@@ -1267,7 +1274,7 @@ body,
   cursor: pointer;
   overflow: hidden;
   isolation: isolate;
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 1024 / 630;
   transform: translateZ(0) scale(1);
   transition:
     transform var(--sb-dur-short3) var(--sb-ease-emphasized-decelerate),
@@ -1284,7 +1291,6 @@ body,
 }
 
 .about-banner:active {
-  transform: translateZ(0) scale(0.965);
   filter: brightness(0.94);
   box-shadow: none;
   transition-duration: var(--sb-motion-duration-press);
@@ -1621,7 +1627,9 @@ body,
 @media (prefers-reduced-motion: reduce) {
   .about-banner,
   .about-banner:hover,
-  .about-banner:active {
+  .about-banner:active,
+  .about-os-frame,
+  .about-os-frame:has(.about-banner:active) {
     transform: none;
     transition: none;
     filter: none;
