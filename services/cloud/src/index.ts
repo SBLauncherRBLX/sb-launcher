@@ -89,6 +89,40 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
   "objects.githubusercontent.com",
 ]);
 
+/**
+ * Seeded update shipped with the Worker so clients still see a new release
+ * when Cloudflare KV write quota is exhausted (free tier). Prefer this when
+ * its version is newer than (or equal to) the KV copy.
+ */
+const SHIPPED_UPDATE: UpdateManifest = {
+  version: "2.3.2",
+  buildId: "20260726012436",
+  downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
+  notes:
+    "SB Launcher 2.3.2\n\n- New About banner — rebuilt as pixel-perfect vector art, crisp at any window size.\n- Banner press animation fixed: the art no longer separates from its frame when clicked.\n- SB Launcher is now open source — full code on GitHub.",
+  title: "SB Launcher 2.3.2",
+  publishedAt: "2026-07-25T18:24:36.000Z",
+};
+
+function parseSemver(v: string): [number, number, number] | null {
+  const m = /^(\d+)\.(\d+)\.(\d+)/.exec(v.trim());
+  if (!m) return null;
+  return [Number(m[1]), Number(m[2]), Number(m[3])];
+}
+
+/** Positive if a > b, 0 if equal, negative if a < b. Invalid versions sort lowest. */
+function compareSemver(a: string, b: string): number {
+  const pa = parseSemver(a);
+  const pb = parseSemver(b);
+  if (!pa && !pb) return 0;
+  if (!pa) return -1;
+  if (!pb) return 1;
+  for (let i = 0; i < 3; i++) {
+    if (pa[i]! !== pb[i]!) return pa[i]! - pb[i]!;
+  }
+  return 0;
+}
+
 export function defaultCosmetics(): ProfileCosmetics {
   return {
     badge: { mode: "launcher" },
@@ -431,33 +465,42 @@ async function playerCount(env: Env): Promise<Response> {
 }
 
 async function getUpdate(env: Env): Promise<Response> {
-  const raw = await env.META.get(UPDATE_KEY, "json");
-  if (!raw || typeof raw !== "object") {
-    const fallback = sanitizeDownloadUrl(env.DEFAULT_DOWNLOAD_URL ?? "") ?? "";
-    return json({
-      version: "2.1.0",
-      buildId: "",
-      downloadUrl: fallback,
-      notes: "",
-      publishedAt: "",
-    } satisfies UpdateManifest);
+  let fromKv: UpdateManifest | null = null;
+  try {
+    const raw = await env.META.get(UPDATE_KEY, "json");
+    if (raw && typeof raw === "object") {
+      const data = raw as Partial<UpdateManifest>;
+      const downloadUrl =
+        sanitizeDownloadUrl(typeof data.downloadUrl === "string" ? data.downloadUrl : "") ??
+        sanitizeDownloadUrl(env.DEFAULT_DOWNLOAD_URL ?? "") ??
+        "";
+      fromKv = {
+        version: typeof data.version === "string" ? data.version : "0.0.0",
+        buildId: typeof data.buildId === "string" ? data.buildId : "",
+        downloadUrl,
+        notes: typeof data.notes === "string" ? data.notes.slice(0, UPDATE_NOTES_MAX) : "",
+        title:
+          typeof data.title === "string" && data.title.trim()
+            ? data.title.trim().slice(0, UPDATE_TITLE_MAX)
+            : undefined,
+        publishedAt: typeof data.publishedAt === "string" ? data.publishedAt : "",
+      };
+    }
+  } catch {
+    // KV read failures should not block the seeded release.
   }
-  const data = raw as Partial<UpdateManifest>;
-  const downloadUrl =
-    sanitizeDownloadUrl(typeof data.downloadUrl === "string" ? data.downloadUrl : "") ??
-    sanitizeDownloadUrl(env.DEFAULT_DOWNLOAD_URL ?? "") ??
-    "";
-  return json({
-    version: typeof data.version === "string" ? data.version : "2.1.0",
-    buildId: typeof data.buildId === "string" ? data.buildId : "",
-    downloadUrl,
-    notes: typeof data.notes === "string" ? data.notes.slice(0, UPDATE_NOTES_MAX) : "",
-    title:
-      typeof data.title === "string" && data.title.trim()
-        ? data.title.trim().slice(0, UPDATE_TITLE_MAX)
-        : undefined,
-    publishedAt: typeof data.publishedAt === "string" ? data.publishedAt : "",
-  } satisfies UpdateManifest);
+
+  const shipped: UpdateManifest = {
+    ...SHIPPED_UPDATE,
+    downloadUrl:
+      sanitizeDownloadUrl(SHIPPED_UPDATE.downloadUrl) ??
+      sanitizeDownloadUrl(env.DEFAULT_DOWNLOAD_URL ?? "") ??
+      SHIPPED_UPDATE.downloadUrl,
+  };
+
+  const best =
+    !fromKv || compareSemver(shipped.version, fromKv.version) >= 0 ? shipped : fromKv;
+  return json(best);
 }
 
 async function putUpdate(request: Request, env: Env): Promise<Response> {
@@ -509,7 +552,18 @@ async function putUpdate(request: Request, env: Env): Promise<Response> {
         : new Date().toISOString(),
   };
 
-  await env.META.put(UPDATE_KEY, JSON.stringify(manifest));
+  try {
+    await env.META.put(UPDATE_KEY, JSON.stringify(manifest));
+  } catch {
+    // Free-tier KV write quota exhausted: seed SHIPPED_UPDATE + redeploy instead.
+    return json(
+      {
+        error:
+          "KV write failed (quota?). Bump SHIPPED_UPDATE in the Worker and redeploy.",
+      },
+      503,
+    );
+  }
   return json({ ok: true, update: manifest });
 }
 
