@@ -1114,18 +1114,22 @@ function normalizeLocationName(value: string | null | undefined): string | null 
 }
 
 async function hydrateFriendGameNames(items: FriendPresence[]): Promise<FriendPresence[]> {
-  const needsName = items
+  const inExperience = items.filter(
+    (item) => item.presenceType === "InGame" || item.presenceType === "InStudio",
+  );
+  // Fill missing universeId even when Roblox already sent a location name —
+  // Last Played history requires universeId + placeId on /api/launch.
+  const needsMeta = inExperience
     .filter(
       (item) =>
-        (item.presenceType === "InGame" || item.presenceType === "InStudio") &&
-        !normalizeLocationName(item.lastLocation),
+        (!item.universeId && item.placeId) || !normalizeLocationName(item.lastLocation),
     )
-    .slice(0, 24);
-  if (!needsName.length) return items;
+    .slice(0, 40);
+  if (!needsMeta.length) return items;
 
   const placeOnly = [
     ...new Set(
-      needsName
+      needsMeta
         .filter((item) => !item.universeId && item.placeId)
         .map((item) => item.placeId!)
         .filter(Boolean),
@@ -1137,7 +1141,7 @@ async function hydrateFriendGameNames(items: FriendPresence[]): Promise<FriendPr
 
   const universeIds = [
     ...new Set(
-      needsName
+      needsMeta
         .map((item) => item.universeId || (item.placeId ? placeMeta[item.placeId]?.universeId : null))
         .filter((id): id is string => Boolean(id)),
     ),
@@ -1148,13 +1152,22 @@ async function hydrateFriendGameNames(items: FriendPresence[]): Promise<FriendPr
 
   return items.map((item) => {
     if (item.presenceType !== "InGame" && item.presenceType !== "InStudio") return item;
-    if (normalizeLocationName(item.lastLocation)) return item;
 
     let universeId = item.universeId;
     let placeId = item.placeId;
-    if (!universeId && placeId && placeMeta[placeId]?.universeId) {
-      universeId = placeMeta[placeId].universeId;
-      placeId = placeMeta[placeId].placeId || placeId;
+    const placeInfo = placeId ? placeMeta[placeId] : undefined;
+    if (!universeId && placeInfo?.universeId) {
+      universeId = placeInfo.universeId;
+      placeId = placeInfo.placeId || placeId;
+    }
+
+    const existingName = normalizeLocationName(item.lastLocation);
+    if (existingName && universeId) {
+      return {
+        ...item,
+        universeId,
+        placeId: placeId ?? item.placeId ?? (games[universeId]?.placeId ?? null),
+      };
     }
 
     const fromPlace = placeId ? placeMeta[placeId]?.name : null;
@@ -1169,6 +1182,75 @@ async function hydrateFriendGameNames(items: FriendPresence[]): Promise<FriendPr
       placeId: placeId ?? item.placeId ?? (universeId ? games[universeId]?.placeId ?? null : null),
     };
   });
+}
+
+/** Resolve enough game fields to write a Last Played (history) row for a launch. */
+export async function resolveLaunchHistoryMeta(input: {
+  placeId?: string | null;
+  universeId?: string | null;
+  name?: string | null;
+  iconUrl?: string | null;
+  userId?: string | null;
+  accessToken?: string | null;
+}): Promise<{
+  universeId: string;
+  placeId: string;
+  name: string;
+  iconUrl: string | null;
+} | null> {
+  let placeId = input.placeId?.trim() || "";
+  let universeId = input.universeId?.trim() || "";
+  let name = normalizeLocationName(input.name) || "";
+  let iconUrl = input.iconUrl?.trim() || null;
+
+  // Follow-user joins often omit place/universe; re-read friend presence.
+  if ((!placeId || !universeId || !name) && input.userId?.trim() && input.accessToken?.trim()) {
+    const presence = await batchFriendPresence(input.accessToken, [input.userId.trim()]).catch(
+      () => ({ userPresences: [] as RobloxFriendPresence[] }),
+    );
+    const row = presence.userPresences?.[0];
+    if (row) {
+      if (!placeId) {
+        const raw = row.placeId ?? row.rootPlaceId;
+        placeId = raw ? String(raw) : placeId;
+      }
+      if (!universeId && row.universeId) universeId = String(row.universeId);
+      if (!name) name = normalizeLocationName(row.lastLocation) || name;
+    }
+  }
+
+  if (!universeId && placeId) {
+    const places = await batchPlaceDetails([placeId]).catch(
+      () => ({}) as Awaited<ReturnType<typeof batchPlaceDetails>>,
+    );
+    const meta = places[placeId];
+    if (meta?.universeId) universeId = meta.universeId;
+    if (!name && meta?.name) name = normalizeLocationName(meta.name) || name;
+    if (meta?.placeId) placeId = meta.placeId;
+  }
+
+  if (universeId && (!placeId || !name)) {
+    const games = await batchGameDetails([universeId]).catch(
+      () => ({}) as Awaited<ReturnType<typeof batchGameDetails>>,
+    );
+    const game = games[universeId];
+    if (game) {
+      if (!placeId && game.placeId) placeId = game.placeId;
+      if (!name && game.name) name = normalizeLocationName(game.name) || name;
+    }
+  }
+
+  if (!universeId || !placeId) return null;
+  if (!name) name = "Experience";
+
+  if (!iconUrl) {
+    const icons = await thumbnails("GameIcon", [universeId], "150x150").catch(
+      () => ({}) as Record<string, string | null>,
+    );
+    iconUrl = icons[universeId] ?? null;
+  }
+
+  return { universeId, placeId, name, iconUrl };
 }
 
 async function batchPlaceDetails(

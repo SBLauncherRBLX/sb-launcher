@@ -139,11 +139,13 @@ textarea {
   border-radius: 999px;
   padding: 0.82rem 1.5rem;
   min-height: 2.75rem;
+  max-width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   line-height: 1.2;
+  white-space: normal;
   background: var(--sb-primary-container);
   color: var(--sb-on-primary-container);
   font-weight: 700;
@@ -276,6 +278,8 @@ textarea {
 
 .sb-card {
   position: relative;
+  min-width: 0;
+  max-width: 100%;
   --sb-glass-filter: blur(calc(var(--sb-glass-blur, var(--sb-blur)) * var(--sb-glass-cards, 0)))
     saturate(calc(1 + (var(--sb-glass-saturate, 1) - 1) * var(--sb-glass-cards, 0)))
     brightness(calc(1 + (var(--sb-glass-brightness, 1) - 1) * var(--sb-glass-cards, 0)))
@@ -343,6 +347,9 @@ textarea {
 
 .sb-input {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   background: var(--sb-surface-container-highest);
   border: none;
   border-radius: var(--sb-shape-md);

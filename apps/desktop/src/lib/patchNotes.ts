@@ -19,6 +19,17 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "2.3.7",
+    title: "Discord activity",
+    items: [
+      "Discord Rich Presence now shows the game you’re in, playtime, and the game thumbnail.",
+      "Friends can use Join server (when the server ID is known) or open the Roblox game page.",
+      "Full Discord settings: browsing presence, thumbnail, timer, and each button on/off.",
+      "Joining a friend now saves that experience to Last Played.",
+      "Discord settings checkboxes stay aligned when changing UI fonts.",
+    ],
+  },
+  {
     version: "2.3.6",
     title: "Startup port fix",
     items: [

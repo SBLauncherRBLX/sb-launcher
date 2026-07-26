@@ -38,6 +38,7 @@ import {
   listFriends,
   peekCachedFriends,
   listServers,
+  resolveLaunchHistoryMeta,
   searchGames,
   searchUsers,
 } from "./modules/roblox/client.js";
@@ -316,16 +317,27 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     const deepLink = buildRobloxDeepLink(target);
     const webUrl = buildWebLaunchUrl(target);
 
-    if (request.auth && body.universeId && body.name && body.placeId) {
-      await prisma.historyEntry.create({
-        data: {
-          userId: request.auth.user.id,
-          universeId: body.universeId,
-          placeId: body.placeId,
-          name: body.name,
-          iconUrl: body.iconUrl ?? null,
-        },
+    // Last Played: also record friend joins (often missing universeId until resolved).
+    if (request.auth) {
+      const meta = await resolveLaunchHistoryMeta({
+        placeId: body.placeId,
+        universeId: body.universeId,
+        name: body.name,
+        iconUrl: body.iconUrl,
+        userId: body.userId,
+        accessToken: request.auth.accessToken,
       });
+      if (meta) {
+        await prisma.historyEntry.create({
+          data: {
+            userId: request.auth.user.id,
+            universeId: meta.universeId,
+            placeId: meta.placeId,
+            name: meta.name,
+            iconUrl: meta.iconUrl,
+          },
+        });
+      }
     }
 
     return { deepLink, webUrl };

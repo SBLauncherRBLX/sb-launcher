@@ -472,22 +472,50 @@ public partial class MainWindow : Window
             {
                 var prefsPath = UserDataPaths.LocalPrefsPath;
                 var prefs = LoadJsonObject(prefsPath);
-                if (args[0] is JsonObject patch)
+                var patch = args.Count > 0 ? args[0] as JsonObject : null;
+                if (patch is not null)
+                {
                     foreach (var pair in patch)
                         prefs[pair.Key] = pair.Value?.DeepClone();
+                }
                 SaveJsonObject(prefsPath, prefs);
-                if (prefs.ContainsKey("discordRichPresence"))
+                if (patch is not null &&
+                    patch.Any(pair => pair.Key.StartsWith("discord", StringComparison.OrdinalIgnoreCase)))
                     _discordPresence?.SyncFromPrefs(prefs);
                 return prefs;
             }
             case "discord:setActivity":
             {
                 var payload = args.Count > 0 ? args[0] as JsonObject : null;
-                var details = payload?["details"]?.GetValue<string>();
-                var state = payload?["state"]?.GetValue<string>();
-                var playing = payload?["playing"]?.GetValue<string>();
-                if (!string.IsNullOrWhiteSpace(playing))
-                    _discordPresence?.SetPlaying(playing);
+                var details = ReadBridgeString(payload, "details");
+                var state = ReadBridgeString(payload, "state");
+                var playing = ReadBridgeString(payload, "playing");
+                var mode = ReadBridgeString(payload, "mode")?.Trim().ToLowerInvariant();
+                var placeId = ReadBridgeString(payload, "placeId");
+                var gameInstanceId = ReadBridgeString(payload, "gameInstanceId");
+                var universeId = ReadBridgeString(payload, "universeId");
+                var iconUrl = ReadBridgeString(payload, "iconUrl");
+                var creatorName = ReadBridgeString(payload, "creatorName");
+                var serverType = ReadBridgeString(payload, "serverType");
+
+                var isPlaying =
+                    string.Equals(mode, "playing", StringComparison.Ordinal) ||
+                    !string.IsNullOrWhiteSpace(playing) ||
+                    !string.IsNullOrWhiteSpace(placeId);
+
+                if (isPlaying && !string.Equals(mode, "browsing", StringComparison.Ordinal))
+                {
+                    _discordPresence?.SetPlaying(new DiscordPresence.ActivityPayload
+                    {
+                        GameName = playing ?? details,
+                        PlaceId = placeId,
+                        GameInstanceId = gameInstanceId,
+                        UniverseId = universeId,
+                        IconUrl = iconUrl,
+                        CreatorName = creatorName,
+                        ServerType = serverType,
+                    });
+                }
                 else if (!string.IsNullOrWhiteSpace(details) || !string.IsNullOrWhiteSpace(state))
                     _discordPresence?.SetActivity(details, state);
                 else
@@ -734,6 +762,25 @@ public partial class MainWindow : Window
         }
         SaveJsonObject(path, config);
         return config;
+    }
+
+    private static string? ReadBridgeString(JsonObject? payload, string key)
+    {
+        if (payload is null || !payload.TryGetPropertyValue(key, out var node) || node is null)
+            return null;
+        if (node is JsonValue value)
+        {
+            if (value.TryGetValue<string>(out var asString))
+                return string.IsNullOrWhiteSpace(asString) ? null : asString.Trim();
+            if (value.TryGetValue<long>(out var asLong))
+                return asLong.ToString();
+            if (value.TryGetValue<double>(out var asDouble) && !double.IsNaN(asDouble) && !double.IsInfinity(asDouble))
+                return Convert.ToInt64(asDouble).ToString();
+            if (value.TryGetValue<bool>(out var asBool))
+                return asBool ? "true" : "false";
+        }
+        var text = node.ToString()?.Trim();
+        return string.IsNullOrWhiteSpace(text) || text is "null" or "undefined" ? null : text.Trim('"');
     }
 
     private static JsonObject LoadJsonObject(string path)

@@ -41,6 +41,11 @@ export function SettingsPage() {
   );
   const [discordRichPresence, setDiscordRichPresence] = useState(true);
   const [discordApplicationId, setDiscordApplicationId] = useState("");
+  const [discordShowWhenBrowsing, setDiscordShowWhenBrowsing] = useState(true);
+  const [discordShowGameThumbnail, setDiscordShowGameThumbnail] = useState(true);
+  const [discordShowElapsed, setDiscordShowElapsed] = useState(true);
+  const [discordShowJoinButton, setDiscordShowJoinButton] = useState(true);
+  const [discordShowGamePageButton, setDiscordShowGamePageButton] = useState(true);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -52,6 +57,11 @@ export function SettingsPage() {
     });
     void window.sbDesktop?.getPrefs().then((prefs) => {
       setDiscordRichPresence(prefs.discordRichPresence !== false);
+      setDiscordShowWhenBrowsing(prefs.discordShowWhenBrowsing !== false);
+      setDiscordShowGameThumbnail(prefs.discordShowGameThumbnail !== false);
+      setDiscordShowElapsed(prefs.discordShowElapsed !== false);
+      setDiscordShowJoinButton(prefs.discordShowJoinButton !== false);
+      setDiscordShowGamePageButton(prefs.discordShowGamePageButton !== false);
       if (typeof prefs.discordApplicationId === "string") {
         setDiscordApplicationId(prefs.discordApplicationId.replace(/\D/g, ""));
       }
@@ -60,6 +70,10 @@ export function SettingsPage() {
       if (persistTimer.current) clearTimeout(persistTimer.current);
     };
   }, []);
+
+  async function patchDiscordPrefs(patch: Record<string, unknown>) {
+    await window.sbDesktop?.setPrefs(patch);
+  }
 
   function schedulePersist() {
     if (persistTimer.current) clearTimeout(persistTimer.current);
@@ -191,6 +205,11 @@ export function SettingsPage() {
     await window.sbDesktop?.setPrefs({
       discordRichPresence,
       discordApplicationId: discordApplicationId.trim() || null,
+      discordShowWhenBrowsing,
+      discordShowGameThumbnail,
+      discordShowElapsed,
+      discordShowJoinButton,
+      discordShowGamePageButton,
     });
     saveRobloxAppIconPreference(robloxAppIcon);
     setMessage("Settings saved.");
@@ -198,7 +217,7 @@ export function SettingsPage() {
 
   async function toggleDiscordRichPresence(next: boolean) {
     setDiscordRichPresence(next);
-    await window.sbDesktop?.setPrefs({ discordRichPresence: next });
+    await patchDiscordPrefs({ discordRichPresence: next });
     if (next) {
       void window.sbDesktop?.clearDiscordActivity?.();
     }
@@ -237,32 +256,102 @@ export function SettingsPage() {
         <div className="sb-card" style={{ padding: "1.25rem" }}>
           <h3>Discord</h3>
           <p className="sb-muted" style={{ marginTop: "0.75rem" }}>
-            Show SB Launcher in your Discord activity while the app is open. Discord desktop must be
-            running on this PC.
+            Show what you&apos;re doing in Roblox on Discord — game name, playtime, thumbnail, Join
+            server, and game page. Discord desktop must be running on this PC.
           </p>
-          <label className="checkbox-row" style={{ marginTop: "1rem" }}>
+          <label className="check-row" style={{ marginTop: "1rem" }}>
             <input
               type="checkbox"
               checked={discordRichPresence}
               onChange={(event) => void toggleDiscordRichPresence(event.target.checked)}
             />
-            Show in Discord activity
+            <span>Enable Discord Rich Presence</span>
           </label>
-          <label style={{ display: "block", marginTop: "1rem" }}>
-            Discord Application ID
-            <input
-              className="sb-input"
-              inputMode="numeric"
-              placeholder="From discord.com/developers/applications"
-              value={discordApplicationId}
-              onChange={(event) => setDiscordApplicationId(event.target.value.replace(/\D/g, ""))}
-            />
-          </label>
-          <p className="sb-muted" style={{ margin: "0.5rem 0 0" }}>
-            Create an application named &quot;SB Launcher&quot;, copy its Application ID, then Save.
-            Optional: Rich Presence → Art Assets → upload logo as{" "}
-            <code>sblogo</code>.
-          </p>
+
+          {discordRichPresence ? (
+            <div className="form-grid" style={{ marginTop: "1rem" }}>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={discordShowWhenBrowsing}
+                  onChange={(event) => {
+                    const next = event.target.checked;
+                    setDiscordShowWhenBrowsing(next);
+                    void patchDiscordPrefs({ discordShowWhenBrowsing: next });
+                  }}
+                />
+                <span>Show activity while browsing the launcher</span>
+              </label>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={discordShowGameThumbnail}
+                  onChange={(event) => {
+                    const next = event.target.checked;
+                    setDiscordShowGameThumbnail(next);
+                    void patchDiscordPrefs({ discordShowGameThumbnail: next });
+                  }}
+                />
+                <span>Show game thumbnail</span>
+              </label>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={discordShowElapsed}
+                  onChange={(event) => {
+                    const next = event.target.checked;
+                    setDiscordShowElapsed(next);
+                    void patchDiscordPrefs({ discordShowElapsed: next });
+                  }}
+                />
+                <span>Show time elapsed in game</span>
+              </label>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={discordShowJoinButton}
+                  onChange={(event) => {
+                    const next = event.target.checked;
+                    setDiscordShowJoinButton(next);
+                    void patchDiscordPrefs({ discordShowJoinButton: next });
+                  }}
+                />
+                <span>Join button (server when known, otherwise the game)</span>
+              </label>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={discordShowGamePageButton}
+                  onChange={(event) => {
+                    const next = event.target.checked;
+                    setDiscordShowGamePageButton(next);
+                    void patchDiscordPrefs({ discordShowGamePageButton: next });
+                  }}
+                />
+                <span>See game page button</span>
+              </label>
+              <p className="sb-muted" style={{ gridColumn: "1 / -1", margin: 0 }}>
+                Discord hides activity buttons on your own profile. Friends still see Join / See game
+                page on your activity.
+              </p>
+              <label style={{ gridColumn: "1 / -1" }}>
+                Discord Application ID
+                <input
+                  className="sb-input"
+                  inputMode="numeric"
+                  placeholder="Leave empty for the built-in SB Launcher ID"
+                  value={discordApplicationId}
+                  onChange={(event) =>
+                    setDiscordApplicationId(event.target.value.replace(/\D/g, ""))
+                  }
+                />
+              </label>
+              <p className="sb-muted" style={{ gridColumn: "1 / -1", margin: 0 }}>
+                Leave empty to use the built-in app ID. Change this only if you use your own Discord
+                application. Optional Rich Presence art asset name: sblogo.
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <div className="sb-card" style={{ padding: "1.25rem" }}>

@@ -162,6 +162,7 @@ export function GameDetailsPage() {
                   universeId: game.universeId,
                   name: game.name,
                   iconUrl: game.iconUrl,
+                  creatorName: game.creatorName,
                 })
               }
             >
@@ -275,6 +276,8 @@ export function GameDetailsPage() {
                         universeId: friend.universeId ?? game.universeId,
                         name: game.name,
                         iconUrl: game.iconUrl,
+                        creatorName: game.creatorName,
+                        serverType: "public",
                       })
                     }
                   >
@@ -331,6 +334,8 @@ export function GameDetailsPage() {
                         universeId: game.universeId,
                         name: game.name,
                         iconUrl: game.iconUrl,
+                        creatorName: game.creatorName,
+                        serverType: "public",
                       })
                     }
                   >

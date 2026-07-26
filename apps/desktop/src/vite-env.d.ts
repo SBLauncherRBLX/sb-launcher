@@ -51,9 +51,16 @@ type SbDesktopApi = {
     cornerRadius?: number;
   }) => Promise<boolean>;
   setDiscordActivity: (payload: {
+    mode?: "browsing" | "playing";
     details?: string;
     state?: string;
     playing?: string;
+    placeId?: string;
+    gameInstanceId?: string;
+    universeId?: string;
+    iconUrl?: string;
+    creatorName?: string;
+    serverType?: "public" | "private" | "reserved" | string;
   }) => Promise<boolean>;
   clearDiscordActivity: () => Promise<boolean>;
   startUpdate: (payload: {

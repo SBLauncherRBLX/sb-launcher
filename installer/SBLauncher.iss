@@ -1,5 +1,5 @@
 #define MyAppName "SB Launcher"
-#define MyAppVersion "2.3.6"
+#define MyAppVersion "2.3.7"
 #define MyAppPublisher "SB Launcher"
 #define MyAppExeName "SB Launcher.exe"
 

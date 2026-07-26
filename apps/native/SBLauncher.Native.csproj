@@ -16,9 +16,9 @@
     <StartupObject>SBLauncher.Native.Program</StartupObject>
     <Product>SB Launcher</Product>
     <Company>SB Launcher</Company>
-    <Version>2.3.6</Version>
-    <AssemblyVersion>2.3.6.0</AssemblyVersion>
-    <FileVersion>2.3.6.0</FileVersion>
+    <Version>2.3.7</Version>
+    <AssemblyVersion>2.3.7.0</AssemblyVersion>
+    <FileVersion>2.3.7.0</FileVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\SBLauncher.ico</ApplicationIcon>
     <Nullable>enable</Nullable>
