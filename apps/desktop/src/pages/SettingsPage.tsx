@@ -39,6 +39,8 @@ export function SettingsPage() {
   const [robloxAppIcon, setRobloxAppIcon] = useState<RobloxAppIconPreference>(
     getRobloxAppIconPreference,
   );
+  const [discordRichPresence, setDiscordRichPresence] = useState(true);
+  const [discordApplicationId, setDiscordApplicationId] = useState("");
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -47,6 +49,12 @@ export function SettingsPage() {
       setOauthClientId(config.clientId);
       setOauthConfigured(config.configured);
       setRedirectUri(config.redirectUri);
+    });
+    void window.sbDesktop?.getPrefs().then((prefs) => {
+      setDiscordRichPresence(prefs.discordRichPresence !== false);
+      if (typeof prefs.discordApplicationId === "string") {
+        setDiscordApplicationId(prefs.discordApplicationId.replace(/\D/g, ""));
+      }
     });
     return () => {
       if (persistTimer.current) clearTimeout(persistTimer.current);
@@ -180,8 +188,20 @@ export function SettingsPage() {
       const result = await window.sbDesktop.setOAuthClientId(oauthClientId);
       setOauthConfigured(result.configured);
     }
+    await window.sbDesktop?.setPrefs({
+      discordRichPresence,
+      discordApplicationId: discordApplicationId.trim() || null,
+    });
     saveRobloxAppIconPreference(robloxAppIcon);
     setMessage("Settings saved.");
+  }
+
+  async function toggleDiscordRichPresence(next: boolean) {
+    setDiscordRichPresence(next);
+    await window.sbDesktop?.setPrefs({ discordRichPresence: next });
+    if (next) {
+      void window.sbDesktop?.clearDiscordActivity?.();
+    }
   }
 
   async function applyRobloxAppIcon() {
@@ -214,6 +234,37 @@ export function SettingsPage() {
       {message ? <div className="notice">{message}</div> : null}
 
       <div className="panel-grid">
+        <div className="sb-card" style={{ padding: "1.25rem" }}>
+          <h3>Discord</h3>
+          <p className="sb-muted" style={{ marginTop: "0.75rem" }}>
+            Show SB Launcher in your Discord activity while the app is open. Discord desktop must be
+            running on this PC.
+          </p>
+          <label className="checkbox-row" style={{ marginTop: "1rem" }}>
+            <input
+              type="checkbox"
+              checked={discordRichPresence}
+              onChange={(event) => void toggleDiscordRichPresence(event.target.checked)}
+            />
+            Show in Discord activity
+          </label>
+          <label style={{ display: "block", marginTop: "1rem" }}>
+            Discord Application ID
+            <input
+              className="sb-input"
+              inputMode="numeric"
+              placeholder="From discord.com/developers/applications"
+              value={discordApplicationId}
+              onChange={(event) => setDiscordApplicationId(event.target.value.replace(/\D/g, ""))}
+            />
+          </label>
+          <p className="sb-muted" style={{ margin: "0.5rem 0 0" }}>
+            Create an application named &quot;SB Launcher&quot;, copy its Application ID, then Save.
+            Optional: Rich Presence → Art Assets → upload logo as{" "}
+            <code>sblogo</code>.
+          </p>
+        </div>
+
         <div className="sb-card" style={{ padding: "1.25rem" }}>
           <h3>Account</h3>
           <div style={{ marginTop: "0.75rem" }} className="sb-muted">

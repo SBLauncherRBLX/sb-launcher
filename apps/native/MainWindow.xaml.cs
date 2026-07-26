@@ -50,6 +50,8 @@ public partial class MainWindow : Window
     private string _apiInstanceToken = "";
     private bool _isSecondary;
     private CancellationTokenSource? _robloxSessionMonitorCts;
+    private DiscordPresence? _discordPresence;
+    private Updater? _updater;
 
     private Storyboard? _splashMarkSnake;
     private double _windowCornerRadius = 16;
@@ -109,6 +111,8 @@ public partial class MainWindow : Window
             await StartApiAsync();
             StatusText.Text = "Loading interface…";
             await InitializeBrowserAsync();
+            _updater = new Updater(Log, PushBrowserEvent, Dispatcher);
+            StartDiscordPresence();
         }
         catch (Exception ex)
         {
@@ -422,8 +426,58 @@ public partial class MainWindow : Window
                     foreach (var pair in patch)
                         prefs[pair.Key] = pair.Value?.DeepClone();
                 SaveJsonObject(prefsPath, prefs);
+                if (prefs.ContainsKey("discordRichPresence"))
+                    _discordPresence?.SyncFromPrefs(prefs);
                 return prefs;
             }
+            case "discord:setActivity":
+            {
+                var payload = args.Count > 0 ? args[0] as JsonObject : null;
+                var details = payload?["details"]?.GetValue<string>();
+                var state = payload?["state"]?.GetValue<string>();
+                var playing = payload?["playing"]?.GetValue<string>();
+                if (!string.IsNullOrWhiteSpace(playing))
+                    _discordPresence?.SetPlaying(playing);
+                else if (!string.IsNullOrWhiteSpace(details) || !string.IsNullOrWhiteSpace(state))
+                    _discordPresence?.SetActivity(details, state);
+                else
+                    _discordPresence?.SetBrowsing();
+                return JsonValue.Create(true);
+            }
+            case "discord:clear":
+                _discordPresence?.SetBrowsing();
+                return JsonValue.Create(true);
+            case "update:start":
+            {
+                if (_updater is null)
+                    throw new InvalidOperationException("Updater is not ready yet.");
+                var payload = args.Count > 0 ? args[0] as JsonObject : null;
+                var downloadUrl = payload?["downloadUrl"]?.GetValue<string>() ?? "";
+                var version = payload?["version"]?.GetValue<string>() ?? "";
+                var keepPresets = payload?["keepPresets"]?.GetValue<bool>() ?? true;
+                if (string.IsNullOrWhiteSpace(version))
+                    throw new InvalidOperationException("Update version is missing.");
+                // Fire-and-forget so the bridge returns while download runs; progress is pushed.
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _updater.StartAsync(downloadUrl, version, keepPresets);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // already reported
+                    }
+                    catch
+                    {
+                        // already reported via update-progress error
+                    }
+                });
+                return JsonValue.Create(true);
+            }
+            case "update:cancel":
+                _updater?.Cancel();
+                return JsonValue.Create(true);
             case "shell:openExternal":
                 OpenExternal(args[0]?.GetValue<string>() ?? "");
                 return JsonValue.Create(true);
@@ -571,6 +625,21 @@ public partial class MainWindow : Window
             ["error"] = error,
         };
         Browser.CoreWebView2.PostWebMessageAsJson(response.ToJsonString());
+    }
+
+    private void PushBrowserEvent(JsonObject payload)
+    {
+        try
+        {
+            if (Browser.CoreWebView2 is null) return;
+            void post() => Browser.CoreWebView2.PostWebMessageAsJson(payload.ToJsonString());
+            if (Dispatcher.CheckAccess()) post();
+            else Dispatcher.Invoke(post);
+        }
+        catch (Exception ex)
+        {
+            Log($"PushBrowserEvent failed: {ex.Message}");
+        }
     }
 
     private async Task RestartApiAsync()
@@ -942,7 +1011,11 @@ public partial class MainWindow : Window
             if (shouldCloseRoblox)
                 CloseAllRobloxProcesses();
 
-            await Dispatcher.InvokeAsync(RestoreLauncherWindow);
+            await Dispatcher.InvokeAsync(() =>
+            {
+                _discordPresence?.SetBrowsing();
+                RestoreLauncherWindow();
+            });
         }
         catch (OperationCanceledException)
         {
@@ -951,7 +1024,11 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             Log($"Roblox session monitor failed: {ex.Message}");
-            await Dispatcher.InvokeAsync(RestoreLauncherWindow);
+            await Dispatcher.InvokeAsync(() =>
+            {
+                _discordPresence?.SetBrowsing();
+                RestoreLauncherWindow();
+            });
         }
         finally
         {
@@ -1610,10 +1687,30 @@ public partial class MainWindow : Window
         await StartApplicationAsync();
     }
 
+    private void StartDiscordPresence()
+    {
+        try
+        {
+            _discordPresence?.Dispose();
+            _discordPresence = new DiscordPresence(Log);
+            var prefs = LoadJsonObject(UserDataPaths.LocalPrefsPath);
+            _discordPresence.SyncFromPrefs(prefs);
+            if (_discordPresence.IsConfigured)
+                _discordPresence.SetBrowsing();
+        }
+        catch (Exception ex)
+        {
+            Log($"Discord presence start failed: {ex.Message}");
+        }
+    }
+
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         _robloxSessionMonitorCts?.Cancel();
+        _updater?.Cancel();
         _authTimer.Stop();
+        try { _discordPresence?.Dispose(); } catch { /* ignore */ }
+        _discordPresence = null;
         if (_apiProcess is { HasExited: false })
         {
             try { _apiProcess.Kill(true); } catch { }
@@ -1625,6 +1722,7 @@ public partial class MainWindow : Window
 (() => {
   const pending = new Map();
   const authListeners = new Set();
+  const updateListeners = new Set();
   let sequence = 0;
 
   function call(method, ...args) {
@@ -1639,6 +1737,10 @@ public partial class MainWindow : Window
     const message = event.data;
     if (message?.type === 'auth-token') {
       authListeners.forEach(listener => listener(message.token));
+      return;
+    }
+    if (message?.type === 'update-progress') {
+      updateListeners.forEach(listener => listener(message));
       return;
     }
     const request = pending.get(message?.id);
@@ -1670,6 +1772,14 @@ public partial class MainWindow : Window
     applyRobloxAppIcon: preference => call('robloxAppIcon:apply', preference),
     listCustomWallpapers: () => call('wallpaper:list'),
     setWindowChrome: chrome => call('window:setChrome', chrome),
+    setDiscordActivity: payload => call('discord:setActivity', payload || {}),
+    clearDiscordActivity: () => call('discord:clear'),
+    startUpdate: payload => call('update:start', payload || {}),
+    cancelUpdate: () => call('update:cancel'),
+    onUpdateProgress: handler => {
+      updateListeners.add(handler);
+      return () => updateListeners.delete(handler);
+    },
     onAuthToken: handler => {
       authListeners.add(handler);
       return () => authListeners.delete(handler);

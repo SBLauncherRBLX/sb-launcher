@@ -50,6 +50,26 @@ type SbDesktopApi = {
     accentSecondary?: string;
     cornerRadius?: number;
   }) => Promise<boolean>;
+  setDiscordActivity: (payload: {
+    details?: string;
+    state?: string;
+    playing?: string;
+  }) => Promise<boolean>;
+  clearDiscordActivity: () => Promise<boolean>;
+  startUpdate: (payload: {
+    downloadUrl: string;
+    version: string;
+    keepPresets: boolean;
+  }) => Promise<boolean>;
+  cancelUpdate: () => Promise<boolean>;
+  onUpdateProgress: (
+    handler: (event: {
+      type?: string;
+      phase?: string;
+      percent?: number;
+      message?: string;
+    }) => void,
+  ) => () => void;
   onAuthToken: (handler: (token: string) => void) => () => void;
 };
 

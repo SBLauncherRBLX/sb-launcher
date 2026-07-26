@@ -14,6 +14,7 @@ import {
   resolveProfileAvatar,
   type ProfileAvatarPreference,
 } from "../lib/profileAvatar";
+import { UpdateInstallModal } from "./UpdateInstallModal";
 
 function updateNotesSummary(notes: string, maxLen = 96): string {
   const line = notes
@@ -295,14 +296,7 @@ export function Shell({ children }: PropsWithChildren) {
               </span>
             </div>
             <div className="row-actions">
-              <Button onClick={() => setUpdateNotesOpen(true)}>What's new</Button>
-              <Button
-                onClick={() =>
-                  void window.sbDesktop?.openExternal(updateAvailable.downloadUrl)
-                }
-              >
-                Download
-              </Button>
+              <Button onClick={() => setUpdateNotesOpen(true)}>Install</Button>
               <Button variant="ghost" onClick={() => dismissUpdate()}>
                 Dismiss
               </Button>
@@ -311,49 +305,10 @@ export function Shell({ children }: PropsWithChildren) {
         ) : null}
         <main className="page">{children}</main>
         {updateNotesOpen && updateAvailable ? (
-          <div
-            className="about-update-modal-backdrop"
-            role="presentation"
-            onClick={() => setUpdateNotesOpen(false)}
-          >
-            <div
-              className="about-update-modal sb-card"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Update patch notes"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <header className="about-update-modal-header">
-                <div>
-                  <h2>{updateAvailable.title || "Update available"}</h2>
-                  <p className="sb-muted">
-                    Version {updateAvailable.version}
-                  </p>
-                </div>
-                <Button variant="ghost" onClick={() => setUpdateNotesOpen(false)}>
-                  Close
-                </Button>
-              </header>
-              <div className="about-update-modal-body">
-                {updateAvailable.notes.trim() ? (
-                  <div className="about-update-notes">{updateAvailable.notes}</div>
-                ) : (
-                  <p className="sb-muted">No patch notes were published with this update.</p>
-                )}
-              </div>
-              {updateAvailable.downloadUrl ? (
-                <div className="about-update-modal-actions">
-                  <Button
-                    onClick={() =>
-                      void window.sbDesktop?.openExternal(updateAvailable.downloadUrl)
-                    }
-                  >
-                    Download update
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          </div>
+          <UpdateInstallModal
+            update={updateAvailable}
+            onClose={() => setUpdateNotesOpen(false)}
+          />
         ) : null}
       </div>
     </div>

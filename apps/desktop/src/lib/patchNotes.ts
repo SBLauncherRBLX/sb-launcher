@@ -19,6 +19,15 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "2.3.3",
+    title: "In-app updates & Discord",
+    items: [
+      "Install updates inside the launcher — progress, patch notes, and optional keep-presets, no website dance.",
+      "Show SB Launcher in Discord activity while the app is open.",
+      "About banner press animation stays flush with its frame.",
+    ],
+  },
+  {
     version: "2.3.2",
     title: "Banner & open source",
     items: [

@@ -1508,6 +1508,59 @@ body,
   border-top: 1px solid color-mix(in srgb, var(--sb-outline) 45%, transparent);
 }
 
+.update-install-modal {
+  width: min(100%, 460px);
+}
+
+.update-keep-presets {
+  margin-top: 1rem;
+}
+
+.update-keep-presets-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+}
+
+.update-progress-block {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.update-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sb-outline) 35%, transparent);
+  overflow: hidden;
+}
+
+.update-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--sb-primary) 75%, #7c5cff),
+    var(--sb-primary)
+  );
+  transition: width 180ms ease;
+}
+
+.update-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--sb-on-surface-variant);
+}
+
+.update-install-actions {
+  gap: 0.55rem;
+}
+
+.update-install-error {
+  margin-top: 0.85rem;
+}
+
 .about-update-notice {
   width: min(100%, 52rem);
   text-align: left;

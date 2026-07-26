@@ -1,5 +1,5 @@
-SB Launcher 2.3.2
+SB Launcher 2.3.3
 
-- New About banner — rebuilt as pixel-perfect vector art, crisp at any window size.
-- Banner press animation fixed: the art no longer separates from its frame when clicked.
-- SB Launcher is now open source — full code on GitHub.
+- Install updates inside the launcher — progress, patch notes, and optional keep-presets, no website dance.
+- Show SB Launcher in Discord activity while the app is open.
+- About banner press animation stays flush with its frame.

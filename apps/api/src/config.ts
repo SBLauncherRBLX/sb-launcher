@@ -20,7 +20,7 @@ const EnvSchema = z.object({
     .string()
     .default("openid profile user.social:read user.inventory-item:read"),
   SB_BUILD_ID: z.string().optional().default(""),
-  SB_APP_VERSION: z.string().optional().default("2.3.2"),
+  SB_APP_VERSION: z.string().optional().default("2.3.3"),
   /** Cloudflare Worker base URL. Empty/whitespace falls back to the public Worker. */
   SB_CLOUD_URL: z.preprocess(
     (value) => {

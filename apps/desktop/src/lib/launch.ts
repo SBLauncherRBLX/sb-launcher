@@ -12,6 +12,9 @@ export async function launchExperience(input: {
   const result = await api.launch(input);
   const open = window.sbDesktop?.openRoblox;
   if (open) {
+    void window.sbDesktop?.setDiscordActivity?.({
+      playing: input.name?.trim() || "Roblox",
+    });
     const graphics = useAppStore.getState().graphics;
     const res = await open(result.deepLink, graphics);
     if (!res.ok) {
