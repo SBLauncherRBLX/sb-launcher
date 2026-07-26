@@ -19,6 +19,14 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "2.3.4",
+    title: "Update system test",
+    items: [
+      "Test release to verify in-app install: progress bar, patch notes, and keep-presets option.",
+      "No other product changes — safe to install over 2.3.3.",
+    ],
+  },
+  {
     version: "2.3.3",
     title: "In-app updates & Discord",
     items: [

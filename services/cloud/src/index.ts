@@ -95,13 +95,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "2.3.3",
-  buildId: "20260726120042",
+  version: "2.3.4",
+  buildId: "20260726131352",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 2.3.3\n\n- Install updates inside the launcher — progress, patch notes, and optional keep-presets, no website dance.\n- Show SB Launcher in Discord activity while the app is open.\n- About banner press animation stays flush with its frame.",
-  title: "SB Launcher 2.3.3",
-  publishedAt: "2026-07-26T05:00:42.000Z",
+    "SB Launcher 2.3.4\n\n- Test release to verify in-app install: progress bar, patch notes, and keep-presets option.\n- No other product changes — safe to install over 2.3.3.",
+  title: "SB Launcher 2.3.4",
+  publishedAt: "2026-07-26T06:13:52.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {
