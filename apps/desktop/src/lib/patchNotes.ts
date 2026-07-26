@@ -19,6 +19,14 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "2.3.6",
+    title: "Startup port fix",
+    items: [
+      "Auto-clear a stuck SB Launcher API on port 8787 after a crashed or interrupted update.",
+      "Removes the false “Port 8787 is already in use” startup failure in that case.",
+    ],
+  },
+  {
     version: "2.3.5",
     title: "Updater fix",
     items: [

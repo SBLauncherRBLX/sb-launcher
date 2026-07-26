@@ -157,11 +157,21 @@ public partial class MainWindow : Window
             File.Copy(templateDb, databasePath);
         }
 
-        // Another process is answering on :8787 but is not ours — refuse to attach.
+        // Orphan API from a previous crash/update often still holds :8787.
+        // Kill only SB Launcher node.exe leftovers; never touch unrelated software.
         if (await IsAnyApiRespondingAsync() && !await IsOurApiReadyAsync())
         {
-            throw new InvalidOperationException(
-                "Port 8787 is already in use by another program. Close it and restart SB Launcher.");
+            if (TryKillStaleLauncherApiProcesses())
+            {
+                for (var i = 0; i < 30 && await IsAnyApiRespondingAsync(); i++)
+                    await Task.Delay(100);
+            }
+
+            if (await IsAnyApiRespondingAsync() && !await IsOurApiReadyAsync())
+            {
+                throw new InvalidOperationException(
+                    "Port 8787 is already in use by another program. Close it and restart SB Launcher.");
+            }
         }
 
         var hostConfig = LoadHostConfig();
@@ -240,6 +250,46 @@ public partial class MainWindow : Window
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Kill leftover <c>runtime\node.exe</c> processes from this (or a broken parallel)
+    /// SB Launcher install that still hold port 8787 after a crash / failed update.
+    /// </summary>
+    private bool TryKillStaleLauncherApiProcesses()
+    {
+        var killed = false;
+        var ourNode = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "runtime", "node.exe"));
+        foreach (var process in Process.GetProcessesByName("node"))
+        {
+            try
+            {
+                string? path = null;
+                try { path = process.MainModule?.FileName; } catch { /* access denied */ }
+                if (string.IsNullOrWhiteSpace(path)) continue;
+
+                var full = Path.GetFullPath(path);
+                var isOurs =
+                    string.Equals(full, ourNode, StringComparison.OrdinalIgnoreCase) ||
+                    full.Contains(@"\SB Launcher\runtime\node.exe", StringComparison.OrdinalIgnoreCase) ||
+                    full.Contains(@"\Programs\SB\runtime\node.exe", StringComparison.OrdinalIgnoreCase);
+                if (!isOurs) continue;
+
+                Log($"Killing stale launcher API node PID={process.Id} Path={full}");
+                process.Kill(entireProcessTree: true);
+                killed = true;
+            }
+            catch (Exception ex)
+            {
+                Log($"Could not kill stale node PID={process.Id}: {ex.Message}");
+            }
+            finally
+            {
+                try { process.Dispose(); } catch { /* ignore */ }
+            }
+        }
+
+        return killed;
     }
 
     private async Task<bool> IsOurApiReadyAsync()

@@ -95,13 +95,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "2.3.5",
-  buildId: "20260726132355",
+  version: "2.3.6",
+  buildId: "20260726133728",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 2.3.5\n\n- Fixed in-app install when the install folder path contains spaces (SB Launcher).\n- Update progress bar now moves smoothly while downloading.\n- Failed installs no longer delete the downloaded Setup silently.",
-  title: "SB Launcher 2.3.5",
-  publishedAt: "2026-07-26T06:23:55.000Z",
+    "SB Launcher 2.3.6\n\n- Auto-clear a stuck SB Launcher API on port 8787 after a crashed or interrupted update.\n- Removes the false “Port 8787 is already in use” startup failure in that case.",
+  title: "SB Launcher 2.3.6",
+  publishedAt: "2026-07-26T06:37:28.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

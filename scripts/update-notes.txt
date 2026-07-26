@@ -1,5 +1,4 @@
-SB Launcher 2.3.5
+SB Launcher 2.3.6
 
-- Fixed in-app install when the install folder path contains spaces (SB Launcher).
-- Update progress bar now moves smoothly while downloading.
-- Failed installs no longer delete the downloaded Setup silently.
+- Auto-clear a stuck SB Launcher API on port 8787 after a crashed or interrupted update.
+- Removes the false “Port 8787 is already in use” startup failure in that case.
