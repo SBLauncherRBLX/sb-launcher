@@ -19,6 +19,15 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "2.3.5",
+    title: "Updater fix",
+    items: [
+      "Fixed in-app install when the install folder path contains spaces (SB Launcher).",
+      "Update progress bar now moves smoothly while downloading.",
+      "Failed installs no longer delete the downloaded Setup silently.",
+    ],
+  },
+  {
     version: "2.3.4",
     title: "Update system test",
     items: [

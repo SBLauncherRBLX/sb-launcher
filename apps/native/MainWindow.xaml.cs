@@ -629,16 +629,28 @@ public partial class MainWindow : Window
 
     private void PushBrowserEvent(JsonObject payload)
     {
+        // WebView2 is affinity-bound: never touch Browser from a background thread.
+        var json = payload.ToJsonString();
+        void post()
+        {
+            try
+            {
+                Browser.CoreWebView2?.PostWebMessageAsJson(json);
+            }
+            catch (Exception ex)
+            {
+                Log($"PushBrowserEvent failed: {ex.Message}");
+            }
+        }
+
         try
         {
-            if (Browser.CoreWebView2 is null) return;
-            void post() => Browser.CoreWebView2.PostWebMessageAsJson(payload.ToJsonString());
             if (Dispatcher.CheckAccess()) post();
             else Dispatcher.Invoke(post);
         }
         catch (Exception ex)
         {
-            Log($"PushBrowserEvent failed: {ex.Message}");
+            Log($"PushBrowserEvent dispatch failed: {ex.Message}");
         }
     }
 

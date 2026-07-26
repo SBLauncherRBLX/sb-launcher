@@ -20,7 +20,7 @@ if (-not (Test-Path $buildInfoPath)) {
 }
 
 $buildInfo = Get-Content $buildInfoPath -Raw | ConvertFrom-Json
-$version = if ($buildInfo.version) { [string]$buildInfo.version } else { "2.3.4" }
+$version = if ($buildInfo.version) { [string]$buildInfo.version } else { "2.3.5" }
 $buildId = if ($buildInfo.buildId) { [string]$buildInfo.buildId } else { "" }
 
 $notesFile = if ($env:SB_UPDATE_NOTES_FILE -and $env:SB_UPDATE_NOTES_FILE.Trim()) {

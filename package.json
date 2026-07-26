@@ -1,6 +1,6 @@
 {
   "name": "sb-launcher",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "private": true,
   "description": "SB Launcher — a customizable Roblox desktop launcher",
   "scripts": {

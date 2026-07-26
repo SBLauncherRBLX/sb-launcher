@@ -95,13 +95,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "2.3.4",
-  buildId: "20260726131352",
+  version: "2.3.5",
+  buildId: "20260726132355",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 2.3.4\n\n- Test release to verify in-app install: progress bar, patch notes, and keep-presets option.\n- No other product changes — safe to install over 2.3.3.",
-  title: "SB Launcher 2.3.4",
-  publishedAt: "2026-07-26T06:13:52.000Z",
+    "SB Launcher 2.3.5\n\n- Fixed in-app install when the install folder path contains spaces (SB Launcher).\n- Update progress bar now moves smoothly while downloading.\n- Failed installs no longer delete the downloaded Setup silently.",
+  title: "SB Launcher 2.3.5",
+  publishedAt: "2026-07-26T06:23:55.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

@@ -214,25 +214,36 @@ internal sealed class Updater
             using var response = await Http.GetAsync(
                 partUrl, HttpCompletionOption.ResponseHeadersRead, token);
             response.EnsureSuccessStatusCode();
-            var bytes = await response.Content.ReadAsByteArrayAsync(token);
+            await using var input = await response.Content.ReadAsStreamAsync(token);
+            using var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            var buffer = new byte[1024 * 128];
+            int read;
+            long partWritten = 0;
+            while ((read = await input.ReadAsync(buffer.AsMemory(0, buffer.Length), token)) > 0)
+            {
+                await output.WriteAsync(buffer.AsMemory(0, read), token);
+                hasher.AppendData(buffer.AsSpan(0, read));
+                written += read;
+                partWritten += read;
+                var fraction = totalBytes > 0
+                    ? 0.05 + 0.85 * (written / (double)totalBytes)
+                    : 0.05 + 0.85 * ((i + partWritten / Math.Max(1.0, response.Content.Headers.ContentLength ?? 20_000_000)) / parts.Count);
+                Report(
+                    "downloading",
+                    Math.Min(0.92, fraction),
+                    $"Downloading part {i + 1} of {parts.Count}…");
+            }
 
             if (partHashes is not null && i < partHashes.Count)
             {
                 var expectedPart = partHashes[i]?.GetValue<string>()?.Trim().ToLowerInvariant();
                 if (!string.IsNullOrWhiteSpace(expectedPart))
                 {
-                    var actualPart = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+                    var actualPart = Convert.ToHexString(hasher.GetHashAndReset()).ToLowerInvariant();
                     if (!string.Equals(actualPart, expectedPart, StringComparison.Ordinal))
                         throw new InvalidOperationException($"Integrity check failed for {partName}.");
                 }
             }
-
-            await output.WriteAsync(bytes, token);
-            written += bytes.Length;
-            var fraction = totalBytes > 0
-                ? 0.05 + 0.85 * (written / (double)totalBytes)
-                : 0.05 + 0.85 * ((i + 1) / (double)parts.Count);
-            Report("downloading", Math.Min(0.92, fraction), $"Downloading part {i + 1} of {parts.Count}…");
         }
 
         await output.FlushAsync(token);
@@ -287,32 +298,52 @@ internal sealed class Updater
         var staging = Path.GetDirectoryName(setupPath)
             ?? Path.Combine(Path.GetTempPath(), "SBLauncher-Update");
         var scriptPath = Path.Combine(staging, "apply-update.ps1");
-        var exePath = Path.Combine(installDir, "SB Launcher.exe");
+        var logPath = Path.Combine(staging, "setup.log");
+        // Trailing slash + unquoted /DIR= breaks Inno when the folder has spaces ("SB Launcher").
+        var cleanDir = installDir.Trim().TrimEnd('\\', '/');
+        var exePath = Path.Combine(cleanDir, "SB Launcher.exe");
 
         // PowerShell waits for Inno to finish, then relaunches. skipifsilent skips [Run] launch.
         var script = $$"""
 $ErrorActionPreference = 'Continue'
 $setup = {{PsQuote(setupPath)}}
-$installDir = {{PsQuote(installDir)}}
+$installDir = {{PsQuote(cleanDir)}}
 $exe = {{PsQuote(exePath)}}
+$log = {{PsQuote(logPath)}}
+$helperLog = {{PsQuote(Path.Combine(staging, "apply-update.log"))}}
+function Write-HelperLog([string]$msg) {
+  Add-Content -LiteralPath $helperLog -Value (("[{0}] {1}" -f (Get-Date -Format o), $msg)) -ErrorAction SilentlyContinue
+}
+Write-HelperLog ("Starting apply. setup={0} dir={1}" -f $setup, $installDir)
 Start-Sleep -Seconds 2
 Get-Process -Name 'SB Launcher' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 1
+# /DIR must be quoted — path contains a space ("SB Launcher").
 $setupArgs = @(
   '/VERYSILENT',
   '/NORESTART',
   '/CLOSEAPPLICATIONS',
   '/FORCECLOSEAPPLICATIONS',
   '/SUPPRESSMSGBOXES',
-  ('/DIR=' + $installDir)
+  ('/DIR="{0}"' -f $installDir),
+  ('/LOG="{0}"' -f $log)
 )
+Write-HelperLog ("Setup args: {0}" -f ($setupArgs -join ' '))
 $p = Start-Process -FilePath $setup -ArgumentList $setupArgs -PassThru -Wait
+$code = if ($null -eq $p) { -1 } else { $p.ExitCode }
+Write-HelperLog ("Setup exit code: {0}" -f $code)
 Start-Sleep -Seconds 1
-if (Test-Path -LiteralPath $exe) {
+if ($code -eq 0 -and (Test-Path -LiteralPath $exe)) {
+  Write-HelperLog 'Launching updated EXE'
   Start-Process -FilePath $exe
+  Remove-Item -LiteralPath $setup -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue
+} else {
+  Write-HelperLog 'Setup failed — keeping installer for retry'
+  if (Test-Path -LiteralPath $exe) {
+    Start-Process -FilePath $exe
+  }
 }
-Remove-Item -LiteralPath $setup -Force -ErrorAction SilentlyContinue
-Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue
 """;
         File.WriteAllText(scriptPath, script, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 

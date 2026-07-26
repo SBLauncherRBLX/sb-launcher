@@ -1,4 +1,5 @@
-SB Launcher 2.3.4
+SB Launcher 2.3.5
 
-- Test release to verify in-app install: progress bar, patch notes, and keep-presets option.
-- No other product changes — safe to install over 2.3.3.
+- Fixed in-app install when the install folder path contains spaces (SB Launcher).
+- Update progress bar now moves smoothly while downloading.
+- Failed installs no longer delete the downloaded Setup silently.
