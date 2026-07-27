@@ -1,7 +1,4 @@
-SB Launcher 2.4.0
+SB Launcher 2.4.1
 
-- Discover: new Paid Places section for Robux paid-access experiences.
-- Owned paid places show Play; if you don’t own them, the card shows the Robux price.
-- Price opens the Roblox game page to buy; the rest of the card opens the launcher game page.
-- Ownership uses your inventory (Open Cloud), not playability — so owned games are detected correctly after sign-in.
-- Requires inventory OAuth scope (Inventory badge in Settings). Re-sign in if it’s missing.
+- Last Played no longer shows Robux prices on paid-access experiences — they look like normal places.
+- Paid Places price UI remains on Discover and game pages.

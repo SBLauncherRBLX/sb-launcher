@@ -19,6 +19,14 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "2.4.1",
+    title: "Last Played paid places",
+    items: [
+      "Last Played no longer shows Robux prices on paid-access experiences — they look like normal places.",
+      "Paid Places price UI remains on Discover and game pages.",
+    ],
+  },
+  {
     version: "2.4.0",
     title: "Paid Places",
     items: [

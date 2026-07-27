@@ -95,13 +95,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "2.4.0",
-  buildId: "20260727142826",
+  version: "2.4.1",
+  buildId: "20260727144035",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 2.4.0\n\n- Discover: new Paid Places section for Robux paid-access experiences.\n- Owned paid places show Play; if you don’t own them, the card shows the Robux price.\n- Price opens the Roblox game page to buy; the rest of the card opens the launcher game page.\n- Ownership uses your inventory (Open Cloud), not playability — so owned games are detected correctly after sign-in.\n- Requires inventory OAuth scope (Inventory badge in Settings). Re-sign in if it’s missing.",
-  title: "SB Launcher 2.4.0",
-  publishedAt: "2026-07-27T07:28:26.000Z",
+    "SB Launcher 2.4.1\n\n- Last Played no longer shows Robux prices on paid-access experiences — they look like normal places.\n- Paid Places price UI remains on Discover and game pages.",
+  title: "SB Launcher 2.4.1",
+  publishedAt: "2026-07-27T07:40:35.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

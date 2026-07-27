@@ -25,11 +25,14 @@ export function GameCard({
   compact = false,
   onRemove,
   removeLabel = "Remove",
+  showPaidAccess = true,
 }: {
   game: GameSummary;
   compact?: boolean;
   onRemove?: (game: GameSummary) => void;
   removeLabel?: string;
+  /** When false, paid-access price/owned UI is hidden (e.g. Last Played). */
+  showPaidAccess?: boolean;
 }) {
   const navigate = useNavigate();
   const theme = useAppStore((s) => s.theme);
@@ -47,8 +50,9 @@ export function GameCard({
         whileTap: { scale: 0.98, transition: springSnappy },
       }
     : {};
-  const paidLocked = needsPaidAccessPurchase(game);
+  const paidLocked = showPaidAccess && needsPaidAccessPurchase(game);
   const price = game.priceInRobux ?? 0;
+  const showOwnedBadge = showPaidAccess && !paidLocked && game.isForSale && price > 0;
 
   return (
     <Wrapper className={`game-card-wrap ${compact ? "compact" : ""}`} {...motionProps}>
@@ -81,7 +85,7 @@ export function GameCard({
             <span className="game-card-price-badge" title="Paid access">
               {formatRobux(price)}
             </span>
-          ) : game.isForSale && price > 0 ? (
+          ) : showOwnedBadge ? (
             <span className="game-card-price-badge owned" title="Owned">
               Owned
             </span>

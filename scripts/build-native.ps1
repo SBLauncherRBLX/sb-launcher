@@ -78,7 +78,7 @@ Copy-Item (Join-Path $root "apps\desktop\dist\*") $webRuntime -Recurse -Force
 
 $buildId = Get-Date -Format "yyyyMMddHHmmss"
 $buildInfo = @{
-  version = "2.4.0"
+  version = "2.4.1"
   buildId = $buildId
   builtAt = (Get-Date).ToUniversalTime().ToString("o")
 } | ConvertTo-Json -Compress
@@ -238,7 +238,7 @@ Get-ChildItem $release -Recurse -Include *.pdb,*.xml -File -ErrorAction Silently
   Remove-Item -Force -ErrorAction SilentlyContinue
 
 Write-Host "[8/9] Creating portable package"
-$zip = Join-Path $root "release\SB-Launcher-Native-2.4.0-win-x64.zip"
+$zip = Join-Path $root "release\SB-Launcher-Native-2.4.1-win-x64.zip"
 Remove-Item $zip -Force -ErrorAction SilentlyContinue
 Compress-Archive -Path (Join-Path $release "*") -DestinationPath $zip -CompressionLevel Optimal
 Pop-Location
@@ -294,5 +294,5 @@ $nodeMb = if ($nodeItem) { [math]::Round($nodeItem.Length / 1MB, 2) } else { 0 }
 Write-Host ""
 Write-Host "Native executable: $release\SB Launcher.exe"
 Write-Host "Portable package:  $zip"
-Write-Host "Windows installer:  $root\release\SB-Launcher-Setup-2.4.0.exe"
+Write-Host "Windows installer:  $root\release\SB-Launcher-Setup-2.4.1.exe"
 Write-Host ("Size total={0} MB | exe={1} MB | node={2} MB | api={3} MB | web={4} MB" -f $totalMb, $exeMb, $nodeMb, $apiMb, $webMb)

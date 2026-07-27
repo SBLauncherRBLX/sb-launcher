@@ -87,6 +87,7 @@ export function HomePage() {
         games={home.continuePlaying}
         onRemove={session?.authenticated ? removeFromLastPlayed : undefined}
         removeLabel="Remove from Last Played"
+        showPaidAccess={false}
       />
 
       <GameRail title="Favorites" games={home.favorites} />

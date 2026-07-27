@@ -26,6 +26,7 @@ export function GameRail({
   action,
   onRemove,
   removeLabel,
+  showPaidAccess = true,
 }: {
   title: string;
   subtitle?: string;
@@ -33,6 +34,8 @@ export function GameRail({
   action?: React.ReactNode;
   onRemove?: (game: GameSummary) => void;
   removeLabel?: string;
+  /** When false, cards look like normal places (no Robux price UI). */
+  showPaidAccess?: boolean;
 }) {
   const theme = useAppStore((s) => s.theme);
   const motionEnabled = useMotionEnabled(theme);
@@ -125,6 +128,7 @@ export function GameRail({
                 compact
                 onRemove={onRemove}
                 removeLabel={removeLabel}
+                showPaidAccess={showPaidAccess}
               />
             </Card>
           );
