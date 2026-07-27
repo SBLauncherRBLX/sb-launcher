@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { themeToCssVars } from "@sb/ui";
-import { DEFAULT_THEME, normalizeTheme } from "@sb/contracts";
+import { themeToCssVars, LoadingState } from "@sb/ui";
+import { normalizeTheme } from "@sb/contracts";
 import { Shell } from "./components/Shell";
 import { BackgroundScene } from "./components/BackgroundScene";
 import { useAppStore } from "./store";
@@ -15,7 +15,6 @@ import { VisualsPage } from "./pages/VisualsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { AboutPage } from "./pages/AboutPage";
 import { UserProfilePage } from "./pages/UserProfilePage";
-import { LoadingState } from "@sb/ui";
 import { pageTransition, useMotionEnabled } from "./lib/motion";
 
 function AnimatedRoutes() {
@@ -89,6 +88,7 @@ export default function App() {
     void window.sbDesktop?.setWindowChrome?.({
       background: normalizedTheme.background,
       text: normalizedTheme.text,
+      textMuted: normalizedTheme.textMuted,
       accent: normalizedTheme.accent,
       accentSecondary: normalizedTheme.accentSecondary,
       cornerRadius: normalizedTheme.cornerRadius,
@@ -97,6 +97,7 @@ export default function App() {
     ready,
     normalizedTheme.background,
     normalizedTheme.text,
+    normalizedTheme.textMuted,
     normalizedTheme.accent,
     normalizedTheme.accentSecondary,
     normalizedTheme.cornerRadius,
@@ -114,7 +115,7 @@ export default function App() {
 
   if (!ready) {
     return (
-      <div className="app-boot-loading" style={themeToCssVars(DEFAULT_THEME)}>
+      <div className="app-boot-loading" style={themeToCssVars(normalizedTheme)}>
         <LoadingState label="Starting SB Launcher…" />
       </div>
     );

@@ -19,6 +19,14 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "2.4.3",
+    title: "Themed startup splash",
+    items: [
+      "Both startup splash screens now match your Visuals theme colors.",
+      "Background glow, snake spinner, and text use the saved accent and palette from cold start.",
+    ],
+  },
+  {
     version: "2.4.2",
     title: "Paid Places polish",
     items: [

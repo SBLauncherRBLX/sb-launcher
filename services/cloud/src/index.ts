@@ -95,13 +95,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "2.4.2",
-  buildId: "20260727153302",
+  version: "2.4.3",
+  buildId: "20260727192929",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 2.4.2\n\n- Paid Places cards show player count again (price stays on the badge only).\n- Paid Places is the 3rd Discover row instead of the first.",
-  title: "SB Launcher 2.4.2",
-  publishedAt: "2026-07-27T08:33:02.000Z",
+    "SB Launcher 2.4.3\n\n- Startup splash screens (native + web) now match your Visuals theme colors.\n- Background glow, snake spinner, and text use the saved accent and palette from cold start.",
+  title: "SB Launcher 2.4.3",
+  publishedAt: "2026-07-27T12:29:29.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

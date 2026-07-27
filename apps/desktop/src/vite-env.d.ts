@@ -46,6 +46,7 @@ type SbDesktopApi = {
   setWindowChrome: (chrome: {
     background: string;
     text: string;
+    textMuted?: string;
     accent: string;
     accentSecondary?: string;
     cornerRadius?: number;

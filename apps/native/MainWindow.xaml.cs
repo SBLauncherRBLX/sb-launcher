@@ -84,7 +84,7 @@ public partial class MainWindow : Window
     {
         Log("Window loaded.");
         EnsureMaximizeFitsWorkArea();
-        ApplySplashLogoFromPrefs();
+        ApplySplashThemeFromPrefs();
         ApplyWindowChromeFromPrefs();
         RobloxAppearance.RestoreLegacyModBackupsIfPresent();
         if (_isSecondary)
@@ -389,6 +389,7 @@ public partial class MainWindow : Window
         };
 
         await Browser.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BridgeScript);
+        await Browser.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BuildBootThemeInjectScript());
         var bundleStamp = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(Path.Combine(webRoot, "index.html"))))[..12];
         Browser.CoreWebView2.Navigate($"{AppOrigin}/index.html?v={bundleStamp}");
     }
@@ -660,11 +661,18 @@ public partial class MainWindow : Window
             {
                 var background = args[0]?["background"]?.GetValue<string>() ?? "#0B0D14";
                 var text = args[0]?["text"]?.GetValue<string>() ?? "#F4F6FB";
+                var textMuted = args[0]?["textMuted"]?.GetValue<string>() ?? "#CAC4D0";
                 var accent = args[0]?["accent"]?.GetValue<string>() ?? "#7C5CFF";
                 var accentSecondary = args[0]?["accentSecondary"]?.GetValue<string>();
                 var cornerRadius = args[0]?["cornerRadius"]?.GetValue<double?>() ??
                     args[0]?["cornerRadius"]?.GetValue<int?>();
                 ApplyWindowChrome(background, text, accent, accentSecondary, cornerRadius);
+                ApplySplashThemeColors(
+                    background,
+                    text,
+                    accent,
+                    accentSecondary ?? accent,
+                    textMuted);
                 return JsonValue.Create(true);
             }
             case "wallpaper:list":
@@ -1497,6 +1505,7 @@ public partial class MainWindow : Window
             var theme = prefs?["theme"]?.AsObject();
             var background = theme?["background"]?.GetValue<string>() ?? "#0B0D14";
             var text = theme?["text"]?.GetValue<string>() ?? "#F4F6FB";
+            var textMuted = theme?["textMuted"]?.GetValue<string>() ?? "#CAC4D0";
             var accent = theme?["accent"]?.GetValue<string>() ?? "#7C5CFF";
             var accentSecondary = theme?["accentSecondary"]?.GetValue<string>() ?? "#EFB8C8";
             double? corner = null;
@@ -1509,6 +1518,7 @@ public partial class MainWindow : Window
             }
 
             ApplyWindowChrome(background, text, accent, accentSecondary, corner);
+            ApplySplashThemeColors(background, text, accent, accentSecondary, textMuted);
         }
         catch (Exception ex)
         {
@@ -1596,19 +1606,138 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ApplySplashLogoFromPrefs()
+    private void ApplySplashThemeFromPrefs()
     {
         try
         {
             var prefs = LoadJsonObject(UserDataPaths.LocalPrefsPath);
             var theme = prefs?["theme"]?.AsObject();
+            var background = theme?["background"]?.GetValue<string>() ?? "#0B0D14";
+            var text = theme?["text"]?.GetValue<string>() ?? "#E6E1E5";
+            var textMuted = theme?["textMuted"]?.GetValue<string>() ?? "#CAC4D0";
             var accent = theme?["accent"]?.GetValue<string>() ?? "#9A82DB";
-            ApplySplashSnakeColor(accent);
+            var accentSecondary = theme?["accentSecondary"]?.GetValue<string>() ?? accent;
+            ApplySplashThemeColors(background, text, accent, accentSecondary, textMuted);
         }
         catch (Exception ex)
         {
-            Log($"ApplySplashLogoFromPrefs failed: {ex.Message}");
+            Log($"ApplySplashThemeFromPrefs failed: {ex.Message}");
         }
+    }
+
+    private void ApplySplashThemeColors(
+        string backgroundHex,
+        string textHex,
+        string accentHex,
+        string accentSecondaryHex,
+        string? textMutedHex = null)
+    {
+        try
+        {
+            var background = (Color)ColorConverter.ConvertFromString(backgroundHex);
+            var accent = (Color)ColorConverter.ConvertFromString(accentHex);
+            var secondary = (Color)ColorConverter.ConvertFromString(accentSecondaryHex);
+            var text = (Color)ColorConverter.ConvertFromString(textHex);
+            var muted = (Color)ColorConverter.ConvertFromString(
+                string.IsNullOrWhiteSpace(textMutedHex) ? "#CAC4D0" : textMutedHex);
+
+            if (Splash is not null)
+            {
+                var brush = new RadialGradientBrush
+                {
+                    Center = new Point(0.28, 0.18),
+                    GradientOrigin = new Point(0.28, 0.18),
+                    RadiusX = 0.9,
+                    RadiusY = 0.9,
+                };
+                // Match web boot: accent glow → secondary wash → solid theme background.
+                brush.GradientStops.Add(new GradientStop(MixColors(accent, background, 0.42), 0));
+                brush.GradientStops.Add(new GradientStop(MixColors(secondary, background, 0.72), 0.45));
+                brush.GradientStops.Add(new GradientStop(background, 1));
+                Splash.Background = brush;
+            }
+
+            if (LogoTrack is not null)
+            {
+                LogoTrack.Stroke = new SolidColorBrush(
+                    Color.FromArgb(0x55, accent.R, accent.G, accent.B));
+            }
+
+            ApplySplashSnakeColor(accentHex);
+
+            if (SplashTitle is not null)
+                SplashTitle.Foreground = new SolidColorBrush(text);
+            if (StatusText is not null)
+                StatusText.Foreground = new SolidColorBrush(muted);
+        }
+        catch (Exception ex)
+        {
+            Log($"ApplySplashThemeColors failed: {ex.Message}");
+        }
+    }
+
+    private static Color MixColors(Color from, Color to, double amount)
+    {
+        amount = Math.Clamp(amount, 0, 1);
+        return Color.FromRgb(
+            (byte)Math.Round(from.R + (to.R - from.R) * amount),
+            (byte)Math.Round(from.G + (to.G - from.G) * amount),
+            (byte)Math.Round(from.B + (to.B - from.B) * amount));
+    }
+
+    private string BuildBootThemeInjectScript()
+    {
+        try
+        {
+            var prefs = LoadJsonObject(UserDataPaths.LocalPrefsPath);
+            var theme = prefs?["theme"]?.AsObject();
+            var background = SanitizeCssColor(theme?["background"]?.GetValue<string>(), "#0B0D14");
+            var surface = SanitizeCssColor(theme?["surface"]?.GetValue<string>(), background);
+            var text = SanitizeCssColor(theme?["text"]?.GetValue<string>(), "#E6E1E5");
+            var textMuted = SanitizeCssColor(theme?["textMuted"]?.GetValue<string>(), "#CAC4D0");
+            var accent = SanitizeCssColor(theme?["accent"]?.GetValue<string>(), "#9A82DB");
+            var secondary = SanitizeCssColor(theme?["accentSecondary"]?.GetValue<string>(), accent);
+
+            return $$"""
+(() => {
+  try {
+    const r = document.documentElement;
+    const set = (k, v) => r.style.setProperty(k, v);
+    set('--sb-accent', '{{accent}}');
+    set('--sb-primary', '{{accent}}');
+    set('--sb-secondary', '{{secondary}}');
+    set('--sb-accent-secondary', '{{secondary}}');
+    set('--sb-bg', '{{background}}');
+    set('--sb-surface', '{{surface}}');
+    set('--sb-surface-dim', '{{background}}');
+    set('--sb-text', '{{text}}');
+    set('--sb-on-surface', '{{text}}');
+    set('--sb-text-muted', '{{textMuted}}');
+    set('--sb-on-surface-variant', '{{textMuted}}');
+  } catch (_) {}
+})();
+""";
+        }
+        catch (Exception ex)
+        {
+            Log($"BuildBootThemeInjectScript failed: {ex.Message}");
+            return "(() => {})();";
+        }
+    }
+
+    private static string SanitizeCssColor(string? value, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return fallback;
+        var trimmed = value.Trim();
+        if (trimmed.Length is < 4 or > 32) return fallback;
+        foreach (var ch in trimmed)
+        {
+            if (ch is (>= '0' and <= '9') or (>= 'a' and <= 'f') or (>= 'A' and <= 'F') or '#' or ','
+                or '(' or ')' or ' ' or '%' or '.' or 'r' or 'g' or 'b' or 'a')
+                continue;
+            return fallback;
+        }
+        return trimmed;
     }
 
     private void ApplySplashSnakeColor(string accentHex)

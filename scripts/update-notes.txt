@@ -1,4 +1,4 @@
-SB Launcher 2.4.2
+SB Launcher 2.4.3
 
-- Paid Places cards show player count again (price stays on the badge only).
-- Paid Places is the 3rd Discover row instead of the first.
+- Startup splash screens (native + web) now match your Visuals theme colors.
+- Background glow, snake spinner, and text use the saved accent and palette from cold start.

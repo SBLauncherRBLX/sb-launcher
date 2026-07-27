@@ -100,6 +100,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   bootstrap: async () => {
     try {
       const prefs = (await window.sbDesktop?.getPrefs()) ?? {};
+      // Paint boot splash with saved theme before waiting on API/session.
+      if (prefs.theme) {
+        set({ theme: normalizeTheme(prefs.theme) });
+      }
       hydrateProfileAvatarPreference(prefs);
       hydrateNickBadgePreference(prefs);
       hydrateRobloxAppIconPreference(prefs);

@@ -320,7 +320,7 @@ export type UpdateCheckResult = {
 
 export async function checkForUpdate(): Promise<UpdateCheckResult> {
   const current = {
-    version: env.SB_APP_VERSION.trim() || "2.4.2",
+    version: env.SB_APP_VERSION.trim() || "2.4.3",
     buildId: env.SB_BUILD_ID.trim(),
   };
   const cloudConfigured = isCloudConfigured();
