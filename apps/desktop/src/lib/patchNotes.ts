@@ -19,6 +19,17 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "2.4.0",
+    title: "Paid Places",
+    items: [
+      "Discover now has a Paid Places section for Robux paid-access experiences.",
+      "Owned paid places show Play; otherwise the Robux price is shown.",
+      "The price button opens Roblox to buy access; the card still opens the launcher game page.",
+      "Ownership is checked via inventory (Open Cloud), so owned games are detected after sign-in.",
+      "Re-sign in if Settings is missing the Inventory badge (needed for ownership checks).",
+    ],
+  },
+  {
     version: "2.3.7",
     title: "Discord activity",
     items: [

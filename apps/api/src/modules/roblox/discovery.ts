@@ -51,7 +51,7 @@ export async function listSortContent(
   sortId: string,
   limit = 100,
 ): Promise<GameSummary[]> {
-  const cacheKey = `discovery:sort:${sortId}:${limit}`;
+  const cacheKey = `discovery:sort:v2:${sortId}:${limit}`;
   const cached = await cacheGet<GameSummary[]>(cacheKey);
   if (cached) return cached;
 
@@ -65,15 +65,25 @@ export async function listSortContent(
   return enriched;
 }
 
+const PAID_ACCESS_SORT: DiscoverySort = {
+  sortId: "top-paid-access",
+  displayName: "Paid Places",
+};
+
 export async function listAllCategories(limitPerSort = 100): Promise<DiscoveryCategory[]> {
-  const cacheKey = `discovery:all:${limitPerSort}`;
+  const cacheKey = `discovery:all:v2:${limitPerSort}`;
   const cached = await cacheGet<DiscoveryCategory[]>(cacheKey);
   if (cached) return cached;
 
   const sorts = await listSorts();
+  // Explore get-sorts often omits paid access — always surface it in Discover.
+  const withPaid = sorts.some((s) => s.sortId === PAID_ACCESS_SORT.sortId)
+    ? sorts
+    : [PAID_ACCESS_SORT, ...sorts];
+
   const categories = await Promise.all(
-    sorts.map(async (sort) => ({
-      sort,
+    withPaid.map(async (sort) => ({
+      sort: sort.sortId === PAID_ACCESS_SORT.sortId ? { ...sort, displayName: "Paid Places" } : sort,
       games: await listSortContent(sort.sortId, limitPerSort),
     })),
   );

@@ -95,13 +95,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "2.3.7",
-  buildId: "20260726235215",
+  version: "2.4.0",
+  buildId: "20260727142826",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 2.3.7\n\n- Discord Rich Presence: game name, thumbnail, elapsed time, Join server, and See game page.\n- Full Discord settings: browsing presence, thumbnail, timer, and each button on/off.\n- Joining a friend now saves that experience to Last Played.\n- Discord settings checkboxes stay aligned when changing UI fonts.",
-  title: "SB Launcher 2.3.7",
-  publishedAt: "2026-07-26T16:52:15.000Z",
+    "SB Launcher 2.4.0\n\n- Discover: new Paid Places section for Robux paid-access experiences.\n- Owned paid places show Play; if you don’t own them, the card shows the Robux price.\n- Price opens the Roblox game page to buy; the rest of the card opens the launcher game page.\n- Ownership uses your inventory (Open Cloud), not playability — so owned games are detected correctly after sign-in.\n- Requires inventory OAuth scope (Inventory badge in Settings). Re-sign in if it’s missing.",
+  title: "SB Launcher 2.4.0",
+  publishedAt: "2026-07-27T07:28:26.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

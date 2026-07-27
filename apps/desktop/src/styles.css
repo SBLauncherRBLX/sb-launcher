@@ -1815,12 +1815,43 @@ body,
 }
 
 .game-card .thumb {
+  position: relative;
   aspect-ratio: 1;
   flex: 0 0 auto;
   background: var(--sb-surface-elevated);
   display: grid;
   place-items: center;
   overflow: hidden;
+}
+
+.game-card-price-badge {
+  position: absolute;
+  left: 0.45rem;
+  bottom: 0.45rem;
+  z-index: 1;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--sb-on-primary, #fff);
+  background: linear-gradient(
+    135deg,
+    var(--sb-primary, var(--sb-accent)) 0%,
+    color-mix(in srgb, var(--sb-primary, var(--sb-accent)) 55%, var(--sb-secondary, var(--sb-accent-secondary, var(--sb-primary)))) 100%
+  );
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--sb-primary, var(--sb-accent)) 35%, transparent);
+}
+
+.game-card-price-badge.owned {
+  color: var(--sb-on-secondary-container, var(--sb-on-surface));
+  background: color-mix(in srgb, var(--sb-secondary-container, var(--sb-surface-container-high)) 90%, transparent);
+  box-shadow: none;
+}
+
+.game-stat-robux {
+  color: var(--sb-primary, var(--sb-accent));
+  font-weight: 800;
 }
 
 .game-card .thumb img {
@@ -1898,6 +1929,12 @@ body,
   align-items: center;
   gap: 1rem;
   margin-bottom: 0.85rem;
+  min-width: 0;
+}
+
+.rail-title-text {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .rail-title h3 {
@@ -1914,6 +1951,55 @@ body,
   color: var(--sb-on-surface-variant);
 }
 
+.rail-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex: 0 0 auto;
+}
+
+.rail-arrows {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.rail-arrow {
+  appearance: none;
+  width: 2.15rem;
+  height: 2.15rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--sb-outline-variant) 80%, transparent);
+  background: color-mix(in srgb, var(--sb-surface-container-high, var(--sb-surface-container)) 88%, transparent);
+  color: var(--sb-on-surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background var(--sb-motion-duration) var(--sb-ease-standard),
+    border-color var(--sb-motion-duration) var(--sb-ease-standard),
+    color var(--sb-motion-duration) var(--sb-ease-standard),
+    opacity var(--sb-motion-duration-short) var(--sb-ease-standard),
+    transform var(--sb-motion-duration-hover) var(--sb-ease-emphasized);
+}
+
+.rail-arrow:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--sb-primary) 16%, var(--sb-surface-container));
+  border-color: color-mix(in srgb, var(--sb-primary) 45%, var(--sb-outline-variant));
+  transform: translateY(-1px);
+}
+
+.rail-arrow:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.rail-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .rail-scroll {
   display: flex;
   gap: 0.95rem;
@@ -1921,6 +2007,16 @@ body,
   align-items: stretch;
   padding: 0.15rem 0.1rem 0.55rem;
   scroll-snap-type: x proximity;
+  scroll-behavior: smooth;
+  /* Roblox-style: batch via arrows, no thumb slider clutter. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.rail-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .surprise-card {

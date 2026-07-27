@@ -3,7 +3,12 @@ import { useParams } from "react-router-dom";
 import type { GameDetails, GameEvent, ServerInfo } from "@sb/contracts";
 import { Badge, Button, EmptyState, LoadingState } from "@sb/ui";
 import { api } from "../lib/api";
-import { formatCount } from "../components/GameCard";
+import {
+  formatCount,
+  formatRobux,
+  needsPaidAccessPurchase,
+  robloxGamePageUrl,
+} from "../components/GameCard";
 import { launchExperience } from "../lib/launch";
 import { useAppStore } from "../store";
 
@@ -155,19 +160,29 @@ export function GameDetailsPage() {
           ) : null}
           <p>{game.description || "No description provided."}</p>
           <div className="row-actions" style={{ marginTop: "1rem" }}>
-            <Button
-              onClick={() =>
-                void launchExperience({
-                  placeId: game.placeId,
-                  universeId: game.universeId,
-                  name: game.name,
-                  iconUrl: game.iconUrl,
-                  creatorName: game.creatorName,
-                })
-              }
-            >
-              Play
-            </Button>
+            {needsPaidAccessPurchase(game) ? (
+              <Button
+                onClick={() =>
+                  void window.sbDesktop?.openExternal(robloxGamePageUrl(game.placeId))
+                }
+              >
+                {formatRobux(game.priceInRobux ?? 0)}
+              </Button>
+            ) : (
+              <Button
+                onClick={() =>
+                  void launchExperience({
+                    placeId: game.placeId,
+                    universeId: game.universeId,
+                    name: game.name,
+                    iconUrl: game.iconUrl,
+                    creatorName: game.creatorName,
+                  })
+                }
+              >
+                Play
+              </Button>
+            )}
             <Button
               variant="secondary"
               disabled={!session?.authenticated}
@@ -176,6 +191,12 @@ export function GameDetailsPage() {
               {favorited ? "Unfavorite" : "Favorite"}
             </Button>
           </div>
+          {needsPaidAccessPurchase(game) ? (
+            <p className="sb-muted" style={{ marginTop: "0.65rem" }}>
+              You don&apos;t own this paid experience yet. Tap the price to open it on Roblox and buy
+              with Robux.
+            </p>
+          ) : null}
         </div>
       </div>
 

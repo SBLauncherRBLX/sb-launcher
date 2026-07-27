@@ -111,6 +111,12 @@ export const GameSummarySchema = z.object({
   updated: z.string().optional(),
   thumbnailUrl: z.string().nullable().default(null),
   iconUrl: z.string().nullable().default(null),
+  /** Robux paid-access price when the experience is sold for Robux. */
+  priceInRobux: z.number().int().nonnegative().nullable().optional(),
+  isForSale: z.boolean().optional(),
+  productId: z.string().nullable().optional(),
+  /** True when the signed-in user can play without buying again. */
+  owned: z.boolean().optional(),
 });
 export type GameSummary = z.infer<typeof GameSummarySchema>;
 

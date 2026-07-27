@@ -368,6 +368,7 @@ export function SettingsPage() {
           <div className="chips" style={{ marginTop: "0.75rem" }}>
             {oauthConfigured ? <Badge>Live OAuth ready</Badge> : <Badge>OAuth setup required</Badge>}
             {session?.capabilities.friends ? <Badge>Friends</Badge> : null}
+            {session?.capabilities.inventory ? <Badge>Inventory</Badge> : null}
             {session?.capabilities.avatarWrite ? <Badge>Avatar write</Badge> : null}
             {session?.capabilities.servers ? <Badge>Servers</Badge> : null}
           </div>

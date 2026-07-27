@@ -104,17 +104,21 @@ export async function enrichGames(
     }));
   }
 
-  const [icons, details] = await Promise.all([
+  const [icons, details, products] = await Promise.all([
     thumbnails("GameIcon", ids, "512x512").catch(
       () => ({}) as Record<string, string | null>,
     ),
     batchGameDetails(ids).catch(
       () => ({}) as Awaited<ReturnType<typeof batchGameDetails>>,
     ),
+    batchGameProductInfo(ids).catch(
+      () => ({}) as Awaited<ReturnType<typeof batchGameProductInfo>>,
+    ),
   ]);
 
   return games.map((game) => {
     const detail = details[game.universeId];
+    const product = products[game.universeId];
     return {
       ...game,
       placeId: game.placeId || detail?.placeId || game.placeId,
@@ -138,8 +142,230 @@ export async function enrichGames(
           : game.ratingPercent),
       iconUrl: icons[game.universeId] ?? game.iconUrl,
       thumbnailUrl: icons[game.universeId] ?? game.thumbnailUrl,
+      isForSale: product?.isForSale ?? game.isForSale,
+      priceInRobux:
+        product?.isForSale && product.price > 0
+          ? product.price
+          : (product?.price === 0 ? null : game.priceInRobux ?? null),
+      productId: product?.productId ?? game.productId ?? null,
     };
   });
+}
+
+export async function batchGameProductInfo(
+  universeIds: string[],
+): Promise<
+  Record<string, { isForSale: boolean; price: number; productId: string | null }>
+> {
+  const unique = [...new Set(universeIds.filter(Boolean))];
+  if (!unique.length) return {};
+
+  const cacheKey = `game-products:${unique.join(",")}`;
+  const cached = await cacheGet<
+    Record<string, { isForSale: boolean; price: number; productId: string | null }>
+  >(cacheKey);
+  if (cached) return cached;
+
+  const CHUNK = 50;
+  const map: Record<
+    string,
+    { isForSale: boolean; price: number; productId: string | null }
+  > = {};
+  for (let i = 0; i < unique.length; i += CHUNK) {
+    const chunk = unique.slice(i, i + CHUNK);
+    try {
+      const url = new URL("https://games.roblox.com/v1/games/games-product-info");
+      url.searchParams.set("universeIds", chunk.join(","));
+      const data = await fetchJson<{
+        data?: Array<{
+          universeId?: number;
+          isForSale?: boolean;
+          price?: number;
+          productId?: number | null;
+        }>;
+      }>(url.toString());
+      for (const row of data.data ?? []) {
+        if (!row.universeId) continue;
+        map[String(row.universeId)] = {
+          isForSale: Boolean(row.isForSale),
+          price: typeof row.price === "number" ? Math.max(0, row.price) : 0,
+          productId: row.productId != null ? String(row.productId) : null,
+        };
+      }
+    } catch {
+      // ignore chunk failures
+    }
+  }
+
+  await cacheSet(cacheKey, map, 60_000);
+  return map;
+}
+
+/**
+ * Check paid-access ownership via inventory (Place asset), which matches
+ * MarketplaceService:PlayerOwnsAsset(placeId). Playability status needs a
+ * website cookie and always returns GuestProhibited for OAuth Bearer.
+ */
+export async function batchPaidAccessOwned(
+  targets: Array<{ universeId: string; placeId: string }>,
+  userId: string,
+  accessToken?: string | null,
+  capabilities?: Pick<Capabilities, "inventory"> | null,
+): Promise<Record<string, boolean>> {
+  const token = accessToken?.trim();
+  if (!token || !userId?.trim() || !targets.length) return {};
+
+  const placeToUniverses = new Map<string, string[]>();
+  for (const target of targets) {
+    const placeId = target.placeId?.trim();
+    const universeId = target.universeId?.trim();
+    if (!placeId || !universeId) continue;
+    const list = placeToUniverses.get(placeId) ?? [];
+    list.push(universeId);
+    placeToUniverses.set(placeId, list);
+  }
+
+  const placeIds = [...placeToUniverses.keys()];
+  if (!placeIds.length) return {};
+
+  const owned: Record<string, boolean> = {};
+  const mark = (placeId: string, value: boolean) => {
+    for (const universeId of placeToUniverses.get(placeId) ?? []) {
+      owned[universeId] = value;
+    }
+  };
+
+  // Open Cloud inventory (needs user.inventory-item:read for purchased places).
+  if (capabilities?.inventory !== false) {
+    try {
+      const CHUNK = 40;
+      let cloudOk = false;
+      for (let i = 0; i < placeIds.length; i += CHUNK) {
+        const chunk = placeIds.slice(i, i + CHUNK);
+        // Keep commas in filter unencoded — Roblox rejects %2C in assetIds lists.
+        const url =
+          `https://apis.roblox.com/cloud/v2/users/${encodeURIComponent(userId)}/inventory-items` +
+          `?maxPageSize=100&filter=assetIds=${chunk.join(",")}`;
+        const data = await fetchJson<{
+          inventoryItems?: Array<{
+            assetDetails?: { assetId?: string | number };
+            placeDetails?: { placeId?: string | number };
+            path?: string;
+          }>;
+        }>(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        cloudOk = true;
+
+        for (const item of data.inventoryItems ?? []) {
+          const assetId =
+            item.placeDetails?.placeId != null
+              ? String(item.placeDetails.placeId)
+              : item.assetDetails?.assetId != null
+                ? String(item.assetDetails.assetId)
+                : item.path?.match(/(?:assets|places)\/(\d+)/i)?.[1];
+          if (!assetId || !placeToUniverses.has(assetId)) continue;
+          mark(assetId, true);
+        }
+      }
+      if (cloudOk) {
+        for (const placeId of placeIds) {
+          const universeIds = placeToUniverses.get(placeId) ?? [];
+          if (universeIds.some((id) => owned[id] === true)) continue;
+          mark(placeId, false);
+        }
+        return owned;
+      }
+    } catch {
+      // Fall through.
+    }
+  }
+
+  // Purchased places tabs (classic inventory; placesTab is 0–5).
+  try {
+    const purchased = await listPurchasedPlaceIds(userId, token);
+    if (purchased) {
+      for (const placeId of placeIds) {
+        mark(placeId, purchased.has(placeId));
+      }
+      return owned;
+    }
+  } catch {
+    // Fall through to per-item checks.
+  }
+
+  await Promise.all(
+    placeIds.map(async (placeId) => {
+      const isOwned = await checkPlaceOwnedClassic(userId, placeId, token).catch(() => null);
+      if (isOwned == null) return;
+      mark(placeId, isOwned);
+    }),
+  );
+
+  return owned;
+}
+
+async function listPurchasedPlaceIds(
+  userId: string,
+  accessToken: string,
+): Promise<Set<string> | null> {
+  const ids = new Set<string>();
+  // Website "Places > Purchased" is typically tab 1; also scan neighbors.
+  const tabs = [1, 2, 0, 3];
+  let anyOk = false;
+  for (const tab of tabs) {
+    let cursor: string | number | null = 1;
+    for (let page = 0; page < 8; page++) {
+      const url = new URL(
+        `https://inventory.roblox.com/v1/users/${encodeURIComponent(userId)}/places/inventory`,
+      );
+      url.searchParams.set("placesTab", String(tab));
+      url.searchParams.set("itemsPerPage", "100");
+      url.searchParams.set("cursor", String(cursor ?? 1));
+      try {
+        const data = await fetchJson<{
+          data?: Array<{ placeId?: number; universeId?: number; id?: number }>;
+          nextPageCursor?: string | number | null;
+        }>(url.toString(), {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        anyOk = true;
+        for (const row of data.data ?? []) {
+          const placeId = row.placeId ?? row.id;
+          if (placeId != null) ids.add(String(placeId));
+        }
+        cursor = data.nextPageCursor ?? null;
+        if (cursor == null || cursor === "") break;
+      } catch {
+        break;
+      }
+    }
+  }
+  return anyOk ? ids : null;
+}
+
+async function checkPlaceOwnedClassic(
+  userId: string,
+  placeId: string,
+  accessToken: string,
+): Promise<boolean | null> {
+  const endpoints = [
+    `https://inventory.roblox.com/v1/users/${encodeURIComponent(userId)}/items/Asset/${encodeURIComponent(placeId)}/is-owned`,
+    `https://inventory.roblox.com/v1/users/${encodeURIComponent(userId)}/items/Place/${encodeURIComponent(placeId)}/is-owned`,
+    `https://inventory.roblox.com/v1/users/${encodeURIComponent(userId)}/items/0/${encodeURIComponent(placeId)}/is-owned`,
+  ];
+  for (const endpoint of endpoints) {
+    try {
+      const data = await fetchJson<boolean | { isOwned?: boolean }>(endpoint, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (typeof data === "boolean") return data;
+      if (typeof data?.isOwned === "boolean") return data.isOwned;
+    } catch {
+      // try next shape
+    }
+  }
+  return null;
 }
 
 async function batchGameDetails(
@@ -787,7 +1013,7 @@ export async function listCharts(limit = 24): Promise<GameSummary[]> {
 }
 
 export async function getGameDetails(universeId: string): Promise<GameDetails> {
-  const cacheKey = `game:${universeId}`;
+  const cacheKey = `game:v2:${universeId}`;
   const cached = await cacheGet<GameDetails>(cacheKey);
   if (cached) return cached;
 
@@ -816,13 +1042,17 @@ export async function getGameDetails(universeId: string): Promise<GameDetails> {
   const g = data.data?.[0];
   if (!g) throw new RobloxApiError("Game not found", 404, "NOT_FOUND");
 
-  const [icons, screenshots] = await Promise.all([
+  const [icons, screenshots, products] = await Promise.all([
     thumbnails("GameIcon", [String(g.id)], "512x512"),
     gameScreenshots(String(g.id), 6, "768x432"),
+    batchGameProductInfo([String(g.id)]).catch(
+      () => ({}) as Awaited<ReturnType<typeof batchGameProductInfo>>,
+    ),
   ]);
   const upVotes = g.upVotes ?? 0;
   const downVotes = g.downVotes ?? 0;
   const iconUrl = icons[String(g.id)] ?? null;
+  const product = products[String(g.id)];
   const details: GameDetails = {
     universeId: String(g.id),
     placeId: String(g.rootPlaceId),
@@ -844,6 +1074,10 @@ export async function getGameDetails(universeId: string): Promise<GameDetails> {
     favoritedCount: g.favoritedCount,
     thumbnailUrl: iconUrl,
     iconUrl,
+    isForSale: product?.isForSale,
+    priceInRobux:
+      product?.isForSale && product.price > 0 ? product.price : null,
+    productId: product?.productId ?? null,
     media: screenshots.length
       ? screenshots.map((imageUrl, index) => ({ id: `shot-${index}`, imageUrl }))
       : [{ id: "icon", imageUrl: iconUrl }],
@@ -1259,36 +1493,48 @@ async function batchPlaceDetails(
   const unique = [...new Set(placeIds.filter(Boolean))];
   if (!unique.length) return {};
 
-  const cacheKey = `place-details:${unique.join(",")}`;
+  const cacheKey = `place-details:v2:${unique.join(",")}`;
   const cached = await cacheGet<Record<string, { name: string; universeId: string; placeId: string }>>(
     cacheKey,
   );
   if (cached) return cached;
 
-  const CHUNK = 50;
+  // games.roblox.com/v1/games/multiget-place-details requires auth (401 anonymously).
+  // Public place → universe mapping works without cookies.
   const map: Record<string, { name: string; universeId: string; placeId: string }> = {};
-  for (let i = 0; i < unique.length; i += CHUNK) {
-    const chunk = unique.slice(i, i + CHUNK);
-    try {
-      const url = new URL("https://games.roblox.com/v1/games/multiget-place-details");
-      for (const id of chunk) url.searchParams.append("placeIds", id);
-      const rows = await fetchJson<
-        Array<{ placeId?: number; name?: string; universeId?: number }>
-      >(url.toString());
-      for (const row of rows ?? []) {
-        if (!row.placeId) continue;
-        map[String(row.placeId)] = {
-          placeId: String(row.placeId),
-          name: row.name?.trim() || "",
-          universeId: row.universeId ? String(row.universeId) : "",
+  await Promise.all(
+    unique.map(async (placeId) => {
+      try {
+        const data = await fetchJson<{ universeId?: number }>(
+          `https://apis.roblox.com/universes/v1/places/${encodeURIComponent(placeId)}/universe`,
+        );
+        if (!data.universeId) return;
+        map[placeId] = {
+          placeId,
+          universeId: String(data.universeId),
+          name: "",
         };
+      } catch {
+        // ignore individual place failures
       }
-    } catch {
-      // ignore chunk failures
+    }),
+  );
+
+  const universeIds = [...new Set(Object.values(map).map((row) => row.universeId))];
+  if (universeIds.length) {
+    const games = await batchGameDetails(universeIds).catch(
+      () => ({}) as Awaited<ReturnType<typeof batchGameDetails>>,
+    );
+    for (const row of Object.values(map)) {
+      const game = games[row.universeId];
+      if (game?.name) row.name = game.name;
     }
   }
 
-  await cacheSet(cacheKey, map, 60_000);
+  // Only cache successful lookups so transient failures are not sticky for 60s.
+  if (Object.keys(map).length) {
+    await cacheSet(cacheKey, map, 60_000);
+  }
   return map;
 }
 

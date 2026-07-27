@@ -82,6 +82,11 @@ export const api = {
   surprise: () => request<SurpriseMePayload>("/api/surprise"),
   game: (universeId: string) =>
     request<import("@sb/contracts").GameDetails>(`/api/games/${universeId}`),
+  gamePlayability: (games: Array<{ universeId: string; placeId: string }>) =>
+    request<{ owned: Record<string, boolean> }>("/api/games/playability", {
+      method: "POST",
+      body: JSON.stringify({ games }),
+    }),
   gameEvents: (universeId: string) =>
     request<{ items: import("@sb/contracts").GameEvent[] }>(
       `/api/games/${universeId}/events`,

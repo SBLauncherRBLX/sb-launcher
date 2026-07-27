@@ -39,6 +39,7 @@ import {
   peekCachedFriends,
   listServers,
   resolveLaunchHistoryMeta,
+  batchPaidAccessOwned,
   searchGames,
   searchUsers,
 } from "./modules/roblox/client.js";
@@ -269,13 +270,54 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{ Params: { universeId: string } }>("/api/games/:universeId", async (request, reply) => {
     try {
-      return await getGameDetails(request.params.universeId);
+      const details = await getGameDetails(request.params.universeId);
+      if (
+        request.auth &&
+        details.isForSale &&
+        (details.priceInRobux ?? 0) > 0 &&
+        details.placeId
+      ) {
+        const ownedMap = await batchPaidAccessOwned(
+          [{ universeId: details.universeId, placeId: details.placeId }],
+          request.auth.user.id,
+          request.auth.accessToken,
+          request.auth.capabilities,
+        );
+        if (details.universeId in ownedMap) {
+          return { ...details, owned: ownedMap[details.universeId] };
+        }
+      }
+      return details;
     } catch (err) {
       return reply.code(404).send({
         error: err instanceof Error ? err.message : "Game not found",
         code: "NOT_FOUND",
       });
     }
+  });
+
+  app.post<{
+    Body: { games?: Array<{ universeId?: string; placeId?: string }> };
+  }>("/api/games/playability", async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const games = Array.isArray(request.body?.games)
+      ? request.body.games
+          .map((row) => ({
+            universeId: String(row?.universeId ?? "").trim(),
+            placeId: String(row?.placeId ?? "").trim(),
+          }))
+          .filter((row) => row.universeId && row.placeId)
+          .slice(0, 100)
+      : [];
+    if (!games.length) return { owned: {} as Record<string, boolean> };
+    const owned = await batchPaidAccessOwned(
+      games,
+      auth.user.id,
+      auth.accessToken,
+      auth.capabilities,
+    );
+    return { owned };
   });
 
   app.get<{ Params: { universeId: string } }>(
@@ -317,27 +359,34 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     const deepLink = buildRobloxDeepLink(target);
     const webUrl = buildWebLaunchUrl(target);
 
-    // Last Played: also record friend joins (often missing universeId until resolved).
+    // Record Last Played in the background — never delay the deep link.
     if (request.auth) {
-      const meta = await resolveLaunchHistoryMeta({
-        placeId: body.placeId,
-        universeId: body.universeId,
-        name: body.name,
-        iconUrl: body.iconUrl,
-        userId: body.userId,
-        accessToken: request.auth.accessToken,
-      });
-      if (meta) {
-        await prisma.historyEntry.create({
-          data: {
-            userId: request.auth.user.id,
-            universeId: meta.universeId,
-            placeId: meta.placeId,
-            name: meta.name,
-            iconUrl: meta.iconUrl,
-          },
-        });
-      }
+      const userId = request.auth.user.id;
+      const accessToken = request.auth.accessToken;
+      void (async () => {
+        try {
+          const meta = await resolveLaunchHistoryMeta({
+            placeId: body.placeId,
+            universeId: body.universeId,
+            name: body.name,
+            iconUrl: body.iconUrl,
+            userId: body.userId,
+            accessToken,
+          });
+          if (!meta) return;
+          await prisma.historyEntry.create({
+            data: {
+              userId,
+              universeId: meta.universeId,
+              placeId: meta.placeId,
+              name: meta.name,
+              iconUrl: meta.iconUrl,
+            },
+          });
+        } catch {
+          // History is best-effort; launch already succeeded.
+        }
+      })();
     }
 
     return { deepLink, webUrl };

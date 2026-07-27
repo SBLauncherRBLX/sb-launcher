@@ -578,16 +578,14 @@ public partial class MainWindow : Window
                     .Select(process => process.Id)
                     .ToHashSet();
 
-                // Start leave-monitor before the overlay delay so we never miss
-                // leaveUGCGameInternal that fires while the splash is still up.
-                if (returnToLauncher)
-                {
-                    _robloxSessionMonitorCts?.Cancel();
-                    _robloxSessionMonitorCts = new CancellationTokenSource();
-                    _ = MonitorRobloxSessionAsync(
-                        existingRobloxPids,
-                        _robloxSessionMonitorCts.Token);
-                }
+                // Always watch the Roblox session so Discord presence clears on leave/exit,
+                // even when "return to launcher" is off.
+                _robloxSessionMonitorCts?.Cancel();
+                _robloxSessionMonitorCts = new CancellationTokenSource();
+                _ = MonitorRobloxSessionAsync(
+                    existingRobloxPids,
+                    returnToLauncher,
+                    _robloxSessionMonitorCts.Token);
 
                 await LaunchOverlay.ShowDuringLaunchAsync(
                     this,
@@ -1012,6 +1010,7 @@ public partial class MainWindow : Window
 
     private async Task MonitorRobloxSessionAsync(
         HashSet<int> existingPids,
+        bool returnToLauncher,
         CancellationToken cancellationToken)
     {
         FileStream? logStream = null;
@@ -1035,17 +1034,24 @@ public partial class MainWindow : Window
                 sessionProcesses = GetRobloxProcesses();
             if (sessionProcesses.Length == 0)
             {
-                await Dispatcher.InvokeAsync(RestoreLauncherWindow);
+                // Roblox never started — drop "Playing" Discord activity.
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    _discordPresence?.SetBrowsing();
+                    if (returnToLauncher)
+                        RestoreLauncherWindow();
+                });
                 return;
             }
 
             var trackedPids = sessionProcesses.Select(process => process.Id).ToHashSet();
             var monitorStartedAt = DateTime.Now;
             var shouldCloseRoblox = false;
+            var leaveDetected = false;
             var seenInGame = false;
             string? currentLogPath = null;
 
-            Log($"Roblox session monitor started (pids={string.Join(",", trackedPids)})");
+            Log($"Roblox session monitor started (pids={string.Join(",", trackedPids)}, return={returnToLauncher})");
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -1091,8 +1097,9 @@ public partial class MainWindow : Window
                         if (IsRobloxLeaveToDesktopApp(line) &&
                             (seenInGame || line.Contains("leaveUGCGameInternal", StringComparison.Ordinal)))
                         {
-                            Log($"Detected Roblox leave-to-app marker — closing Roblox. line={line}");
-                            shouldCloseRoblox = true;
+                            Log($"Detected Roblox leave-to-app marker — clearing Discord{(returnToLauncher ? " and closing Roblox" : "")}. line={line}");
+                            leaveDetected = true;
+                            shouldCloseRoblox = returnToLauncher;
                             break;
                         }
                     }
@@ -1113,7 +1120,7 @@ public partial class MainWindow : Window
                     break;
                 }
 
-                if (shouldCloseRoblox) break;
+                if (leaveDetected) break;
                 await Task.Delay(200, cancellationToken);
             }
 
@@ -1123,7 +1130,8 @@ public partial class MainWindow : Window
             await Dispatcher.InvokeAsync(() =>
             {
                 _discordPresence?.SetBrowsing();
-                RestoreLauncherWindow();
+                if (returnToLauncher)
+                    RestoreLauncherWindow();
             });
         }
         catch (OperationCanceledException)
@@ -1136,7 +1144,8 @@ public partial class MainWindow : Window
             await Dispatcher.InvokeAsync(() =>
             {
                 _discordPresence?.SetBrowsing();
-                RestoreLauncherWindow();
+                if (returnToLauncher)
+                    RestoreLauncherWindow();
             });
         }
         finally

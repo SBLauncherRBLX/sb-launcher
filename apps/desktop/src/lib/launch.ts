@@ -31,7 +31,6 @@ export async function launchExperience(input: {
   const result = await api.launch(input);
   const open = window.sbDesktop?.openRoblox;
   if (open) {
-    const iconUrl = await resolveGameIconUrl(input.placeId, input.iconUrl);
     const serverType =
       input.serverType ??
       (input.gameInstanceId?.trim() ? "public" : undefined);
@@ -46,21 +45,36 @@ export async function launchExperience(input: {
       input.universeId != null && String(input.universeId).trim()
         ? String(input.universeId).trim()
         : undefined;
-    void window.sbDesktop?.setDiscordActivity?.({
-      mode: "playing",
-      playing: input.name?.trim() || "Roblox",
-      placeId,
-      gameInstanceId,
-      universeId,
-      iconUrl,
-      creatorName: input.creatorName?.trim() || undefined,
-      serverType,
-    });
+    const playing = input.name?.trim() || "Roblox";
+    const creatorName = input.creatorName?.trim() || undefined;
+
+    // Launch first — Discord art must not delay opening Roblox.
     const graphics = useAppStore.getState().graphics;
     const res = await open(result.deepLink, graphics);
     if (!res.ok) {
       await window.sbDesktop?.openExternal(result.webUrl);
     }
+
+    const baseActivity = {
+      mode: "playing" as const,
+      playing,
+      placeId,
+      gameInstanceId,
+      universeId,
+      creatorName,
+      serverType,
+    };
+    void window.sbDesktop?.setDiscordActivity?.({
+      ...baseActivity,
+      iconUrl: input.iconUrl?.trim() || undefined,
+    });
+    void resolveGameIconUrl(input.placeId, input.iconUrl).then((iconUrl) => {
+      if (!iconUrl) return;
+      void window.sbDesktop?.setDiscordActivity?.({
+        ...baseActivity,
+        iconUrl,
+      });
+    });
   } else {
     window.open(result.webUrl, "_blank");
   }

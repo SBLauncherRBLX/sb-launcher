@@ -6,6 +6,7 @@ import { api } from "../lib/api";
 import { GameCard } from "../components/GameCard";
 import { GameRail } from "../components/GameRail";
 import { LauncherNickBadge } from "../components/LauncherNickBadge";
+import { useAppStore } from "../store";
 
 type SearchTab = "experiences" | "people";
 
@@ -15,6 +16,53 @@ type CachedSearch =
 
 function isRateLimitError(message: string): boolean {
   return /limiting search|too many requests|rate.?limit/i.test(message);
+}
+
+async function applyOwnedFlags(
+  games: GameSummary[],
+  canCheckInventory: boolean,
+): Promise<GameSummary[]> {
+  if (!canCheckInventory) return games;
+  const paid = games.filter(
+    (game) => game.isForSale && (game.priceInRobux ?? 0) > 0 && game.placeId,
+  );
+  if (!paid.length) return games;
+  try {
+    const { owned } = await api.gamePlayability(
+      paid.map((game) => ({ universeId: game.universeId, placeId: game.placeId })),
+    );
+    return games.map((game) =>
+      game.universeId in owned ? { ...game, owned: owned[game.universeId] } : game,
+    );
+  } catch {
+    return games;
+  }
+}
+
+async function applyOwnedToCategories(
+  categories: DiscoveryCategory[],
+  canCheckInventory: boolean,
+): Promise<DiscoveryCategory[]> {
+  if (!canCheckInventory) return categories;
+  const paid = categories.flatMap((category) =>
+    category.games.filter(
+      (game) => game.isForSale && (game.priceInRobux ?? 0) > 0 && game.placeId,
+    ),
+  );
+  if (!paid.length) return categories;
+  try {
+    const { owned } = await api.gamePlayability(
+      paid.map((game) => ({ universeId: game.universeId, placeId: game.placeId })),
+    );
+    return categories.map((category) => ({
+      ...category,
+      games: category.games.map((game) =>
+        game.universeId in owned ? { ...game, owned: owned[game.universeId] } : game,
+      ),
+    }));
+  } catch {
+    return categories;
+  }
 }
 
 function PersonAvatar({
@@ -47,6 +95,7 @@ export function DiscoverPage() {
   const [params, setParams] = useSearchParams();
   const q = params.get("q") ?? "";
   const tab = (params.get("tab") === "people" ? "people" : "experiences") as SearchTab;
+  const session = useAppStore((s) => s.session);
   const [categories, setCategories] = useState<DiscoveryCategory[]>([]);
   const [searchItems, setSearchItems] = useState<GameSummary[]>([]);
   const [peopleItems, setPeopleItems] = useState<UserSearchResult[]>([]);
@@ -133,14 +182,18 @@ export function DiscoverPage() {
           } else {
             const data = await api.searchGames(q);
             if (!cancelled) {
-              setSearchItems(data.items);
+              const items = session?.authenticated
+                ? await applyOwnedFlags(data.items, Boolean(session.capabilities.inventory))
+                : data.items;
+              if (cancelled) return;
+              setSearchItems(items);
               setSearchCursor(data.nextCursor);
               setPeopleItems([]);
               setPeopleCursor(null);
               setCategories([]);
               searchCache.current.set(cacheKey, {
                 tab: "experiences",
-                items: data.items,
+                items,
                 cursor: data.nextCursor,
               });
             }
@@ -149,7 +202,14 @@ export function DiscoverPage() {
           setLoading(true);
           const data = await api.discover();
           if (!cancelled) {
-            setCategories(data.categories);
+            const categoriesWithOwned = session?.authenticated
+              ? await applyOwnedToCategories(
+                  data.categories,
+                  Boolean(session.capabilities.inventory),
+                )
+              : data.categories;
+            if (cancelled) return;
+            setCategories(categoriesWithOwned);
             setSearchItems([]);
             setPeopleItems([]);
             setSearchCursor(null);
@@ -171,7 +231,7 @@ export function DiscoverPage() {
     return () => {
       cancelled = true;
     };
-  }, [q, tab, searchNonce]);
+  }, [q, tab, searchNonce, session?.authenticated, session?.capabilities.inventory]);
 
   async function loadMoreSearch() {
     if (!q) return;
@@ -218,7 +278,10 @@ export function DiscoverPage() {
     setLoading(true);
     try {
       const data = await api.discoverSort(sortId, 100);
-      setSortGames(data.items);
+      const games = session?.authenticated
+        ? await applyOwnedFlags(data.items, Boolean(session.capabilities.inventory))
+        : data.items;
+      setSortGames(games);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load category");
     } finally {
