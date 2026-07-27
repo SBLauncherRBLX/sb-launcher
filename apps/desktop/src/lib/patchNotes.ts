@@ -19,6 +19,14 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "2.4.2",
+    title: "Paid Places polish",
+    items: [
+      "Paid Places cards show player count again — Robux price stays on the badge only.",
+      "Paid Places is the 3rd Discover row instead of the first.",
+    ],
+  },
+  {
     version: "2.4.1",
     title: "Last Played paid places",
     items: [

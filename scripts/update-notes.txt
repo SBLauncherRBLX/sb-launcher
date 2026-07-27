@@ -1,4 +1,4 @@
-SB Launcher 2.4.1
+SB Launcher 2.4.2
 
-- Last Played no longer shows Robux prices on paid-access experiences — they look like normal places.
-- Paid Places price UI remains on Discover and game pages.
+- Paid Places cards show player count again (price stays on the badge only).
+- Paid Places is the 3rd Discover row instead of the first.

@@ -94,26 +94,22 @@ export function GameCard({
         <div className="meta">
           <h3>{game.name}</h3>
           <div className="game-stats">
-            {paidLocked ? (
-              <span className="game-stat-robux">{formatRobux(price)}</span>
-            ) : (
-              <span className="game-stat-playing">
-                <svg
-                  className="game-stat-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.9"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <circle cx="12" cy="8" r="3.25" />
-                  <path d="M5.5 19c.9-3.2 3.2-5 6.5-5s5.6 1.8 6.5 5" />
-                </svg>
-                {formatCount(game.playing)} playing
-              </span>
-            )}
+            <span className="game-stat-playing">
+              <svg
+                className="game-stat-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <circle cx="12" cy="8" r="3.25" />
+                <path d="M5.5 19c.9-3.2 3.2-5 6.5-5s5.6 1.8 6.5 5" />
+              </svg>
+              {formatCount(game.playing)} playing
+            </span>
             {game.ratingPercent ? <span>{game.ratingPercent}%</span> : null}
             {game.genreL1 ? <span>{game.genreL1}</span> : null}
           </div>

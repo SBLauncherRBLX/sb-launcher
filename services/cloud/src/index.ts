@@ -95,13 +95,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "2.4.1",
-  buildId: "20260727144035",
+  version: "2.4.2",
+  buildId: "20260727153302",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 2.4.1\n\n- Last Played no longer shows Robux prices on paid-access experiences — they look like normal places.\n- Paid Places price UI remains on Discover and game pages.",
-  title: "SB Launcher 2.4.1",
-  publishedAt: "2026-07-27T07:40:35.000Z",
+    "SB Launcher 2.4.2\n\n- Paid Places cards show player count again (price stays on the badge only).\n- Paid Places is the 3rd Discover row instead of the first.",
+  title: "SB Launcher 2.4.2",
+  publishedAt: "2026-07-27T08:33:02.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

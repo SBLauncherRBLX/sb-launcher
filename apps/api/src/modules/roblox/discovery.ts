@@ -70,20 +70,27 @@ const PAID_ACCESS_SORT: DiscoverySort = {
   displayName: "Paid Places",
 };
 
+/** Keep Paid Places as the 3rd Discover rail (after the first two Roblox sorts). */
+function withPaidPlacesThird(sorts: DiscoverySort[]): DiscoverySort[] {
+  const withoutPaid = sorts.filter((s) => s.sortId !== PAID_ACCESS_SORT.sortId);
+  const paid =
+    sorts.find((s) => s.sortId === PAID_ACCESS_SORT.sortId) ?? PAID_ACCESS_SORT;
+  const namedPaid = { ...paid, displayName: "Paid Places" };
+  const head = withoutPaid.slice(0, 2);
+  const tail = withoutPaid.slice(2);
+  return [...head, namedPaid, ...tail];
+}
+
 export async function listAllCategories(limitPerSort = 100): Promise<DiscoveryCategory[]> {
-  const cacheKey = `discovery:all:v2:${limitPerSort}`;
+  const cacheKey = `discovery:all:v3:${limitPerSort}`;
   const cached = await cacheGet<DiscoveryCategory[]>(cacheKey);
   if (cached) return cached;
 
-  const sorts = await listSorts();
-  // Explore get-sorts often omits paid access — always surface it in Discover.
-  const withPaid = sorts.some((s) => s.sortId === PAID_ACCESS_SORT.sortId)
-    ? sorts
-    : [PAID_ACCESS_SORT, ...sorts];
+  const sorts = withPaidPlacesThird(await listSorts());
 
   const categories = await Promise.all(
-    withPaid.map(async (sort) => ({
-      sort: sort.sortId === PAID_ACCESS_SORT.sortId ? { ...sort, displayName: "Paid Places" } : sort,
+    sorts.map(async (sort) => ({
+      sort,
       games: await listSortContent(sort.sortId, limitPerSort),
     })),
   );
