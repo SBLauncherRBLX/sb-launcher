@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import {
+  DEFAULT_CAPABILITIES,
   DEFAULT_THEME,
   SafeGraphicsSettingsSchema,
   normalizeTheme,
@@ -8,7 +9,7 @@ import {
   type VisualTheme,
   type FriendPresence,
 } from "@sb/contracts";
-import { api, setSessionToken } from "./lib/api";
+import { api, authStartUrl, setSessionToken } from "./lib/api";
 import { hydrateProfileAvatarPreference } from "./lib/profileAvatar";
 import { hydrateNickBadgePreference } from "./lib/nickBadge";
 import { hydrateRobloxAppIconPreference } from "./lib/robloxAppIcon";
@@ -46,7 +47,21 @@ type AppState = {
   setGraphics: (graphics: SafeGraphicsSettings) => void;
   persistPreferences: () => Promise<void>;
   signOut: () => Promise<void>;
+  switchAccount: (userId: string) => Promise<void>;
+  addAccount: () => Promise<void>;
+  removeAccount: (userId: string) => Promise<void>;
 };
+
+function guestSession(accounts: Session["accounts"] = []): Session {
+  return {
+    authenticated: false,
+    user: null,
+    capabilities: DEFAULT_CAPABILITIES,
+    scopes: [],
+    accounts,
+    activeUserId: null,
+  };
+}
 
 const DEFAULT_DOWNLOAD =
   "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/";
@@ -153,6 +168,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         robloxInstalled: detect?.installed ?? null,
         error: null,
       });
+      // Keep shared theme/graphics on every saved account in the background.
+      if (session?.authenticated) {
+        void api.savePreferences({ theme, graphics }).catch(() => undefined);
+      }
       if (session?.authenticated && session.capabilities.friends) {
         void api
           .friends()
@@ -178,16 +197,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   refreshSession: async () => {
     const session = await api.session();
     set({ session });
-    if (session.authenticated) {
-      try {
-        const pref = await api.preferences();
-        set({ theme: normalizeTheme(pref.theme), graphics: pref.graphics });
-      } catch {
-        // ignore
-      }
-      if (session.capabilities.friends) {
-        void get().refreshFriends();
-      }
+    // Theme/graphics stay on the shared local prefs — do not reload per-account values.
+    if (session.authenticated && session.capabilities.friends) {
+      void get().refreshFriends();
+    } else if (!session.authenticated) {
+      set({ friends: [] });
     }
   },
 
@@ -220,21 +234,51 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     setSessionToken(null);
     await window.sbDesktop?.setPrefs({ sessionToken: null });
+    const session = await api.session().catch(() => null);
     set({
       friends: [],
-      session: {
-        authenticated: false,
-        user: null,
-        capabilities: {
-          profile: false,
-          friends: false,
-          presence: false,
-          avatarWrite: false,
-          inventory: false,
-          servers: true,
-        },
-        scopes: [],
-      },
+      session: session ?? guestSession(get().session?.accounts ?? []),
     });
+  },
+
+  switchAccount: async (userId: string) => {
+    const result = await api.switchAccount(userId);
+    setSessionToken(result.sessionToken);
+    await window.sbDesktop?.setPrefs({ sessionToken: result.sessionToken });
+    set({ session: result.session });
+    // Keep the same shared theme/graphics across accounts.
+    if (result.session.capabilities.friends) {
+      void get().refreshFriends();
+    } else {
+      set({ friends: [] });
+    }
+  },
+
+  addAccount: async () => {
+    const url = authStartUrl();
+    if (window.sbDesktop?.openExternal) {
+      await window.sbDesktop.openExternal(url);
+    } else {
+      window.open(url, "_blank");
+    }
+  },
+
+  removeAccount: async (userId: string) => {
+    const result = await api.removeAccount(userId);
+    if (result.removedActive) {
+      const next = result.accounts[0];
+      if (next) {
+        await get().switchAccount(next.id);
+        return;
+      }
+      setSessionToken(null);
+      await window.sbDesktop?.setPrefs({ sessionToken: null });
+      set({ friends: [], session: guestSession([]) });
+      return;
+    }
+    const session = get().session;
+    if (session) {
+      set({ session: { ...session, accounts: result.accounts } });
+    }
   },
 }));

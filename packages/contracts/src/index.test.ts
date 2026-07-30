@@ -28,5 +28,18 @@ describe("contracts", () => {
     expect(graphics.qualityLevel).toBe(5);
     expect(graphics.applyOnLaunch).toBe(false);
     expect(graphics.robloxFontMode).toBe("vanilla");
+    expect(graphics.preferredAspectRatio).toBe("native");
+    expect(graphics.disableDpiScale).toBe(false);
+  });
+
+  it("accepts custom Roblox resolution and aspect ratio", () => {
+    const graphics = SafeGraphicsSettingsSchema.parse({
+      preferredResolution: "1280x720",
+      preferredAspectRatio: "16:9",
+      disableDpiScale: true,
+    });
+    expect(graphics.preferredResolution).toBe("1280x720");
+    expect(graphics.preferredAspectRatio).toBe("16:9");
+    expect(graphics.disableDpiScale).toBe(true);
   });
 });

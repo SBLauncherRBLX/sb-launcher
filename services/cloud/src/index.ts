@@ -753,6 +753,9 @@ function sanitizeUrl(value: string): string | null {
     if (url.protocol !== "https:") return null;
     if (url.username || url.password) return null;
     const host = url.hostname.toLowerCase();
+    if (host.endsWith(".sblauncher")) {
+      return null;
+    }
     if (
       host === "localhost" ||
       host === "127.0.0.1" ||

@@ -78,6 +78,43 @@ async function fileToBase64(file: File): Promise<string> {
   return btoa(binary);
 }
 
+function isLocalVirtualMediaUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host.endsWith(".sblauncher");
+  } catch {
+    return false;
+  }
+}
+
+async function uploadPickedNativeMedia(
+  picked: { url: string; dataBase64?: string; contentType?: string },
+  upload: (file: { contentType: string; dataBase64: string }) => Promise<string | null>,
+): Promise<string> {
+  // Prefer bytes from the native host — WebView cannot reliably fetch
+  // cross-origin virtual hosts like profile.sblauncher / badges.sblauncher.
+  if (picked.dataBase64?.trim()) {
+    const url = await upload({
+      contentType: picked.contentType || "image/png",
+      dataBase64: picked.dataBase64,
+    });
+    if (url) return url;
+    throw new Error("Cloud upload failed. Check your connection and try again.");
+  }
+
+  // Legacy fallback (browser / older hosts).
+  const res = await fetch(picked.url);
+  const blob = await res.blob();
+  const file = new File([blob], "upload.bin", { type: blob.type || "application/octet-stream" });
+  const dataBase64 = await fileToBase64(file);
+  const url = await upload({
+    contentType: file.type || "application/octet-stream",
+    dataBase64,
+  });
+  if (url) return url;
+  throw new Error("Cloud upload failed. Check your connection and try again.");
+}
+
 export function UserProfilePage() {
   const { userId = "" } = useParams();
   const friends = useAppStore((s) => s.friends);
@@ -123,6 +160,21 @@ export function UserProfilePage() {
         const fromCloud = bannerFromLauncher(data.launcherBanner);
         const ownId = useAppStore.getState().session?.user?.id ?? "";
         const own = String(ownId) === String(data.id);
+        if (own) {
+          saveProfileAvatarPreference({
+            mode: data.launcherAvatarMode === "custom" ? "custom" : "roblox",
+            customUrl: data.launcherAvatarUrl ?? "",
+          });
+          saveNickBadgePreference({
+            mode:
+              data.launcherBadgeMode === "custom" ||
+              data.launcherBadgeMode === "off" ||
+              data.launcherBadgeMode === "launcher"
+                ? data.launcherBadgeMode
+                : "launcher",
+            customUrl: data.launcherBadgeUrl ?? "",
+          });
+        }
         setBanner(own ? resolveOwnBanner(data.id, fromCloud) : fromCloud);
         setError(null);
       })
@@ -275,12 +327,43 @@ export function UserProfilePage() {
     return uploaded.url;
   }
 
+  async function resolveNativeUpload(
+    picked: { url: string; dataBase64?: string; contentType?: string },
+  ): Promise<string> {
+    return uploadPickedNativeMedia(picked, async ({ contentType, dataBase64 }) => {
+      const uploaded = await api.uploadProfileMedia({ contentType, dataBase64 });
+      return uploaded.url;
+    });
+  }
+
   async function saveCosmetics() {
     setSaving(true);
     setMessage(null);
     const badgeSnapshot = { ...badge };
     const avatarSnapshot = { ...avatar };
     const bannerSnapshot = { ...banner };
+
+    if (
+      avatarSnapshot.mode === "custom" &&
+      (!avatarSnapshot.customUrl.trim() || isLocalVirtualMediaUrl(avatarSnapshot.customUrl))
+    ) {
+      setSaving(false);
+      setMessage(
+        "Custom photo must be uploaded to cloud first. Click Upload photo, wait for it to finish, then Save.",
+      );
+      return;
+    }
+    if (
+      badgeSnapshot.mode === "custom" &&
+      (!badgeSnapshot.customUrl.trim() || isLocalVirtualMediaUrl(badgeSnapshot.customUrl))
+    ) {
+      setSaving(false);
+      setMessage(
+        "Custom badge must be uploaded to cloud first. Click Upload badge image, wait for it to finish, then Save.",
+      );
+      return;
+    }
+
     const nextBanner = bannerToLauncher(bannerSnapshot);
 
     // Optimistic UI — apply immediately, then persist to cloud.
@@ -562,16 +645,17 @@ export function UserProfilePage() {
                     onClick={() =>
                       void window.sbDesktop?.pickNickBadge?.().then(async (picked) => {
                         if (!picked) return;
+                        setMessage(null);
                         try {
-                          const res = await fetch(picked.url);
-                          const blob = await res.blob();
-                          const file = new File([blob], "badge.png", {
-                            type: blob.type || "image/png",
-                          });
-                          const url = await uploadPickedFile(file);
-                          if (url) setBadge({ mode: "custom", customUrl: url });
-                        } catch {
-                          setBadge({ mode: "custom", customUrl: picked.url });
+                          const url = await resolveNativeUpload(picked);
+                          setBadge({ mode: "custom", customUrl: url });
+                          setMessage("Badge image uploaded. Click Save to publish.");
+                        } catch (err) {
+                          setMessage(
+                            err instanceof Error
+                              ? err.message
+                              : "Could not upload badge image.",
+                          );
                         }
                       })
                     }
@@ -615,16 +699,19 @@ export function UserProfilePage() {
                     onClick={() =>
                       void window.sbDesktop?.pickProfileAvatar?.().then(async (picked) => {
                         if (!picked) return;
+                        setMessage(null);
                         try {
-                          const res = await fetch(picked.url);
-                          const blob = await res.blob();
-                          const file = new File([blob], "avatar.png", {
-                            type: blob.type || "image/png",
-                          });
-                          const url = await uploadPickedFile(file);
-                          if (url) setAvatar({ mode: "custom", customUrl: url });
-                        } catch {
-                          setAvatar({ mode: "custom", customUrl: picked.url });
+                          const url = await resolveNativeUpload(picked);
+                          setAvatar({ mode: "custom", customUrl: url });
+                          // Preview in Shell immediately via local prefs (cloud URL).
+                          saveProfileAvatarPreference({ mode: "custom", customUrl: url });
+                          setMessage("Photo uploaded. Click Save to publish on your profile.");
+                        } catch (err) {
+                          setMessage(
+                            err instanceof Error
+                              ? err.message
+                              : "Could not upload profile photo.",
+                          );
                         }
                       })
                     }

@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import {
   DEFAULT_CAPABILITIES,
   type Capabilities,
+  type SavedAccount,
   type Session,
   type UserProfile,
 } from "@sb/contracts";
@@ -293,18 +294,93 @@ async function upsertUserGrant(profile: UserProfile, tokens: TokenResponse): Pro
   });
 }
 
+/** Users with an OAuth grant on this machine (saved launcher accounts). */
+export async function listSavedAccounts(): Promise<SavedAccount[]> {
+  const rows = await prisma.user.findMany({
+    where: { oauthGrant: { isNot: null } },
+    include: {
+      oauthGrant: { select: { updatedAt: true } },
+      sessions: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { createdAt: true },
+      },
+    },
+  });
+
+  const mapped = rows.map((row) => {
+    const lastSession = row.sessions[0]?.createdAt?.getTime() ?? 0;
+    const grantUpdated = row.oauthGrant?.updatedAt.getTime() ?? 0;
+    const lastUsedMs = Math.max(lastSession, grantUpdated, row.updatedAt.getTime());
+    return {
+      id: row.id,
+      username: row.username,
+      displayName: row.displayName,
+      avatarUrl: row.avatarUrl,
+      profileUrl: row.profileUrl,
+      lastUsedAt: new Date(lastUsedMs).toISOString(),
+      _sort: lastUsedMs,
+    };
+  });
+
+  mapped.sort((a, b) => b._sort - a._sort);
+  return mapped.map(({ _sort: _, ...account }) => account);
+}
+
+export async function switchAccount(
+  userId: string,
+  previousSessionId?: string | null,
+): Promise<{ sessionToken: string; auth: AuthContext }> {
+  const grant = await prisma.oAuthGrant.findUnique({
+    where: { userId },
+    include: { user: true },
+  });
+  if (!grant) {
+    throw new Error("Account is not saved on this PC. Sign in with Roblox to add it.");
+  }
+
+  if (previousSessionId) {
+    await prisma.session.delete({ where: { id: previousSessionId } }).catch(() => undefined);
+  }
+
+  const sessionToken = await createSession(userId);
+  const auth = await resolveSession(sessionToken);
+  if (!auth) {
+    throw new Error("Could not activate that account. Try signing in again.");
+  }
+  return { sessionToken, auth };
+}
+
+/**
+ * Remove OAuth grant + sessions for a saved account.
+ * Keeps User favorites/history so re-adding restores context.
+ */
+export async function removeAccount(userId: string): Promise<void> {
+  const grant = await prisma.oAuthGrant.findUnique({ where: { userId } });
+  if (!grant) return;
+
+  await prisma.$transaction([
+    prisma.session.deleteMany({ where: { userId } }),
+    prisma.oAuthGrant.delete({ where: { userId } }),
+  ]);
+}
+
+/** Clear only the active SB session; saved OAuth grants remain. */
 export async function logout(sessionToken?: string | null): Promise<void> {
   if (!sessionToken) return;
   await prisma.session.deleteMany({ where: { tokenHash: hashToken(sessionToken) } });
 }
 
-export function toSessionPayload(auth: AuthContext | null): Session {
+export async function toSessionPayload(auth: AuthContext | null): Promise<Session> {
+  const accounts = await listSavedAccounts().catch(() => [] as SavedAccount[]);
   if (!auth) {
     return {
       authenticated: false,
       user: null,
       capabilities: DEFAULT_CAPABILITIES,
       scopes: [],
+      accounts,
+      activeUserId: null,
     };
   }
   return {
@@ -312,6 +388,8 @@ export function toSessionPayload(auth: AuthContext | null): Session {
     user: auth.user,
     capabilities: auth.capabilities,
     scopes: auth.scopes,
+    accounts,
+    activeUserId: auth.user.id,
   };
 }
 

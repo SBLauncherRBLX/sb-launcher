@@ -1132,6 +1132,37 @@ export async function listServers(
   }
 }
 
+/** Public CookieNone endpoint — whether VIP / private servers are enabled for a universe. */
+export async function privateServersEnabledInUniverse(universeId: string): Promise<boolean> {
+  const cacheKey = `private-servers-enabled:${universeId}`;
+  const cached = await cacheGet<boolean | null>(cacheKey);
+  if (typeof cached === "boolean") return cached;
+  try {
+    const data = await fetchJson<{
+      privateServerEnabled?: boolean;
+      isEnabled?: boolean;
+      privateServersEnabled?: boolean;
+    }>(
+      `https://games.roblox.com/v1/private-servers/enabled-in-universe/${encodeURIComponent(universeId)}`,
+    );
+    const enabled =
+      data.privateServerEnabled === true ||
+      data.privateServersEnabled === true ||
+      data.isEnabled === true;
+    // Some responses are bare booleans in practice; treat missing fields as unknown → show UI.
+    const known =
+      typeof data.privateServerEnabled === "boolean" ||
+      typeof data.privateServersEnabled === "boolean" ||
+      typeof data.isEnabled === "boolean";
+    const value = known ? enabled : true;
+    await cacheSet(cacheKey, value, 120_000);
+    return value;
+  } catch {
+    await cacheSet(cacheKey, true, 60_000);
+    return true;
+  }
+}
+
 export async function peekCachedFriends(userId: string): Promise<FriendPresence[]> {
   const cacheKey = `friends-presence:v3:${userId}`;
   const cached = await cacheGet<FriendPresence[]>(cacheKey);

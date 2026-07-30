@@ -1,5 +1,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+using System.Text;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -7,6 +9,7 @@ namespace SBLauncher.Native;
 
 /// <summary>
 /// Changes the Windows shortcut icon for Roblox Player (not the person's profile avatar).
+/// Must run on an STA thread (WPF UI dispatcher) — WScript / ShellLink COM is STA-only.
 /// </summary>
 internal static class RobloxAppIcon
 {
@@ -16,7 +19,7 @@ internal static class RobloxAppIcon
         Directory.CreateDirectory(UserDataPaths.RobloxAppIconsDirectory);
 
         var iconLocation = ResolveIconLocation(mode, customUrl);
-        if (iconLocation is null)
+        if (string.IsNullOrWhiteSpace(iconLocation) || !File.Exists(iconLocation))
         {
             return new
             {
@@ -26,32 +29,46 @@ internal static class RobloxAppIcon
             };
         }
 
-        var shortcuts = FindRobloxShortcuts().ToList();
+        // Absolute path; never allow empty IconLocation (produces broken ",0" shortcuts).
+        iconLocation = Path.GetFullPath(iconLocation);
+
+        var playerExe = ResolvePlayerExe();
+        EnsureManagedShortcuts(playerExe);
+
+        var shortcuts = FindRobloxShortcuts(playerExe).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         if (shortcuts.Count == 0)
         {
             return new
             {
-                ok = true,
-                message = "Icon prepared, but no Roblox Player shortcuts were found yet. Launch Roblox once, then Apply again.",
+                ok = false,
+                message = playerExe is null
+                    ? "Roblox Player was not found. Install or launch Roblox once, then Apply again."
+                    : "No Roblox Player shortcuts were found. Launch Roblox once, then Apply again.",
                 iconPath = iconLocation,
                 updated = Array.Empty<string>(),
             };
         }
 
         var updated = new List<string>();
+        var failed = 0;
         foreach (var shortcut in shortcuts)
         {
-            if (TrySetShortcutIcon(shortcut, iconLocation))
+            if (TrySetShortcutIcon(shortcut, iconLocation, playerExe))
                 updated.Add(shortcut);
+            else
+                failed++;
         }
 
-        NotifyShellIconsChanged();
+        NotifyShellIconsChanged(updated);
+
         return new
         {
             ok = updated.Count > 0,
             message = updated.Count > 0
-                ? $"Roblox app icon updated on {updated.Count} shortcut(s)."
-                : "Could not update Roblox shortcuts. Try running SB Launcher as administrator.",
+                ? failed > 0
+                    ? $"Roblox icon updated on {updated.Count} shortcut(s); {failed} could not be changed."
+                    : $"Roblox app icon updated on {updated.Count} shortcut(s). If an icon still looks old, refresh the desktop (F5) or unpin/repin Roblox."
+                : "Could not update Roblox shortcuts. Close Roblox and try again.",
             iconPath = iconLocation,
             updated = updated.ToArray(),
         };
@@ -81,7 +98,7 @@ internal static class RobloxAppIcon
         if (extension == ".ico")
             File.Copy(target, ico, true);
         else
-            WritePngAsIco(DecodeToPngBytes(target), ico);
+            WriteImageAsIco(DecodeToPngBytes(target), ico);
 
         return new
         {
@@ -95,32 +112,48 @@ internal static class RobloxAppIcon
     {
         return mode switch
         {
-            "classic" => EnsureBundledIco("roblox-classic.png", "classic.ico"),
-            "launcher" => EnsureBundledIco("sb-logo.png", "launcher.ico"),
+            "classic" => EnsureBundledIco("roblox-classic.png", "classic"),
+            "launcher" => EnsureBundledIco("sb-logo.png", "launcher"),
             "custom" => ResolveCustomIco(customUrl),
             _ => ResolveDefaultRobloxIcon(),
         };
     }
 
-    private static string? ResolveDefaultRobloxIcon()
+    private static string? ResolvePlayerExe()
     {
         var player = RobloxAppearance.ResolvePlayerDirectory();
-        if (player is null)
-            return null;
+        if (player is null) return null;
         var exe = Path.Combine(player, "RobloxPlayerBeta.exe");
         return File.Exists(exe) ? exe : null;
     }
 
-    private static string? EnsureBundledIco(string pngFileName, string icoFileName)
+    private static string? ResolveDefaultRobloxIcon() => ResolvePlayerExe();
+
+    private static string? EnsureBundledIco(string pngFileName, string stem)
     {
-        var icoPath = Path.Combine(UserDataPaths.RobloxAppIconsDirectory, icoFileName);
         var pngPath = Path.Combine(AppContext.BaseDirectory, "Assets", pngFileName);
         if (!File.Exists(pngPath))
             pngPath = Path.Combine(AppContext.BaseDirectory, pngFileName);
         if (!File.Exists(pngPath))
-            return File.Exists(icoPath) ? icoPath : null;
+        {
+            // Fall back to any previously built ICO for this stem.
+            var existing = Directory.Exists(UserDataPaths.RobloxAppIconsDirectory)
+                ? Directory.EnumerateFiles(UserDataPaths.RobloxAppIconsDirectory, $"{stem}*.ico")
+                    .OrderByDescending(File.GetLastWriteTimeUtc)
+                    .FirstOrDefault()
+                : null;
+            return existing;
+        }
 
-        WritePngAsIco(File.ReadAllBytes(pngPath), icoPath);
+        var pngBytes = File.ReadAllBytes(pngPath);
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(pngBytes))[..10].ToLowerInvariant();
+        var icoPath = Path.Combine(UserDataPaths.RobloxAppIconsDirectory, $"{stem}-{hash}.ico");
+        if (!File.Exists(icoPath))
+            WriteImageAsIco(pngBytes, icoPath);
+
+        // Stable alias so older messages / docs still resolve.
+        var alias = Path.Combine(UserDataPaths.RobloxAppIconsDirectory, $"{stem}.ico");
+        try { File.Copy(icoPath, alias, true); } catch { /* ignore */ }
         return icoPath;
     }
 
@@ -137,20 +170,54 @@ internal static class RobloxAppIcon
         if (!File.Exists(source))
             return null;
 
-        var ico = Path.Combine(
-            UserDataPaths.RobloxAppIconsDirectory,
-            Path.GetFileNameWithoutExtension(fileName) + ".ico");
+        var stem = Path.GetFileNameWithoutExtension(fileName);
+        var ico = Path.Combine(UserDataPaths.RobloxAppIconsDirectory, stem + ".ico");
         if (Path.GetExtension(source).Equals(".ico", StringComparison.OrdinalIgnoreCase))
         {
             File.Copy(source, ico, true);
-            return ico;
+            return Path.GetFullPath(ico);
         }
 
-        WritePngAsIco(DecodeToPngBytes(source), ico);
-        return ico;
+        WriteImageAsIco(DecodeToPngBytes(source), ico);
+        return Path.GetFullPath(ico);
     }
 
-    private static IEnumerable<string> FindRobloxShortcuts()
+    private static void EnsureManagedShortcuts(string? playerExe)
+    {
+        if (string.IsNullOrWhiteSpace(playerExe) || !File.Exists(playerExe))
+            return;
+
+        var candidates = new[]
+        {
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                "Roblox Player.lnk"),
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                @"Microsoft\Windows\Start Menu\Programs",
+                "Roblox Player.lnk"),
+        };
+
+        foreach (var path in candidates)
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(dir))
+                    Directory.CreateDirectory(dir);
+                if (!File.Exists(path))
+                    CreateShortcut(path, playerExe);
+                else
+                    TryRetargetShortcut(path, playerExe);
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+    }
+
+    private static IEnumerable<string> FindRobloxShortcuts(string? playerExe)
     {
         var roots = new List<string>
         {
@@ -179,16 +246,64 @@ internal static class RobloxAppIcon
             foreach (var link in files)
             {
                 var name = Path.GetFileNameWithoutExtension(link);
-                if (name.Contains("Roblox", StringComparison.OrdinalIgnoreCase) &&
-                    !name.Contains("Studio", StringComparison.OrdinalIgnoreCase))
+                if (name.Contains("Studio", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var nameHit = name.Contains("Roblox", StringComparison.OrdinalIgnoreCase);
+                var targetHit = false;
+                if (!nameHit && !string.IsNullOrWhiteSpace(playerExe))
                 {
-                    yield return link;
+                    if (TryReadShortcut(link, out var target, out _) &&
+                        !string.IsNullOrWhiteSpace(target) &&
+                        target.Contains("RobloxPlayerBeta", StringComparison.OrdinalIgnoreCase) &&
+                        !target.Contains("Studio", StringComparison.OrdinalIgnoreCase))
+                    {
+                        targetHit = true;
+                    }
                 }
+
+                if (nameHit || targetHit)
+                    yield return link;
             }
         }
     }
 
-    private static bool TrySetShortcutIcon(string shortcutPath, string iconPath)
+    private static bool TrySetShortcutIcon(string shortcutPath, string iconPath, string? playerExe)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(iconPath) || !File.Exists(iconPath))
+                return false;
+
+            // IShellLink on STA is more reliable than WScript.Shell IconLocation writes.
+            var link = (IShellLinkW)new ShellLink();
+            var file = (IPersistFile)link;
+            file.Load(shortcutPath, 0);
+
+            if (!string.IsNullOrWhiteSpace(playerExe) && File.Exists(playerExe))
+                link.SetPath(playerExe);
+
+            link.SetIconLocation(iconPath, 0);
+            file.Save(shortcutPath, true);
+
+            // Verify write stuck (guards against empty ",0" regressions).
+            if (TryReadShortcut(shortcutPath, out _, out var icon) &&
+                !string.IsNullOrWhiteSpace(icon) &&
+                icon.StartsWith(iconPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // Fallback: WScript.Shell (still on STA).
+            return TrySetShortcutIconViaWscript(shortcutPath, iconPath);
+        }
+        catch
+        {
+            return TrySetShortcutIconViaWscript(shortcutPath, iconPath);
+        }
+    }
+
+    private static bool TrySetShortcutIconViaWscript(string shortcutPath, string iconPath)
     {
         try
         {
@@ -198,6 +313,58 @@ internal static class RobloxAppIcon
             dynamic shortcut = shell.CreateShortcut(shortcutPath);
             shortcut.IconLocation = iconPath + ",0";
             shortcut.Save();
+            Marshal.FinalReleaseComObject(shortcut);
+            Marshal.FinalReleaseComObject(shell);
+            return TryReadShortcut(shortcutPath, out _, out var icon) &&
+                   !string.IsNullOrWhiteSpace(icon) &&
+                   icon.Contains(".ico", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void CreateShortcut(string shortcutPath, string targetExe)
+    {
+        var link = (IShellLinkW)new ShellLink();
+        link.SetPath(targetExe);
+        link.SetWorkingDirectory(Path.GetDirectoryName(targetExe) ?? "");
+        link.SetDescription("Roblox Player");
+        ((IPersistFile)link).Save(shortcutPath, true);
+    }
+
+    private static void TryRetargetShortcut(string shortcutPath, string playerExe)
+    {
+        try
+        {
+            var link = (IShellLinkW)new ShellLink();
+            var file = (IPersistFile)link;
+            file.Load(shortcutPath, 0);
+            link.SetPath(playerExe);
+            link.SetWorkingDirectory(Path.GetDirectoryName(playerExe) ?? "");
+            file.Save(shortcutPath, true);
+        }
+        catch
+        {
+            // ignore
+        }
+    }
+
+    private static bool TryReadShortcut(string shortcutPath, out string target, out string icon)
+    {
+        target = "";
+        icon = "";
+        try
+        {
+            var link = (IShellLinkW)new ShellLink();
+            ((IPersistFile)link).Load(shortcutPath, 0);
+            var targetSb = new StringBuilder(260);
+            link.GetPath(targetSb, targetSb.Capacity, IntPtr.Zero, 0);
+            target = targetSb.ToString();
+            var iconSb = new StringBuilder(260);
+            link.GetIconLocation(iconSb, iconSb.Capacity, out _);
+            icon = iconSb.ToString();
             return true;
         }
         catch
@@ -225,7 +392,7 @@ internal static class RobloxAppIcon
         return ms.ToArray();
     }
 
-    private static void WritePngAsIco(byte[] sourcePng, string icoPath)
+    private static void WriteImageAsIco(byte[] sourcePng, string icoPath)
     {
         var sizes = new[] { 256, 48, 32, 16 };
         var images = new List<byte[]>();
@@ -269,25 +436,73 @@ internal static class RobloxAppIcon
             frame,
             new ScaleTransform(size / (double)frame.PixelWidth, size / (double)frame.PixelHeight));
         scaled.Freeze();
+
+        // Render to an exact pixel buffer so Windows gets a clean PNG-in-ICO frame.
+        var dv = new DrawingVisual();
+        using (var dc = dv.RenderOpen())
+            dc.DrawImage(scaled, new System.Windows.Rect(0, 0, size, size));
+        var rtb = new RenderTargetBitmap(size, size, 96, 96, PixelFormats.Pbgra32);
+        rtb.Render(dv);
+        rtb.Freeze();
+
         var encoder = new PngBitmapEncoder();
-        encoder.Frames.Add(BitmapFrame.Create(scaled));
+        encoder.Frames.Add(BitmapFrame.Create(rtb));
         using var output = new MemoryStream();
         encoder.Save(output);
         return output.ToArray();
     }
 
-    [DllImport("shell32.dll", CharSet = CharSet.Auto)]
-    private static extern void SHChangeNotify(uint wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
-
-    private static void NotifyShellIconsChanged()
+    private static void NotifyShellIconsChanged(IReadOnlyList<string> shortcuts)
     {
         try
         {
-            SHChangeNotify(0x08000000, 0x0000, IntPtr.Zero, IntPtr.Zero);
+            // Global icon overlay refresh.
+            SHChangeNotify(0x08000000 /*SHCNE_ASSOCCHANGED*/, 0x1000 /*SHCNF_FLUSH*/, IntPtr.Zero, IntPtr.Zero);
+            foreach (var path in shortcuts)
+            {
+                SHChangeNotify(0x00002000 /*SHCNE_UPDATEITEM*/, 0x0005 /*SHCNF_PATHW | SHCNF_FLUSH*/, path, null);
+            }
         }
         catch
         {
             // ignore
         }
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern void SHChangeNotify(uint wEventId, uint uFlags, string? dwItem1, string? dwItem2);
+
+    [DllImport("shell32.dll")]
+    private static extern void SHChangeNotify(uint wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
+
+    [ComImport]
+    [Guid("00021401-0000-0000-C000-000000000046")]
+    private class ShellLink
+    {
+    }
+
+    [ComImport]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [Guid("000214F9-0000-0000-C000-000000000046")]
+    private interface IShellLinkW
+    {
+        void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile, int cchMaxPath, IntPtr pfd, uint fFlags);
+        void GetIDList(out IntPtr ppidl);
+        void SetIDList(IntPtr pidl);
+        void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszName, int cchMaxName);
+        void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string pszName);
+        void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszDir, int cchMaxPath);
+        void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string pszDir);
+        void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszArgs, int cchMaxPath);
+        void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string pszArgs);
+        void GetHotkey(out short pwHotkey);
+        void SetHotkey(short wHotkey);
+        void GetShowCmd(out int piShowCmd);
+        void SetShowCmd(int iShowCmd);
+        void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszIconPath, int cchIconPath, out int piIcon);
+        void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string pszIconPath, int iIcon);
+        void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string pszPathRel, uint dwReserved);
+        void Resolve(IntPtr hwnd, uint fFlags);
+        void SetPath([MarshalAs(UnmanagedType.LPWStr)] string pszFile);
     }
 }

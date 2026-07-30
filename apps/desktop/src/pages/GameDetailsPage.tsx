@@ -11,6 +11,7 @@ import {
 } from "../components/GameCard";
 import { launchExperience } from "../lib/launch";
 import { useAppStore } from "../store";
+import { PrivateServersPanel } from "../components/PrivateServersPanel";
 
 export function GameDetailsPage() {
   const { universeId = "" } = useParams();
@@ -253,6 +254,8 @@ export function GameDetailsPage() {
           </div>
         </section>
       ) : null}
+
+      <PrivateServersPanel game={game} />
 
       <section className="rail">
         <div className="rail-title">

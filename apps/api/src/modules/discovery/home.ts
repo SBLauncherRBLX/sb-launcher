@@ -31,7 +31,7 @@ export async function buildHomeLightPayload(input: {
   const historyRows = dedupeHistory(input.history).slice(0, 12);
   const friendsPlaying = await enrichGames(
     buildFriendsPlayingRail(input.friends ?? []),
-    "icons",
+    "full",
   ).catch(() => buildFriendsPlayingRail(input.friends ?? []));
 
   return {
@@ -118,7 +118,7 @@ export async function buildHomePayload(input: {
 
   const friendsPlaying = await enrichGames(
     buildFriendsPlayingRail(input.friends ?? []),
-    "icons",
+    "full",
   ).catch(() => buildFriendsPlayingRail(input.friends ?? []));
 
   const historyForRecs = dedupeHistory(input.history).map((row) => ({
@@ -180,13 +180,11 @@ function buildFriendsPlayingRail(friends: FriendPresence[]): GameSummary[] {
     .map(([universeId, row]) => ({
       universeId,
       placeId: row.placeId,
-      name:
-        row.friendCount > 1
-          ? `${row.name} · ${row.friendCount} friends`
-          : row.name,
+      name: row.name,
       description: "",
       creatorName: "",
-      playing: row.friendCount,
+      // Real player count comes from enrichGames("full"); do not use friendCount here.
+      playing: 0,
       visits: 0,
       thumbnailUrl: row.iconUrl,
       iconUrl: row.iconUrl,

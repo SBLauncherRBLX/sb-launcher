@@ -1,12 +1,12 @@
 import { NavLink, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import type { PropsWithChildren, FormEvent, ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge, Button } from "@sb/ui";
 import { useAppStore } from "../store";
 import { authStartUrl } from "../lib/api";
 import sbLogo from "../assets/sb-logo.png";
-import { useMotionEnabled } from "../lib/motion";
+import { fadeUp, springSnappy, useMotionEnabled } from "../lib/motion";
 import { APP_VERSION } from "../lib/version";
 import {
   getProfileAvatarPreference,
@@ -15,6 +15,7 @@ import {
   type ProfileAvatarPreference,
 } from "../lib/profileAvatar";
 import { UpdateInstallModal } from "./UpdateInstallModal";
+import { LaunchGateModal } from "./LaunchGateModal";
 
 function updateNotesSummary(notes: string, maxLen = 96): string {
   const line = notes
@@ -119,6 +120,8 @@ export function Shell({ children }: PropsWithChildren) {
   const theme = useAppStore((s) => s.theme);
   const demoMode = useAppStore((s) => s.demoMode);
   const signOut = useAppStore((s) => s.signOut);
+  const switchAccount = useAppStore((s) => s.switchAccount);
+  const addAccount = useAppStore((s) => s.addAccount);
   const updateAvailable = useAppStore((s) => s.updateAvailable);
   const dismissUpdate = useAppStore((s) => s.dismissUpdate);
   const updateNotesOpen = useAppStore((s) => s.updateNotesOpen);
@@ -127,11 +130,16 @@ export function Shell({ children }: PropsWithChildren) {
   const location = useLocation();
   const [params] = useSearchParams();
   const [query, setQuery] = useState("");
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [accountBusy, setAccountBusy] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const [avatarPreference, setAvatarPreference] = useState<ProfileAvatarPreference>(
     getProfileAvatarPreference,
   );
   const motionEnabled = useMotionEnabled(theme);
   const profileAvatar = resolveProfileAvatar(session?.user?.avatarUrl, avatarPreference);
+  const accounts = session?.accounts ?? [];
+  const activeUserId = session?.activeUserId ?? session?.user?.id ?? null;
 
   useEffect(() => {
     if (location.pathname.startsWith("/discover")) {
@@ -150,12 +158,46 @@ export function Shell({ children }: PropsWithChildren) {
     return () => window.removeEventListener(PROFILE_AVATAR_EVENT, update);
   }, []);
 
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAccountMenuOpen(false);
+    };
+    window.addEventListener("mousedown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("mousedown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [accountMenuOpen]);
+
   async function signIn() {
     const url = authStartUrl();
     if (window.sbDesktop?.openExternal) {
       await window.sbDesktop.openExternal(url);
     } else {
       window.open(url, "_blank");
+    }
+  }
+
+  async function onSwitchAccount(userId: string) {
+    if (userId === activeUserId || accountBusy) {
+      setAccountMenuOpen(false);
+      return;
+    }
+    setAccountBusy(true);
+    try {
+      await switchAccount(userId);
+      setAccountMenuOpen(false);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Could not switch account");
+    } finally {
+      setAccountBusy(false);
     }
   }
 
@@ -214,25 +256,102 @@ export function Shell({ children }: PropsWithChildren) {
         <div className="sidebar-footer">
           {demoMode ? <Badge>Guest mode</Badge> : null}
           {session?.authenticated ? (
-            <>
-              <button
-                className="profile-chip sidebar-profile-button"
-                onClick={() => navigate(`/profile/${session.user?.id}`)}
-              >
-                <img
-                  src={profileAvatar ?? sbLogo}
-                  alt={session.user?.displayName ?? "Profile"}
-                  className="profile-avatar"
-                />
-                <div>
-                  <strong>{session.user?.displayName}</strong>
-                  <div className="sb-muted">@{session.user?.username}</div>
-                </div>
-              </button>
-              <Button variant="secondary" onClick={() => void signOut()}>
-                Sign out
-              </Button>
-            </>
+            <div className="sidebar-account" ref={accountMenuRef}>
+              <div className="sidebar-account-row">
+                <motion.button
+                  type="button"
+                  className="profile-chip sidebar-profile-button"
+                  aria-expanded={accountMenuOpen}
+                  aria-haspopup="menu"
+                  whileTap={motionEnabled ? { scale: 0.98 } : undefined}
+                  transition={springSnappy}
+                  onClick={() => setAccountMenuOpen((open) => !open)}
+                >
+                  <img
+                    src={profileAvatar ?? sbLogo}
+                    alt={session.user?.displayName ?? "Profile"}
+                    className="profile-avatar"
+                  />
+                  <div>
+                    <strong>{session.user?.displayName}</strong>
+                    <div className="sb-muted">@{session.user?.username}</div>
+                  </div>
+                </motion.button>
+                <motion.button
+                  type="button"
+                  className="account-add-button"
+                  title="Add another Roblox account"
+                  aria-label="Add another Roblox account"
+                  disabled={accountBusy}
+                  whileTap={motionEnabled ? { scale: 0.92 } : undefined}
+                  transition={springSnappy}
+                  onClick={() => void addAccount()}
+                >
+                  +
+                </motion.button>
+              </div>
+              <AnimatePresence>
+                {accountMenuOpen ? (
+                  <motion.div
+                    className="account-popover"
+                    role="menu"
+                    initial={motionEnabled ? { opacity: 0, y: 10, scale: 0.96 } : false}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={motionEnabled ? { opacity: 0, y: 8, scale: 0.97 } : undefined}
+                    transition={springSnappy}
+                  >
+                    {accounts.map((account, index) => {
+                      const active = account.id === activeUserId;
+                      return (
+                        <motion.button
+                          key={account.id}
+                          type="button"
+                          role="menuitem"
+                          className={`account-popover-item${active ? " active" : ""}`}
+                          disabled={accountBusy}
+                          {...fadeUp(index, motionEnabled)}
+                          whileTap={motionEnabled ? { scale: 0.98 } : undefined}
+                          onClick={() => void onSwitchAccount(account.id)}
+                        >
+                          <img
+                            src={account.avatarUrl || sbLogo}
+                            alt=""
+                            className="profile-avatar"
+                          />
+                          <div>
+                            <strong>{account.displayName}</strong>
+                            <div className="sb-muted">@{account.username}</div>
+                          </div>
+                          {active ? <span className="account-active-mark">Active</span> : null}
+                        </motion.button>
+                      );
+                    })}
+                    <div className="account-popover-actions">
+                      <button
+                        type="button"
+                        className="account-popover-link"
+                        onClick={() => {
+                          setAccountMenuOpen(false);
+                          if (session.user?.id) navigate(`/profile/${session.user.id}`);
+                        }}
+                      >
+                        Open profile
+                      </button>
+                      <button
+                        type="button"
+                        className="account-popover-link"
+                        onClick={() => {
+                          setAccountMenuOpen(false);
+                          void signOut();
+                        }}
+                      >
+                        Sign out
+                      </button>
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
           ) : (
             <div className="guest-profile">
               <span
@@ -310,6 +429,7 @@ export function Shell({ children }: PropsWithChildren) {
             onClose={() => setUpdateNotesOpen(false)}
           />
         ) : null}
+        <LaunchGateModal />
       </div>
     </div>
   );

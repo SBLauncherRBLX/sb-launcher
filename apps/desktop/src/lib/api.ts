@@ -95,6 +95,40 @@ export const api = {
     request<{ items: import("@sb/contracts").ServerInfo[]; nextCursor: string | null }>(
       `/api/games/${placeId}/servers${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
     ),
+  privateServersEnabled: (universeId: string) =>
+    request<{ enabled: boolean }>(
+      `/api/games/${encodeURIComponent(universeId)}/private-servers/enabled`,
+    ),
+  privateServers: (filter?: { universeId?: string; placeId?: string }) => {
+    const params = new URLSearchParams();
+    if (filter?.universeId) params.set("universeId", filter.universeId);
+    if (filter?.placeId) params.set("placeId", filter.placeId);
+    const q = params.toString();
+    return request<{ items: import("@sb/contracts").SavedPrivateServer[] }>(
+      `/api/private-servers${q ? `?${q}` : ""}`,
+    );
+  },
+  savePrivateServer: (body: {
+    universeId: string;
+    placeId: string;
+    accessCode: string;
+    label?: string;
+    gameName?: string | null;
+    iconUrl?: string | null;
+  }) =>
+    request<import("@sb/contracts").SavedPrivateServer>("/api/private-servers", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  renamePrivateServer: (id: string, label: string) =>
+    request<import("@sb/contracts").SavedPrivateServer>(
+      `/api/private-servers/${encodeURIComponent(id)}`,
+      { method: "PATCH", body: JSON.stringify({ label }) },
+    ),
+  removePrivateServer: (id: string) =>
+    request<{ ok: boolean }>(`/api/private-servers/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
   launch: (body: Record<string, unknown>) =>
     request<{ deepLink: string; webUrl: string }>("/api/launch", {
       method: "POST",
@@ -170,6 +204,19 @@ export const api = {
       body: JSON.stringify({ name, theme }),
     }),
   logout: () => request("/auth/logout", { method: "POST" }),
+  accounts: () =>
+    request<{ items: import("@sb/contracts").SavedAccount[] }>("/api/accounts"),
+  switchAccount: (userId: string) =>
+    request<import("@sb/contracts").AccountSwitchResponse>("/api/accounts/switch", {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    }),
+  removeAccount: (userId: string) =>
+    request<{
+      ok: boolean;
+      removedActive: boolean;
+      accounts: import("@sb/contracts").SavedAccount[];
+    }>(`/api/accounts/${encodeURIComponent(userId)}`, { method: "DELETE" }),
   checkUpdate: () =>
     request<{
       updateAvailable: boolean;

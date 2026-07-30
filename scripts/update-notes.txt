@@ -1,4 +1,7 @@
-SB Launcher 2.4.3
+﻿SB Launcher 2.5.0
 
-- Startup splash screens (native + web) now match your Visuals theme colors.
-- Background glow, snake spinner, and text use the saved accent and palette from cold start.
+- Private servers: join by invite, save, rename, copy link, remove
+- Startup splash uses your Visuals wallpaper (native + web)
+- Roblox app icon Apply fixed on desktop / Start Menu
+- Profile photo and nick badge upload fixed
+- Game card hover clipping fix; Friends Playing online counts

@@ -5,9 +5,11 @@ import rateLimit from "@fastify/rate-limit";
 import { env } from "./config.js";
 import { registerRoutes } from "./routes.js";
 import { ensureBuildFreshness } from "./lib/buildFreshness.js";
+import { ensurePrivateServerTable } from "./modules/privateServers.js";
 
 async function main() {
   await ensureBuildFreshness();
+  await ensurePrivateServerTable();
 
   const app = Fastify({
     logger: true,

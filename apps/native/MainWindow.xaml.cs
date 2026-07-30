@@ -1,5 +1,7 @@
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
+using SkiaSharp;
+using Svg.Skia;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -566,6 +568,7 @@ public partial class MainWindow : Window
                 JsonNode? optimization = null;
                 var returnToLauncher = true;
                 JsonObject? graphics = args.Count > 1 ? args[1] as JsonObject : null;
+                string? displayModeNote = null;
                 if (graphics is not null)
                 {
                     var applyAll = graphics["applyOnLaunch"]?.GetValue<bool>() == true;
@@ -574,6 +577,26 @@ public partial class MainWindow : Window
                         optimization = JsonSerializer.SerializeToNode(ApplyRobloxSettings(graphics));
                     returnToLauncher =
                         graphics["returnToLauncherOnExit"]?.GetValue<bool>() ?? true;
+
+                    var windowMode = graphics["preferredWindowMode"]?.GetValue<string>() ?? "windowed";
+                    var resolution = graphics["preferredResolution"]?.GetValue<string>() ?? "native";
+                    var aspectRatio = graphics["preferredAspectRatio"]?.GetValue<string>() ?? "native";
+                    var wantsFullscreen = windowMode is "fullscreen" or "borderless";
+                    if (wantsFullscreen &&
+                        TryResolveRobloxWindowSize(resolution, aspectRatio, out var width, out var height))
+                    {
+                        var (ok, message) = RobloxDisplayMode.TryApply(width, height);
+                        displayModeNote = message;
+                        if (!ok)
+                            Log($"Display mode not changed: {message}");
+                        else
+                            Log($"Display mode applied: {message}");
+                    }
+                    else if (!wantsFullscreen)
+                    {
+                        // Leaving fullscreen custom mode — restore if a previous launch changed it.
+                        RobloxDisplayMode.Restore();
+                    }
                 }
                 var existingRobloxPids = GetRobloxProcesses()
                     .Select(process => process.Id)
@@ -599,7 +622,12 @@ public partial class MainWindow : Window
 
                 if (returnToLauncher)
                     WindowState = WindowState.Minimized;
-                return JsonSerializer.SerializeToNode(new { ok = true, optimization });
+                return JsonSerializer.SerializeToNode(new
+                {
+                    ok = true,
+                    optimization,
+                    displayMode = displayModeNote,
+                });
             }
             case "auth:getPendingToken":
             {
@@ -609,6 +637,8 @@ public partial class MainWindow : Window
             }
             case "roblox:detect":
                 return JsonSerializer.SerializeToNode(DetectRoblox());
+            case "roblox:loggedInUser":
+                return JsonSerializer.SerializeToNode(RobloxLoggedInUser.Probe());
             case "roblox:isRunning":
                 return JsonValue.Create(GetRobloxProcesses().Length > 0);
             case "roblox:applySettings":
@@ -684,13 +714,15 @@ public partial class MainWindow : Window
             case "nickBadge:pick":
                 return JsonSerializer.SerializeToNode(PickCustomNickBadge());
             case "robloxAppIcon:pick":
-                return await Task.Run(() => JsonSerializer.SerializeToNode(RobloxAppIcon.PickCustomIcon()));
+                // OpenFileDialog + ShellLink COM require STA (WPF UI thread).
+                return await Dispatcher.InvokeAsync(() =>
+                    JsonSerializer.SerializeToNode(RobloxAppIcon.PickCustomIcon()));
             case "robloxAppIcon:apply":
             {
                 var payload = args[0] as JsonObject;
                 var mode = payload?["mode"]?.GetValue<string>() ?? "default";
                 var customUrl = payload?["customUrl"]?.GetValue<string>();
-                return await Task.Run(() =>
+                return await Dispatcher.InvokeAsync(() =>
                     JsonSerializer.SerializeToNode(RobloxAppIcon.Apply(mode, customUrl)));
             }
             default:
@@ -876,13 +908,43 @@ public partial class MainWindow : Window
 
             var quality = Math.Clamp(graphics["qualityLevel"]?.GetValue<int>() ?? 5, 1, 10);
             SetNamedValue(document, "SavedQualityLevel", quality.ToString());
+            SetNamedValue(document, "GraphicsQualityLevel", quality.ToString());
             applied.Add($"Quality: {quality}/10");
 
             var windowMode = graphics["preferredWindowMode"]?.GetValue<string>() ?? "windowed";
-            var fullscreen = windowMode is "fullscreen" or "borderless";
-            SetNamedValue(document, "Fullscreen", fullscreen ? "true" : "false");
-            SetNamedValue(document, "StartMaximized", fullscreen ? "true" : "false");
-            applied.Add(fullscreen ? "Fullscreen" : "Windowed");
+            var resolution = graphics["preferredResolution"]?.GetValue<string>() ?? "native";
+            var aspectRatio = graphics["preferredAspectRatio"]?.GetValue<string>() ?? "native";
+            var customSize = TryResolveRobloxWindowSize(resolution, aspectRatio, out var width, out var height);
+            var wantsFullscreen = windowMode is "fullscreen" or "borderless";
+
+            if (customSize && wantsFullscreen)
+            {
+                // CS-style: keep Roblox fullscreen; launcher changes the Windows display
+                // mode to the chosen resolution on launch and restores it when Roblox exits.
+                SetNamedValue(document, "Fullscreen", "true");
+                SetNamedValue(document, "StartMaximized", "true");
+                SetVector2(document, "StartScreenSize", width, height);
+                SetVector2(document, "StartScreenPosition", 0, 0);
+                applied.Add($"Fullscreen resolution: {width}x{height} (display mode on launch)");
+            }
+            else if (customSize)
+            {
+                SetNamedValue(document, "Fullscreen", "false");
+                SetNamedValue(document, "StartMaximized", "false");
+                SetVector2(document, "StartScreenSize", width, height);
+                var screenW = Math.Max(1, (int)SystemParameters.PrimaryScreenWidth);
+                var screenH = Math.Max(1, (int)SystemParameters.PrimaryScreenHeight);
+                var posX = Math.Max(0, (screenW - width) / 2);
+                var posY = Math.Max(0, (screenH - height) / 2);
+                SetVector2(document, "StartScreenPosition", posX, posY);
+                applied.Add($"Window size: {width}x{height}");
+            }
+            else
+            {
+                SetNamedValue(document, "Fullscreen", wantsFullscreen ? "true" : "false");
+                SetNamedValue(document, "StartMaximized", wantsFullscreen ? "true" : "false");
+                applied.Add(wantsFullscreen ? "Fullscreen" : "Windowed");
+            }
 
             var backupPath = settingsPath + ".sblauncher.backup";
             if (!File.Exists(backupPath))
@@ -929,6 +991,7 @@ public partial class MainWindow : Window
         "FFlagDebugGraphicsPreferVulkan",
         "FFlagDebugGraphicsPreferOpenGL",
         "FFlagHandleAltEnterFullscreenManually",
+        "DFFlagDisableDPIScale",
         "FFlagDebugDisableOTAMaterialTexture",
     ];
 
@@ -976,6 +1039,8 @@ public partial class MainWindow : Window
                     graphics["qualityLevel"]?.GetValue<int>() ?? 5,
                     1,
                     10);
+                var disableDpiScale =
+                    graphics["disableDpiScale"]?.GetValue<bool>() ?? false;
 
                 settings["FFlagDebugSkyGray"] = graySky ? "True" : "False";
                 settings["DFFlagTextureQualityOverrideEnabled"] =
@@ -993,6 +1058,8 @@ public partial class MainWindow : Window
                 settings["FFlagDebugGraphicsPreferOpenGL"] =
                     renderingMode == "opengl" ? "True" : "False";
                 settings["FFlagHandleAltEnterFullscreenManually"] = "True";
+                settings["DFFlagDisableDPIScale"] =
+                    disableDpiScale ? "True" : "False";
 
                 if (grassDistance != "default")
                 {
@@ -1009,11 +1076,98 @@ public partial class MainWindow : Window
         }
 
         if (enabled)
+        {
             applied.Add("Roblox-allowlisted FastFlags");
+            if (graphics["disableDpiScale"]?.GetValue<bool>() == true)
+                applied.Add("DPI scale disabled");
+        }
         else
             applied.Add("Allowlisted FastFlags disabled");
 
         return lastPath;
+    }
+
+    private static bool TryResolveRobloxWindowSize(
+        string resolution,
+        string aspectRatio,
+        out int width,
+        out int height)
+    {
+        width = 0;
+        height = 0;
+        var hasResolution = TryParseResolution(resolution, out var resW, out var resH);
+        var hasAspect = TryParseAspectRatio(aspectRatio, out var aspectW, out var aspectH);
+
+        if (!hasResolution && !hasAspect)
+            return false;
+
+        var screenW = Math.Max(640, (int)SystemParameters.PrimaryScreenWidth);
+        var screenH = Math.Max(480, (int)SystemParameters.PrimaryScreenHeight);
+
+        if (hasResolution && hasAspect)
+        {
+            width = resW;
+            height = Math.Max(480, (int)Math.Round(resW * (double)aspectH / aspectW));
+        }
+        else if (hasResolution)
+        {
+            width = resW;
+            height = resH;
+        }
+        else
+        {
+            width = Math.Min(screenW, 1920);
+            height = Math.Max(480, (int)Math.Round(width * (double)aspectH / aspectW));
+            if (height > screenH)
+            {
+                height = screenH;
+                width = Math.Max(640, (int)Math.Round(height * (double)aspectW / aspectH));
+            }
+        }
+
+        width = Math.Clamp(width, 640, Math.Max(640, screenW));
+        height = Math.Clamp(height, 480, Math.Max(480, screenH));
+        return true;
+    }
+
+    private static bool TryParseResolution(string value, out int width, out int height)
+    {
+        width = 0;
+        height = 0;
+        if (string.IsNullOrWhiteSpace(value) ||
+            value.Equals("native", StringComparison.OrdinalIgnoreCase))
+            return false;
+        var parts = value.Split('x', 'X', '×');
+        if (parts.Length != 2) return false;
+        if (!int.TryParse(parts[0].Trim(), out width) ||
+            !int.TryParse(parts[1].Trim(), out height))
+            return false;
+        return width >= 640 && height >= 480;
+    }
+
+    private static bool TryParseAspectRatio(string value, out int width, out int height)
+    {
+        width = 0;
+        height = 0;
+        if (string.IsNullOrWhiteSpace(value) ||
+            value.Equals("native", StringComparison.OrdinalIgnoreCase))
+            return false;
+        return value switch
+        {
+            "16:9" => AssignAspect(16, 9, out width, out height),
+            "16:10" => AssignAspect(16, 10, out width, out height),
+            "4:3" => AssignAspect(4, 3, out width, out height),
+            "21:9" => AssignAspect(21, 9, out width, out height),
+            "1:1" => AssignAspect(1, 1, out width, out height),
+            _ => false,
+        };
+    }
+
+    private static bool AssignAspect(int w, int h, out int width, out int height)
+    {
+        width = w;
+        height = h;
+        return true;
     }
 
     private async Task MonitorRobloxSessionAsync(
@@ -1043,6 +1197,7 @@ public partial class MainWindow : Window
             if (sessionProcesses.Length == 0)
             {
                 // Roblox never started — drop "Playing" Discord activity.
+                RobloxDisplayMode.Restore();
                 await Dispatcher.InvokeAsync(() =>
                 {
                     _discordPresence?.SetBrowsing();
@@ -1135,6 +1290,8 @@ public partial class MainWindow : Window
             if (shouldCloseRoblox)
                 CloseAllRobloxProcesses();
 
+            RobloxDisplayMode.Restore();
+
             await Dispatcher.InvokeAsync(() =>
             {
                 _discordPresence?.SetBrowsing();
@@ -1145,10 +1302,12 @@ public partial class MainWindow : Window
         catch (OperationCanceledException)
         {
             // A newer launch or app shutdown replaced this monitor.
+            // Don't restore display here — openRoblox / Closing own that.
         }
         catch (Exception ex)
         {
             Log($"Roblox session monitor failed: {ex.Message}");
+            RobloxDisplayMode.Restore();
             await Dispatcher.InvokeAsync(() =>
             {
                 _discordPresence?.SetBrowsing();
@@ -1518,7 +1677,7 @@ public partial class MainWindow : Window
             }
 
             ApplyWindowChrome(background, text, accent, accentSecondary, corner);
-            ApplySplashThemeColors(background, text, accent, accentSecondary, textMuted);
+            ApplySplashThemeFromPrefs();
         }
         catch (Exception ex)
         {
@@ -1617,7 +1776,21 @@ public partial class MainWindow : Window
             var textMuted = theme?["textMuted"]?.GetValue<string>() ?? "#CAC4D0";
             var accent = theme?["accent"]?.GetValue<string>() ?? "#9A82DB";
             var accentSecondary = theme?["accentSecondary"]?.GetValue<string>() ?? accent;
-            ApplySplashThemeColors(background, text, accent, accentSecondary, textMuted);
+            var wallpaperId = theme?["wallpaperId"]?.GetValue<string>()
+                              ?? theme?["backgroundImage"]?.GetValue<string>();
+            var wallpaperOpacity = theme?["wallpaperOpacity"]?.GetValue<double?>() ?? 0.55;
+            var wallpaperDim = theme?["wallpaperDim"]?.GetValue<double?>() ?? 0.45;
+            var wallpaperBlur = theme?["wallpaperBlur"]?.GetValue<double?>() ?? 0;
+            ApplySplashThemeColors(
+                background,
+                text,
+                accent,
+                accentSecondary,
+                textMuted,
+                wallpaperId,
+                wallpaperOpacity,
+                wallpaperDim,
+                wallpaperBlur);
         }
         catch (Exception ex)
         {
@@ -1630,7 +1803,11 @@ public partial class MainWindow : Window
         string textHex,
         string accentHex,
         string accentSecondaryHex,
-        string? textMutedHex = null)
+        string? textMutedHex = null,
+        string? wallpaperId = null,
+        double? wallpaperOpacity = null,
+        double? wallpaperDim = null,
+        double? wallpaperBlur = null)
     {
         try
         {
@@ -1642,19 +1819,30 @@ public partial class MainWindow : Window
                 string.IsNullOrWhiteSpace(textMutedHex) ? "#CAC4D0" : textMutedHex);
 
             if (Splash is not null)
+                Splash.Background = new SolidColorBrush(background);
+
+            ApplySplashWallpaper(
+                wallpaperId,
+                background,
+                wallpaperOpacity ?? 0.55,
+                wallpaperDim ?? 0.45,
+                wallpaperBlur ?? 0);
+
+            if (SplashGlow is not null)
             {
-                var brush = new RadialGradientBrush
+                SplashGlow.Background = new RadialGradientBrush
                 {
-                    Center = new Point(0.28, 0.18),
-                    GradientOrigin = new Point(0.28, 0.18),
-                    RadiusX = 0.9,
-                    RadiusY = 0.9,
+                    Center = new Point(0.5, 0.32),
+                    GradientOrigin = new Point(0.5, 0.28),
+                    RadiusX = 0.72,
+                    RadiusY = 0.55,
+                    GradientStops =
+                    [
+                        new GradientStop(Color.FromArgb(0x66, accent.R, accent.G, accent.B), 0),
+                        new GradientStop(Color.FromArgb(0x28, secondary.R, secondary.G, secondary.B), 0.45),
+                        new GradientStop(Color.FromArgb(0, 0, 0, 0), 1),
+                    ],
                 };
-                // Match web boot: accent glow → secondary wash → solid theme background.
-                brush.GradientStops.Add(new GradientStop(MixColors(accent, background, 0.42), 0));
-                brush.GradientStops.Add(new GradientStop(MixColors(secondary, background, 0.72), 0.45));
-                brush.GradientStops.Add(new GradientStop(background, 1));
-                Splash.Background = brush;
             }
 
             if (LogoTrack is not null)
@@ -1674,6 +1862,134 @@ public partial class MainWindow : Window
         {
             Log($"ApplySplashThemeColors failed: {ex.Message}");
         }
+    }
+
+    private void ApplySplashWallpaper(
+        string? wallpaperId,
+        Color background,
+        double opacity,
+        double dim,
+        double blur)
+    {
+        if (SplashWallpaper is null || SplashDim is null)
+            return;
+
+        var path = ResolveSplashWallpaperPath(wallpaperId);
+        ImageSource? source = null;
+        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+        {
+            try
+            {
+                source = Path.GetExtension(path).Equals(".svg", StringComparison.OrdinalIgnoreCase)
+                    ? RenderSvgWallpaper(path)
+                    : LoadRasterWallpaper(path);
+            }
+            catch (Exception ex)
+            {
+                Log($"Splash wallpaper decode failed: {ex.Message}");
+            }
+        }
+
+        if (source is not null)
+        {
+            SplashWallpaper.Source = source;
+            SplashWallpaper.Opacity = Math.Clamp(opacity, 0.25, 1);
+            if (blur > 0.5)
+                SplashWallpaper.Effect = new System.Windows.Media.Effects.BlurEffect
+                {
+                    Radius = Math.Clamp(blur, 0, 24),
+                };
+            else
+                SplashWallpaper.Effect = null;
+
+            var dimA = (byte)Math.Clamp((int)Math.Round(Math.Clamp(dim, 0.15, 0.85) * 255), 40, 220);
+            SplashDim.Background = new SolidColorBrush(
+                Color.FromArgb(dimA, background.R, background.G, background.B));
+            SplashDim.Visibility = Visibility.Visible;
+            SplashWallpaper.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            SplashWallpaper.Source = null;
+            SplashWallpaper.Opacity = 0;
+            SplashWallpaper.Effect = null;
+            SplashWallpaper.Visibility = Visibility.Collapsed;
+            // Soft tint so color-only splash still feels themed.
+            SplashDim.Background = new SolidColorBrush(
+                Color.FromArgb(0x40, background.R, background.G, background.B));
+            SplashDim.Visibility = Visibility.Visible;
+        }
+    }
+
+    private string? ResolveSplashWallpaperPath(string? wallpaperId)
+    {
+        if (string.IsNullOrWhiteSpace(wallpaperId))
+            return null;
+
+        var id = wallpaperId.Trim();
+        // Custom files live under %LOCALAPPDATA%\SB Launcher\wallpapers
+        if (Directory.Exists(_wallpaperDirectory))
+        {
+            foreach (var file in Directory.EnumerateFiles(_wallpaperDirectory))
+            {
+                var name = Path.GetFileNameWithoutExtension(file);
+                if (name.Equals(id, StringComparison.OrdinalIgnoreCase) ||
+                    Path.GetFileName(file).Equals(id, StringComparison.OrdinalIgnoreCase))
+                    return file;
+            }
+        }
+
+        // Bundled presets shipped next to the EXE.
+        var bundled = Path.Combine(AppContext.BaseDirectory, "Assets", "wallpapers", $"{id}.svg");
+        if (File.Exists(bundled))
+            return bundled;
+        bundled = Path.Combine(AppContext.BaseDirectory, "Assets", "wallpapers", id);
+        return File.Exists(bundled) ? bundled : null;
+    }
+
+    private static BitmapSource? LoadRasterWallpaper(string path)
+    {
+        using var stream = File.OpenRead(path);
+        var decoder = BitmapDecoder.Create(
+            stream,
+            BitmapCreateOptions.PreservePixelFormat,
+            BitmapCacheOption.OnLoad);
+        var frame = decoder.Frames[0];
+        frame.Freeze();
+        return frame;
+    }
+
+    private static BitmapSource? RenderSvgWallpaper(string path)
+    {
+        var svg = new SKSvg();
+        if (svg.Load(path) is null || svg.Picture is null)
+            return null;
+
+        var bounds = svg.Picture.CullRect;
+        if (bounds.Width < 1 || bounds.Height < 1)
+            return null;
+
+        // High enough for crisp splash cover on 1080p–1440p windows.
+        const int targetW = 1920;
+        var scale = targetW / bounds.Width;
+        var targetH = Math.Max(1, (int)Math.Round(bounds.Height * scale));
+        var info = new SKImageInfo(targetW, targetH, SKColorType.Bgra8888, SKAlphaType.Premul);
+        using var surface = SKSurface.Create(info);
+        var canvas = surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        canvas.Scale(scale);
+        canvas.DrawPicture(svg.Picture);
+        using var image = surface.Snapshot();
+        using var png = image.Encode(SKEncodedImageFormat.Png, 92);
+        if (png is null) return null;
+
+        var bitmap = new BitmapImage();
+        bitmap.BeginInit();
+        bitmap.StreamSource = new MemoryStream(png.ToArray());
+        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+        bitmap.EndInit();
+        bitmap.Freeze();
+        return bitmap;
     }
 
     private static Color MixColors(Color from, Color to, double amount)
@@ -1697,6 +2013,37 @@ public partial class MainWindow : Window
             var textMuted = SanitizeCssColor(theme?["textMuted"]?.GetValue<string>(), "#CAC4D0");
             var accent = SanitizeCssColor(theme?["accent"]?.GetValue<string>(), "#9A82DB");
             var secondary = SanitizeCssColor(theme?["accentSecondary"]?.GetValue<string>(), accent);
+            var wallpaperId = theme?["wallpaperId"]?.GetValue<string>()
+                              ?? theme?["backgroundImage"]?.GetValue<string>()
+                              ?? "";
+            var wallpaperOpacity = theme?["wallpaperOpacity"]?.GetValue<double?>() ?? 0.55;
+            var wallpaperDim = theme?["wallpaperDim"]?.GetValue<double?>() ?? 0.45;
+            var wallpaperBlur = theme?["wallpaperBlur"]?.GetValue<double?>() ?? 0;
+            var wallpaperPath = ResolveSplashWallpaperPath(wallpaperId);
+            var wallpaperUrl = "";
+            if (!string.IsNullOrWhiteSpace(wallpaperPath) && File.Exists(wallpaperPath))
+            {
+                var file = Path.GetFileName(wallpaperPath);
+                // Custom files are mapped via virtual host; bundled live under Assets.
+                if (wallpaperPath.StartsWith(_wallpaperDirectory, StringComparison.OrdinalIgnoreCase))
+                    wallpaperUrl = $"https://wallpapers.sblauncher/{file}";
+                else
+                {
+                    // Data URL for bundled SVG so boot CSS paints before React hydrates.
+                    var bytes = File.ReadAllBytes(wallpaperPath);
+                    var b64 = Convert.ToBase64String(bytes);
+                    var mime = Path.GetExtension(wallpaperPath).Equals(".svg", StringComparison.OrdinalIgnoreCase)
+                        ? "image/svg+xml"
+                        : "image/png";
+                    wallpaperUrl = $"data:{mime};base64,{b64}";
+                }
+            }
+
+            var safeWallpaperUrl = wallpaperUrl
+                .Replace("\\", "\\\\")
+                .Replace("'", "\\'")
+                .Replace("\r", "")
+                .Replace("\n", "");
 
             return $$"""
 (() => {
@@ -1714,6 +2061,10 @@ public partial class MainWindow : Window
     set('--sb-on-surface', '{{text}}');
     set('--sb-text-muted', '{{textMuted}}');
     set('--sb-on-surface-variant', '{{textMuted}}');
+    set('--sb-wallpaper-opacity', '{{wallpaperOpacity.ToString(System.Globalization.CultureInfo.InvariantCulture)}}');
+    set('--sb-wallpaper-dim', '{{wallpaperDim.ToString(System.Globalization.CultureInfo.InvariantCulture)}}');
+    set('--sb-wallpaper-blur', '{{wallpaperBlur.ToString(System.Globalization.CultureInfo.InvariantCulture)}}px');
+    {{(string.IsNullOrEmpty(safeWallpaperUrl) ? "set('--sb-boot-wallpaper', 'none');" : $"set('--sb-boot-wallpaper', \"url('{safeWallpaperUrl}')\");")}}
   } catch (_) {}
 })();
 """;
@@ -1865,10 +2216,23 @@ public partial class MainWindow : Window
         Directory.CreateDirectory(_nickBadgeDirectory);
         var id = $"badge-{Guid.NewGuid():N}";
         var file = $"{id}{extension}";
-        File.Copy(dialog.FileName, Path.Combine(_nickBadgeDirectory, file), true);
+        var target = Path.Combine(_nickBadgeDirectory, file);
+        File.Copy(dialog.FileName, target, true);
+        var bytes = File.ReadAllBytes(target);
+        if (bytes.Length == 0 || bytes.Length > 3_500_000)
+            throw new ArgumentException("Badge image must be between 1 byte and ~3.5 MB.");
+
         return new
         {
             url = $"https://badges.sblauncher/{file}?v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
+            dataBase64 = Convert.ToBase64String(bytes),
+            contentType = extension switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".webp" => "image/webp",
+                ".bmp" => "image/bmp",
+                _ => "image/png",
+            },
         };
     }
 
@@ -1885,13 +2249,30 @@ public partial class MainWindow : Window
         if (extension is not (".png" or ".jpg" or ".jpeg" or ".webp" or ".bmp"))
             throw new ArgumentException("Unsupported profile picture format.");
 
+        Directory.CreateDirectory(_profileAvatarDirectory);
         foreach (var existing in Directory.EnumerateFiles(_profileAvatarDirectory))
         {
-            try { File.Delete(existing); } catch { }
+            try { File.Delete(existing); } catch { /* ignore */ }
         }
         var file = $"avatar{extension}";
-        File.Copy(dialog.FileName, Path.Combine(_profileAvatarDirectory, file), true);
-        return new { url = $"https://profile.sblauncher/{file}?v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}" };
+        var target = Path.Combine(_profileAvatarDirectory, file);
+        File.Copy(dialog.FileName, target, true);
+        var bytes = File.ReadAllBytes(target);
+        if (bytes.Length == 0 || bytes.Length > 3_500_000)
+            throw new ArgumentException("Profile picture must be between 1 byte and ~3.5 MB.");
+
+        return new
+        {
+            url = $"https://profile.sblauncher/{file}?v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
+            dataBase64 = Convert.ToBase64String(bytes),
+            contentType = extension switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".webp" => "image/webp",
+                ".bmp" => "image/bmp",
+                _ => "image/png",
+            },
+        };
     }
 
     private List<object> ListCustomWallpapers()
@@ -1956,6 +2337,7 @@ public partial class MainWindow : Window
         _robloxSessionMonitorCts?.Cancel();
         _updater?.Cancel();
         _authTimer.Stop();
+        try { RobloxDisplayMode.Restore(); } catch { /* ignore */ }
         try { _discordPresence?.Dispose(); } catch { /* ignore */ }
         _discordPresence = null;
         if (_apiProcess is { HasExited: false })
@@ -2004,6 +2386,7 @@ public partial class MainWindow : Window
     openRoblox: (url, graphics) => call('shell:openRoblox', url, graphics),
     getPendingAuthToken: () => call('auth:getPendingToken'),
     detectRoblox: () => call('roblox:detect'),
+    getRobloxLoggedInUser: () => call('roblox:loggedInUser'),
     isRobloxRunning: () => call('roblox:isRunning'),
     applyRobloxSettings: graphics => call('roblox:applySettings', graphics),
     pickRobloxFont: () => call('roblox:pickFont'),

@@ -1,5 +1,6 @@
-import { api } from "../lib/api";
+import { api } from "./api";
 import { useAppStore } from "../store";
+import { ensureLaunchAccountMatches } from "./launchGate";
 
 async function resolveGameIconUrl(placeId?: string, iconUrl?: string | null): Promise<string | undefined> {
   const existing = iconUrl?.trim();
@@ -22,18 +23,23 @@ export async function launchExperience(input: {
   placeId?: string;
   gameInstanceId?: string;
   userId?: string;
+  accessCode?: string;
   universeId?: string;
   name?: string;
   iconUrl?: string | null;
   creatorName?: string | null;
   serverType?: "public" | "private" | "reserved";
 }) {
-  const result = await api.launch(input);
+  const allowed = await ensureLaunchAccountMatches();
+  if (!allowed) return null;
+
+  const accessCode = input.accessCode?.trim() || undefined;
+  const result = await api.launch({ ...input, accessCode });
   const open = window.sbDesktop?.openRoblox;
   if (open) {
     const serverType =
       input.serverType ??
-      (input.gameInstanceId?.trim() ? "public" : undefined);
+      (accessCode ? "private" : input.gameInstanceId?.trim() ? "public" : undefined);
     const placeId = input.placeId != null && String(input.placeId).trim()
       ? String(input.placeId).trim()
       : undefined;

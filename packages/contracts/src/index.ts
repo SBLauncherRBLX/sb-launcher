@@ -84,13 +84,34 @@ export const CapabilitySchema = z.object({
 });
 export type Capabilities = z.infer<typeof CapabilitySchema>;
 
+/** Roblox account remembered on this PC via OAuth (launcher identity). */
+export const SavedAccountSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+  displayName: z.string(),
+  avatarUrl: z.string().nullable(),
+  profileUrl: z.string().url(),
+  lastUsedAt: z.string().nullable().optional(),
+});
+export type SavedAccount = z.infer<typeof SavedAccountSchema>;
+
 export const SessionSchema = z.object({
   authenticated: z.boolean(),
   user: UserProfileSchema.nullable(),
   capabilities: CapabilitySchema,
   scopes: z.array(z.string()),
+  /** Saved OAuth accounts on this machine (switcher list). */
+  accounts: z.array(SavedAccountSchema).default([]),
+  /** Active Roblox user id when authenticated. */
+  activeUserId: z.string().nullable().default(null),
 });
 export type Session = z.infer<typeof SessionSchema>;
+
+export const AccountSwitchResponseSchema = z.object({
+  sessionToken: z.string(),
+  session: SessionSchema,
+});
+export type AccountSwitchResponse = z.infer<typeof AccountSwitchResponseSchema>;
 
 export const GameSummarySchema = z.object({
   universeId: z.string(),
@@ -219,6 +240,87 @@ export const ServerInfoSchema = z.object({
 });
 export type ServerInfo = z.infer<typeof ServerInfoSchema>;
 
+/** Saved VIP / private server invite managed in SB Launcher (OAuth-safe). */
+export const SavedPrivateServerSchema = z.object({
+  id: z.string(),
+  universeId: z.string(),
+  placeId: z.string(),
+  accessCode: z.string().min(4).max(256),
+  label: z.string().min(1).max(64),
+  gameName: z.string().optional().nullable(),
+  iconUrl: z.string().nullable().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+});
+export type SavedPrivateServer = z.infer<typeof SavedPrivateServerSchema>;
+
+export const PrivateServerInviteSchema = z.object({
+  placeId: z.string().optional(),
+  accessCode: z.string().min(4).max(256),
+});
+export type PrivateServerInvite = z.infer<typeof PrivateServerInviteSchema>;
+
+/**
+ * Parse a VIP invite URL, deep link, or raw access code.
+ * Supports privateServerLinkCode / accessCode / share?code= / roblox:// links.
+ */
+export function parsePrivateServerInvite(
+  input: string,
+  fallbackPlaceId?: string | null,
+): PrivateServerInvite | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  const fallback = fallbackPlaceId?.trim() || undefined;
+
+  const fromParams = (params: URLSearchParams, pathPlaceId?: string): PrivateServerInvite | null => {
+    const accessCode =
+      params.get("accessCode")?.trim() ||
+      params.get("privateServerLinkCode")?.trim() ||
+      params.get("linkCode")?.trim() ||
+      (params.get("type")?.toLowerCase() === "server" ? params.get("code")?.trim() : null) ||
+      null;
+    const placeId =
+      params.get("placeId")?.trim() ||
+      pathPlaceId?.trim() ||
+      fallback;
+    if (!accessCode) return null;
+    return placeId ? { placeId, accessCode } : { accessCode };
+  };
+
+  try {
+    if (raw.startsWith("roblox://") || raw.startsWith("roblox-player:")) {
+      const normalized = raw.replace(/^roblox-player:/i, "roblox://");
+      const url = new URL(normalized);
+      const parsed = fromParams(url.searchParams);
+      if (parsed?.accessCode) {
+        return parsed.placeId || fallback
+          ? { placeId: parsed.placeId ?? fallback, accessCode: parsed.accessCode }
+          : null;
+      }
+    }
+
+    const withProtocol = /^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`;
+    const url = new URL(withProtocol);
+    const pathPlace = url.pathname.match(/\/games\/(\d+)/)?.[1];
+    const parsed = fromParams(url.searchParams, pathPlace);
+    if (parsed?.accessCode) {
+      return parsed.placeId || fallback
+        ? { placeId: parsed.placeId ?? fallback, accessCode: parsed.accessCode }
+        : null;
+    }
+  } catch {
+    // fall through to raw code
+  }
+
+  if (/^[A-Za-z0-9_-]{6,256}$/.test(raw) && fallback) {
+    return { placeId: fallback, accessCode: raw };
+  }
+  return null;
+}
+
+export function buildPrivateServerInviteUrl(placeId: string, accessCode: string): string {
+  return `https://www.roblox.com/games/${encodeURIComponent(placeId)}?privateServerLinkCode=${encodeURIComponent(accessCode)}`;
+}
 export const FriendPresenceSchema = z.object({
   userId: z.string(),
   username: z.string(),
@@ -380,8 +482,22 @@ export type VisualTheme = z.infer<typeof VisualThemeSchema>;
 export const SafeGraphicsSettingsSchema = z.object({
   preferredWindowMode: z.enum(["windowed", "fullscreen", "borderless"]).default("windowed"),
   preferredResolution: z
-    .enum(["native", "1920x1080", "1600x900", "1280x720"])
+    .enum([
+      "native",
+      "2560x1440",
+      "1920x1080",
+      "1600x900",
+      "1366x768",
+      "1280x720",
+      "1024x768",
+    ])
     .default("native"),
+  /** Window aspect ratio (windowed). Combined with resolution when both are set. */
+  preferredAspectRatio: z
+    .enum(["native", "16:9", "16:10", "4:3", "21:9", "1:1"])
+    .default("native"),
+  /** Disable Windows DPI scaling of the Roblox render buffer (allowlisted FFlag). */
+  disableDpiScale: z.boolean().default(false),
   fpsCapHint: z.enum(["unlimited", "240", "144", "120", "60", "30"]).default("60"),
   qualityLevel: z.number().int().min(1).max(10).default(5),
   optimizationPreset: z
@@ -567,6 +683,9 @@ export function buildRobloxDeepLink(target: LaunchTarget): string {
 
 export function buildWebLaunchUrl(target: LaunchTarget): string {
   if (target.placeId) {
+    if (target.accessCode) {
+      return buildPrivateServerInviteUrl(target.placeId, target.accessCode);
+    }
     const base = `https://www.roblox.com/games/start?placeId=${encodeURIComponent(target.placeId)}`;
     if (target.gameInstanceId) {
       return `${base}&gameInstanceId=${encodeURIComponent(target.gameInstanceId)}`;

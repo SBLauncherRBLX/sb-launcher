@@ -23,6 +23,7 @@ model User {
   themePresets ThemePreset[]
   outfits      OutfitPreset[]
   preferences  UserPreferences?
+  privateServers PrivateServer[]
 }
 
 model OAuthGrant {
@@ -67,6 +68,23 @@ model Favorite {
   createdAt  DateTime @default(now())
 
   @@unique([userId, universeId])
+}
+
+model PrivateServer {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  universeId String
+  placeId    String
+  accessCode String
+  label      String
+  gameName   String?
+  iconUrl    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, placeId, accessCode])
+  @@index([userId, universeId])
 }
 
 model HistoryEntry {

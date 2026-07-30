@@ -46,7 +46,6 @@ export function GameCard({
   const Wrapper = motionEnabled ? motion.div : "div";
   const motionProps = motionEnabled
     ? {
-        whileHover: { y: -4, scale: 1.02, transition: springSnappy },
         whileTap: { scale: 0.98, transition: springSnappy },
       }
     : {};

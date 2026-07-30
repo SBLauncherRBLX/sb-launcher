@@ -88,39 +88,55 @@
 
         <wv2:WebView2 x:Name="Browser" Grid.Row="1" Visibility="Hidden" />
 
-        <Grid x:Name="Splash" Grid.Row="1">
-            <Grid.Background>
-                <RadialGradientBrush Center="0.28,0.18" GradientOrigin="0.28,0.18"
-                                     RadiusX="0.9" RadiusY="0.9">
-                    <GradientStop Color="#342968" Offset="0"/>
-                    <GradientStop Color="#151525" Offset="0.45"/>
-                    <GradientStop Color="#0B0D14" Offset="1"/>
-                </RadialGradientBrush>
-            </Grid.Background>
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Grid x:Name="StartupProgress" Width="128" Height="128" HorizontalAlignment="Center">
-                    <Viewbox Width="128" Height="128" Stretch="Uniform">
-                        <Canvas Width="100" Height="100">
-                            <Path x:Name="LogoTrack" Stroke="#4A4458" StrokeThickness="3.1" Fill="Transparent"
-                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
-                                  Data="M 1.95,49.90 L 2.93,44.04 L 5.18,39.45 L 8.20,35.64 L 11.82,32.32 L 15.72,29.39 L 19.63,26.46 L 23.14,23.14 L 26.46,19.63 L 29.39,15.72 L 32.32,11.82 L 35.64,8.20 L 39.45,5.18 L 44.04,2.93 L 50.00,1.95 L 55.86,2.93 L 60.45,5.18 L 64.26,8.30 L 67.58,11.82 L 70.51,15.72 L 73.44,19.63 L 76.76,23.14 L 80.27,26.46 L 84.18,29.39 L 88.09,32.32 L 91.60,35.64 L 94.73,39.45 L 96.97,44.04 L 97.95,50.00 L 96.97,55.86 L 94.73,60.45 L 91.70,64.26 L 88.09,67.58 L 84.18,70.51 L 80.27,73.44 L 76.66,76.66 L 73.44,80.27 L 70.51,84.18 L 67.58,88.09 L 64.26,91.70 L 60.45,94.73 L 55.86,96.97 L 49.90,97.95 L 44.04,96.97 L 39.45,94.73 L 35.64,91.70 L 32.32,88.09 L 29.39,84.18 L 26.46,80.27 L 23.24,76.66 L 19.63,73.44 L 15.72,70.51 L 11.82,67.58 L 8.20,64.26 L 5.18,60.45 L 2.93,55.86 Z"/>
-                            <Path x:Name="LogoSnake" Stroke="#9A82DB" StrokeThickness="3.4" Fill="Transparent"
-                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
-                                  StrokeDashArray="48 232" StrokeDashOffset="0"
-                                  Data="M 1.95,49.90 L 2.93,44.04 L 5.18,39.45 L 8.20,35.64 L 11.82,32.32 L 15.72,29.39 L 19.63,26.46 L 23.14,23.14 L 26.46,19.63 L 29.39,15.72 L 32.32,11.82 L 35.64,8.20 L 39.45,5.18 L 44.04,2.93 L 50.00,1.95 L 55.86,2.93 L 60.45,5.18 L 64.26,8.30 L 67.58,11.82 L 70.51,15.72 L 73.44,19.63 L 76.76,23.14 L 80.27,26.46 L 84.18,29.39 L 88.09,32.32 L 91.60,35.64 L 94.73,39.45 L 96.97,44.04 L 97.95,50.00 L 96.97,55.86 L 94.73,60.45 L 91.70,64.26 L 88.09,67.58 L 84.18,70.51 L 80.27,73.44 L 76.66,76.66 L 73.44,80.27 L 70.51,84.18 L 67.58,88.09 L 64.26,91.70 L 60.45,94.73 L 55.86,96.97 L 49.90,97.95 L 44.04,96.97 L 39.45,94.73 L 35.64,91.70 L 32.32,88.09 L 29.39,84.18 L 26.46,80.27 L 23.24,76.66 L 19.63,73.44 L 15.72,70.51 L 11.82,67.58 L 8.20,64.26 L 5.18,60.45 L 2.93,55.86 Z"/>
-                        </Canvas>
-                    </Viewbox>
-                </Grid>
-                <TextBlock x:Name="SplashTitle" Text="SB Launcher" Foreground="#E6E1E5" FontSize="28"
-                           FontWeight="SemiBold" HorizontalAlignment="Center"
-                           Margin="0,22,0,4"/>
-                <TextBlock x:Name="StatusText" Text="Starting secure services…"
-                           Foreground="#CAC4D0" FontSize="14"
-                           HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                <Button x:Name="RetryButton" Content="Retry" Visibility="Collapsed"
-                        Width="110" Height="38" Margin="0,20,0,0"
-                        Click="RetryButton_Click"/>
-            </StackPanel>
+        <Grid x:Name="Splash" Grid.Row="1" Background="#0B0D14">
+            <Image x:Name="SplashWallpaper"
+                   Stretch="UniformToFill"
+                   Opacity="0"
+                   RenderOptions.BitmapScalingMode="HighQuality"/>
+            <Border x:Name="SplashDim" Background="#990B0D14" IsHitTestVisible="False"/>
+            <Border x:Name="SplashGlow"
+                    IsHitTestVisible="False"
+                    Opacity="0.85">
+                <Border.Background>
+                    <RadialGradientBrush Center="0.5,0.35" GradientOrigin="0.5,0.3"
+                                         RadiusX="0.7" RadiusY="0.55">
+                        <GradientStop Color="#667C5CFF" Offset="0"/>
+                        <GradientStop Color="#00000000" Offset="1"/>
+                    </RadialGradientBrush>
+                </Border.Background>
+            </Border>
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Padding="36,32" CornerRadius="24"
+                    Background="#6612141C"
+                    BorderBrush="#33FFFFFF" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="32" ShadowDepth="0" Opacity="0.45" Color="#000000"/>
+                </Border.Effect>
+                <StackPanel HorizontalAlignment="Center">
+                    <Grid x:Name="StartupProgress" Width="112" Height="112" HorizontalAlignment="Center">
+                        <Viewbox Width="112" Height="112" Stretch="Uniform">
+                            <Canvas Width="100" Height="100">
+                                <Path x:Name="LogoTrack" Stroke="#4A4458" StrokeThickness="3.1" Fill="Transparent"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                      Data="M 1.95,49.90 L 2.93,44.04 L 5.18,39.45 L 8.20,35.64 L 11.82,32.32 L 15.72,29.39 L 19.63,26.46 L 23.14,23.14 L 26.46,19.63 L 29.39,15.72 L 32.32,11.82 L 35.64,8.20 L 39.45,5.18 L 44.04,2.93 L 50.00,1.95 L 55.86,2.93 L 60.45,5.18 L 64.26,8.30 L 67.58,11.82 L 70.51,15.72 L 73.44,19.63 L 76.76,23.14 L 80.27,26.46 L 84.18,29.39 L 88.09,32.32 L 91.60,35.64 L 94.73,39.45 L 96.97,44.04 L 97.95,50.00 L 96.97,55.86 L 94.73,60.45 L 91.70,64.26 L 88.09,67.58 L 84.18,70.51 L 80.27,73.44 L 76.66,76.66 L 73.44,80.27 L 70.51,84.18 L 67.58,88.09 L 64.26,91.70 L 60.45,94.73 L 55.86,96.97 L 49.90,97.95 L 44.04,96.97 L 39.45,94.73 L 35.64,91.70 L 32.32,88.09 L 29.39,84.18 L 26.46,80.27 L 23.24,76.66 L 19.63,73.44 L 15.72,70.51 L 11.82,67.58 L 8.20,64.26 L 5.18,60.45 L 2.93,55.86 Z"/>
+                                <Path x:Name="LogoSnake" Stroke="#9A82DB" StrokeThickness="3.4" Fill="Transparent"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                      StrokeDashArray="48 232" StrokeDashOffset="0"
+                                      Data="M 1.95,49.90 L 2.93,44.04 L 5.18,39.45 L 8.20,35.64 L 11.82,32.32 L 15.72,29.39 L 19.63,26.46 L 23.14,23.14 L 26.46,19.63 L 29.39,15.72 L 32.32,11.82 L 35.64,8.20 L 39.45,5.18 L 44.04,2.93 L 50.00,1.95 L 55.86,2.93 L 60.45,5.18 L 64.26,8.30 L 67.58,11.82 L 70.51,15.72 L 73.44,19.63 L 76.76,23.14 L 80.27,26.46 L 84.18,29.39 L 88.09,32.32 L 91.60,35.64 L 94.73,39.45 L 96.97,44.04 L 97.95,50.00 L 96.97,55.86 L 94.73,60.45 L 91.70,64.26 L 88.09,67.58 L 84.18,70.51 L 80.27,73.44 L 76.66,76.66 L 73.44,80.27 L 70.51,84.18 L 67.58,88.09 L 64.26,91.70 L 60.45,94.73 L 55.86,96.97 L 49.90,97.95 L 44.04,96.97 L 39.45,94.73 L 35.64,91.70 L 32.32,88.09 L 29.39,84.18 L 26.46,80.27 L 23.24,76.66 L 19.63,73.44 L 15.72,70.51 L 11.82,67.58 L 8.20,64.26 L 5.18,60.45 L 2.93,55.86 Z"/>
+                            </Canvas>
+                        </Viewbox>
+                    </Grid>
+                    <TextBlock x:Name="SplashTitle" Text="SB Launcher" Foreground="#E6E1E5" FontSize="26"
+                               FontWeight="SemiBold" HorizontalAlignment="Center"
+                               Margin="0,18,0,6"/>
+                    <TextBlock x:Name="StatusText" Text="Starting secure services…"
+                               Foreground="#CAC4D0" FontSize="13.5"
+                               HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <Button x:Name="RetryButton" Content="Retry" Visibility="Collapsed"
+                            Width="110" Height="38" Margin="0,16,0,0"
+                            Click="RetryButton_Click"/>
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </Window>

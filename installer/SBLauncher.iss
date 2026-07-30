@@ -1,5 +1,5 @@
 #define MyAppName "SB Launcher"
-#define MyAppVersion "2.4.3"
+#define MyAppVersion "2.5.0"
 #define MyAppPublisher "SB Launcher"
 #define MyAppExeName "SB Launcher.exe"
 
@@ -61,7 +61,7 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
 Type: filesandordirs; Name: "{localappdata}\SB Launcher"; Check: UninstallRemoveSavedData
 
 [Code]
-{ SB Launcher dark theme — classic purple progress bar. }
+{ SB Launcher dark theme вЂ” classic purple progress bar. }
 { TColor/COLORREF are BGR, so hex values below are reversed. }
 const
   BgColor = $181214;         { #141218 }
@@ -372,3 +372,4 @@ begin
     FadeTimer := 0;
   end;
 end;
+

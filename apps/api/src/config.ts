@@ -20,7 +20,7 @@ const EnvSchema = z.object({
     .string()
     .default("openid profile user.social:read user.inventory-item:read"),
   SB_BUILD_ID: z.string().optional().default(""),
-  SB_APP_VERSION: z.string().optional().default("2.4.3"),
+  SB_APP_VERSION: z.string().optional().default("2.5.0"),
   /** Cloudflare Worker base URL. Empty/whitespace falls back to the public Worker. */
   SB_CLOUD_URL: z.preprocess(
     (value) => {
@@ -46,3 +46,4 @@ if (!isAllowedCloudBaseUrl(env.SB_CLOUD_URL)) {
 // Roblox supports Authorization Code + PKCE for public desktop clients,
 // so a Client ID is sufficient and no secret is embedded in the app.
 export const oauthConfigured = Boolean(env.ROBLOX_CLIENT_ID);
+

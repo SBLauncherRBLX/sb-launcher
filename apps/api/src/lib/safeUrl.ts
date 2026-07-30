@@ -37,6 +37,10 @@ export function sanitizeMediaUrl(value: string | null | undefined): string | und
     if (url.username || url.password) return undefined;
     // Block obvious script/data hosts and local network.
     const host = url.hostname.toLowerCase();
+    // Virtual WebView hosts are local-only and cannot be shared via cloud cosmetics.
+    if (host.endsWith(".sblauncher")) {
+      return undefined;
+    }
     if (
       host === "localhost" ||
       host === "127.0.0.1" ||

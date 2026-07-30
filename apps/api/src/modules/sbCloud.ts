@@ -164,7 +164,7 @@ export async function fetchPlayersBatchRemote(
       }
     }
   } catch {
-    // fall through — skip slow per-user fanout on friends lists
+    // fall through вЂ” skip slow per-user fanout on friends lists
   }
 
   // Cap fallback fan-out so a down cloud never stalls Friends for minutes.
@@ -320,7 +320,7 @@ export type UpdateCheckResult = {
 
 export async function checkForUpdate(): Promise<UpdateCheckResult> {
   const current = {
-    version: env.SB_APP_VERSION.trim() || "2.4.3",
+    version: env.SB_APP_VERSION.trim() || "2.5.0",
     buildId: env.SB_BUILD_ID.trim(),
   };
   const cloudConfigured = isCloudConfigured();
@@ -422,4 +422,5 @@ export async function fetchLauncherPresenceBatch(
     return {};
   }
 }
+
 

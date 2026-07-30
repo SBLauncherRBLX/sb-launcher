@@ -19,6 +19,72 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "2.5.0",
+    title: "Private servers, splash & polish",
+    items: [
+      "Private servers: join by invite link/code, save, rename, copy link, and remove from the game page.",
+      "Startup splash (native + web) uses your Visuals wallpaper when set.",
+      "Roblox application icon Apply fixed for desktop and Start Menu shortcuts.",
+      "Custom profile photos and nick badges upload correctly again.",
+      "Game card hover clipping fixed; Friends Playing shows real online counts.",
+    ],
+  },
+  {
+    version: "2.4.10",
+    title: "Themed splash wallpapers",
+    items: [
+      "Native and web startup screens use your Visuals wallpaper when set (color fallback otherwise).",
+      "Splash layout refreshed with a centered glass card and themed glow.",
+    ],
+  },
+  {
+    version: "2.4.9",
+    title: "Roblox app icon fix",
+    items: [
+      "Apply Roblox shortcut icons on the UI thread (STA) so desktop/Start icons actually save.",
+      "Finds Roblox Player shortcuts more reliably and refreshes the Windows icon cache.",
+    ],
+  },
+  {
+    version: "2.4.8",
+    title: "Profile photo upload",
+    items: [
+      "Custom profile photos and nick badges upload to cloud correctly again (WebView virtual-host fetch bypass).",
+    ],
+  },
+  {
+    version: "2.4.7",
+    title: "Game card hover + private servers",
+    items: [
+      "Game cards no longer get clipped at the top when you hover them in rails and grids.",
+      "Private servers: join by invite link/code, save, rename, copy link, and remove from the game page.",
+      "Friends Playing shows real online counts again (not friend count).",
+      "Private server join UI stays available even when Roblox marks VIP create as off.",
+    ],
+  },
+  {
+    version: "2.4.6",
+    title: "Button text selection",
+    items: [
+      "Text on buttons and chips can no longer be selected accidentally.",
+    ],
+  },
+  {
+    version: "2.4.5",
+    title: "Remove FPS overlay",
+    items: [
+      "Removed the experimental in-game FPS and ping overlay — it was unreliable.",
+    ],
+  },
+  {
+    version: "2.4.4",
+    title: "FPS & ping overlay",
+    items: [
+      "Optional in-game FPS and ping HUD over the Roblox window (external overlay, not injected).",
+      "Deep look and position controls in Settings with a live on-screen preview.",
+    ],
+  },
+  {
     version: "2.4.3",
     title: "Themed startup splash",
     items: [

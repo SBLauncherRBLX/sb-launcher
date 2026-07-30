@@ -131,6 +131,12 @@ textarea {
   font: inherit;
 }
 
+button,
+.sb-button {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .sb-button {
   position: relative;
   isolation: isolate;
@@ -503,18 +509,81 @@ input[type="range"] {
 }
 
 .app-boot-loading {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
   width: 100%;
   display: grid;
   place-items: center;
+  overflow: hidden;
+  background: var(--sb-surface-dim, var(--sb-bg));
+}
+
+.app-boot-wallpaper {
+  position: absolute;
+  inset: -2%;
+  z-index: 0;
+  background-image: var(--sb-boot-wallpaper, none);
+  background-size: cover;
+  background-position: center;
+  opacity: var(--sb-wallpaper-opacity, 0.55);
+  filter: blur(var(--sb-wallpaper-blur, 0px));
+  transform: scale(1.04);
+  pointer-events: none;
+}
+
+.app-boot-dim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: color-mix(
+    in srgb,
+    var(--sb-bg) calc(var(--sb-wallpaper-dim, 0.45) * 100%),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.app-boot-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   background:
-    radial-gradient(700px 420px at 20% 10%, color-mix(in srgb, var(--sb-primary) 28%, transparent), transparent 60%),
-    radial-gradient(560px 360px at 85% 80%, color-mix(in srgb, var(--sb-secondary) 22%, transparent), transparent 55%),
-    var(--sb-surface-dim, var(--sb-bg));
+    radial-gradient(640px 380px at 50% 28%, color-mix(in srgb, var(--sb-primary) 30%, transparent), transparent 62%),
+    radial-gradient(480px 320px at 78% 78%, color-mix(in srgb, var(--sb-secondary) 18%, transparent), transparent 58%);
+  pointer-events: none;
+}
+
+.app-boot-card {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 2rem 2.25rem 1.65rem;
+  border-radius: calc(var(--sb-radius, 24px) * 0.9);
+  background: color-mix(in srgb, var(--sb-surface, #1d1b20) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sb-border, #49454f) 55%, transparent);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 48px color-mix(in srgb, #000 40%, transparent);
+}
+
+.app-boot-title {
+  margin: 0.15rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--sb-on-surface, var(--sb-text));
 }
 
 .app-boot-loading .sb-loading {
   min-height: auto;
+  gap: 0.85rem;
+}
+
+.app-boot-loading .sb-loading-label {
+  opacity: 0.78;
+  font-size: 0.92rem;
 }
 
 .sb-loading-mark {

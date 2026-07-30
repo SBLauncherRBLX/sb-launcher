@@ -25,9 +25,12 @@ import {
   clearSessionCookie,
   completeOAuth,
   desktopAuthUrl,
+  listSavedAccounts,
   logout,
+  removeAccount,
   requireAuth,
   setSessionCookie,
+  switchAccount,
   toSessionPayload,
   SESSION_COOKIE,
 } from "./modules/auth/service.js";
@@ -42,7 +45,14 @@ import {
   batchPaidAccessOwned,
   searchGames,
   searchUsers,
+  privateServersEnabledInUniverse,
 } from "./modules/roblox/client.js";
+import {
+  deletePrivateServer,
+  listPrivateServers,
+  updatePrivateServer,
+  upsertPrivateServer,
+} from "./modules/privateServers.js";
 import {
   isLauncherUser,
   getLauncherBadge,
@@ -120,8 +130,10 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.post("/auth/logout", async (request, reply) => {
-    const token = request.cookies?.[SESSION_COOKIE];
-    await logout(token);
+    const header = request.headers.authorization;
+    const bearer = header?.startsWith("Bearer ") ? header.slice(7) : null;
+    const cookie = request.cookies?.[SESSION_COOKIE];
+    await logout(bearer || cookie || null);
     clearSessionCookie(reply);
     return { ok: true };
   });
@@ -133,6 +145,48 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     }
     return toSessionPayload(request.auth ?? null);
   });
+
+  app.get("/api/accounts", async () => ({
+    items: await listSavedAccounts(),
+  }));
+
+  app.post<{ Body: { userId?: string } }>("/api/accounts/switch", async (request, reply) => {
+    const userId = String(request.body?.userId ?? "").trim();
+    if (!userId) {
+      return reply.code(400).send({ error: "userId is required", code: "BAD_REQUEST" });
+    }
+    try {
+      const previousSessionId = request.auth?.sessionId ?? null;
+      const { sessionToken, auth } = await switchAccount(userId, previousSessionId);
+      setSessionCookie(reply, sessionToken);
+      return {
+        sessionToken,
+        session: await toSessionPayload(auth),
+      };
+    } catch (err) {
+      return reply.code(400).send({
+        error: err instanceof Error ? err.message : "Could not switch account",
+        code: "ACCOUNT_SWITCH_FAILED",
+      });
+    }
+  });
+
+  app.delete<{ Params: { userId: string } }>(
+    "/api/accounts/:userId",
+    async (request, reply) => {
+      const userId = String(request.params.userId ?? "").trim();
+      if (!userId) {
+        return reply.code(400).send({ error: "userId is required", code: "BAD_REQUEST" });
+      }
+      const wasActive = request.auth?.user.id === userId;
+      await removeAccount(userId);
+      if (wasActive) {
+        clearSessionCookie(reply);
+      }
+      const accounts = await listSavedAccounts();
+      return { ok: true, removedActive: wasActive, accounts };
+    },
+  );
 
   app.get<{ Querystring: { q?: string; limit?: string } }>("/api/games", async (request) => {
     const q = request.query.q?.trim() ?? "";
@@ -335,6 +389,77 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     return listServers(request.params.placeId, request.query.cursor, limit);
   });
 
+  app.get<{ Params: { universeId: string } }>(
+    "/api/games/:universeId/private-servers/enabled",
+    async (request) => {
+      const enabled = await privateServersEnabledInUniverse(request.params.universeId);
+      return { enabled };
+    },
+  );
+
+  app.get<{
+    Querystring: { universeId?: string; placeId?: string };
+  }>("/api/private-servers", async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const items = await listPrivateServers(auth.user.id, {
+      universeId: request.query.universeId,
+      placeId: request.query.placeId,
+    });
+    return { items };
+  });
+
+  app.post<{
+    Body: {
+      universeId: string;
+      placeId: string;
+      accessCode: string;
+      label?: string;
+      gameName?: string | null;
+      iconUrl?: string | null;
+    };
+  }>("/api/private-servers", async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const body = request.body;
+    if (!body?.universeId || !body.placeId || !body.accessCode?.trim()) {
+      return reply.code(400).send({ error: "universeId, placeId, and accessCode are required" });
+    }
+    const row = await upsertPrivateServer(auth.user.id, {
+      universeId: body.universeId,
+      placeId: body.placeId,
+      accessCode: body.accessCode,
+      label: body.label?.trim() || "Private server",
+      gameName: body.gameName,
+      iconUrl: body.iconUrl,
+    });
+    return row;
+  });
+
+  app.patch<{
+    Params: { id: string };
+    Body: { label?: string };
+  }>("/api/private-servers/:id", async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const row = await updatePrivateServer(auth.user.id, request.params.id, {
+      label: request.body?.label,
+    });
+    if (!row) return reply.code(404).send({ error: "Private server not found" });
+    return row;
+  });
+
+  app.delete<{ Params: { id: string } }>(
+    "/api/private-servers/:id",
+    async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      const ok = await deletePrivateServer(auth.user.id, request.params.id);
+      if (!ok) return reply.code(404).send({ error: "Private server not found" });
+      return { ok: true };
+    },
+  );
+
   app.post<{
     Body: {
       placeId?: string;
@@ -350,11 +475,14 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     if (!body?.placeId && !body?.userId) {
       return reply.code(400).send({ error: "placeId or userId is required" });
     }
+    if (body.accessCode && !body.placeId) {
+      return reply.code(400).send({ error: "placeId is required with accessCode" });
+    }
     const target = {
       placeId: body.placeId,
       gameInstanceId: body.gameInstanceId,
       userId: body.userId,
-      accessCode: body.accessCode,
+      accessCode: body.accessCode?.trim() || undefined,
     };
     const deepLink = buildRobloxDeepLink(target);
     const webUrl = buildWebLaunchUrl(target);
@@ -753,18 +881,26 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       ? normalizeTheme(request.body.theme)
       : DEFAULT_THEME;
     const graphics = SafeGraphicsSettingsSchema.parse(request.body?.graphics ?? {});
-    await prisma.userPreferences.upsert({
-      where: { userId: auth.user.id },
-      create: {
-        userId: auth.user.id,
-        activeThemeJson: JSON.stringify(theme),
-        graphicsJson: JSON.stringify(graphics),
-      },
-      update: {
-        activeThemeJson: JSON.stringify(theme),
-        graphicsJson: JSON.stringify(graphics),
-      },
-    });
+    const payload = {
+      activeThemeJson: JSON.stringify(theme),
+      graphicsJson: JSON.stringify(graphics),
+    };
+
+    // Theme/graphics are shared across all saved launcher accounts on this PC.
+    const accountIds = (await listSavedAccounts()).map((account) => account.id);
+    const userIds = accountIds.includes(auth.user.id)
+      ? accountIds
+      : [...accountIds, auth.user.id];
+
+    await prisma.$transaction(
+      userIds.map((userId) =>
+        prisma.userPreferences.upsert({
+          where: { userId },
+          create: { userId, ...payload },
+          update: payload,
+        }),
+      ),
+    );
     return { theme, graphics };
   });
 

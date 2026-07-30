@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { themeToCssVars, LoadingState } from "@sb/ui";
+import { themeToCssVars } from "@sb/ui";
 import { normalizeTheme } from "@sb/contracts";
 import { Shell } from "./components/Shell";
 import { BackgroundScene } from "./components/BackgroundScene";
+import { BootSplash } from "./components/BootSplash";
 import { useAppStore } from "./store";
 import { api } from "./lib/api";
 import { HomePage } from "./pages/HomePage";
@@ -53,6 +54,7 @@ export default function App() {
   const setAuthToken = useAppStore((s) => s.setAuthToken);
   const normalizedTheme = normalizeTheme(theme);
   const cssVars = themeToCssVars(normalizedTheme);
+  const activeUserId = session?.activeUserId ?? session?.user?.id ?? "guest";
 
   useEffect(() => {
     void bootstrap();
@@ -81,7 +83,7 @@ export default function App() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [ready, session?.authenticated]);
+  }, [ready, session?.authenticated, activeUserId]);
 
   useEffect(() => {
     if (!ready) return;
@@ -114,11 +116,7 @@ export default function App() {
   }, [theme]);
 
   if (!ready) {
-    return (
-      <div className="app-boot-loading" style={themeToCssVars(normalizedTheme)}>
-        <LoadingState label="Starting SB Launcher…" />
-      </div>
-    );
+    return <BootSplash theme={normalizedTheme} label="Starting SB Launcher…" />;
   }
 
   return (
@@ -128,7 +126,7 @@ export default function App() {
     >
       <BackgroundScene theme={normalizedTheme} />
       <Shell>
-        <AnimatedRoutes />
+        <AnimatedRoutes key={activeUserId} />
       </Shell>
     </div>
   );

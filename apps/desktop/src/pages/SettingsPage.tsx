@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
 import type { SafeGraphicsSettings } from "@sb/contracts";
 import { Button, Badge } from "@sb/ui";
 import { useAppStore } from "../store";
 import { authStartUrl } from "../lib/api";
 import { FontPreview } from "../components/FontPreview";
+import { fadeUp, useMotionEnabled } from "../lib/motion";
 import {
   applyRobloxAppIconPreference,
   getRobloxAppIconPreference,
@@ -26,13 +28,17 @@ const ROBLOX_APP_ICON_OPTIONS: Array<{
 export function SettingsPage() {
   const session = useAppStore((s) => s.session);
   const graphics = useAppStore((s) => s.graphics);
+  const theme = useAppStore((s) => s.theme);
   const setGraphics = useAppStore((s) => s.setGraphics);
   const persistPreferences = useAppStore((s) => s.persistPreferences);
+  const removeAccount = useAppStore((s) => s.removeAccount);
   const robloxInstalled = useAppStore((s) => s.robloxInstalled);
+  const motionEnabled = useMotionEnabled(theme);
   const [message, setMessage] = useState<string | null>(null);
   const [detectPath, setDetectPath] = useState<string | null>(null);
   const [oauthClientId, setOauthClientId] = useState("");
   const [oauthConfigured, setOauthConfigured] = useState(false);
+  const [removingUserId, setRemovingUserId] = useState<string | null>(null);
   const [redirectUri, setRedirectUri] = useState(
     "http://127.0.0.1:8787/auth/roblox/callback",
   );
@@ -87,6 +93,83 @@ export function SettingsPage() {
     setGraphics({ ...current, ...partial, optimizationPreset: "custom" });
     schedulePersist();
   }
+
+  function previewRobloxWindowSize(): {
+    mode: "native" | "custom";
+    width: number;
+    height: number;
+    label: string;
+  } {
+    const screenW = Math.max(640, window.screen?.availWidth || window.screen?.width || 1920);
+    const screenH = Math.max(480, window.screen?.availHeight || window.screen?.height || 1080);
+    const res = graphics.preferredResolution;
+    const aspect = graphics.preferredAspectRatio;
+    const windowMode = graphics.preferredWindowMode;
+    const parseRes = (value: string): [number, number] | null => {
+      if (!value || value === "native") return null;
+      const parts = value.split(/[x×]/i);
+      if (parts.length !== 2) return null;
+      const w = Number(parts[0]);
+      const h = Number(parts[1]);
+      if (!Number.isFinite(w) || !Number.isFinite(h) || w < 640 || h < 480) return null;
+      return [w, h];
+    };
+    const aspectMap: Record<string, [number, number]> = {
+      "16:9": [16, 9],
+      "16:10": [16, 10],
+      "4:3": [4, 3],
+      "21:9": [21, 9],
+      "1:1": [1, 1],
+    };
+    const parsedRes = parseRes(res);
+    const parsedAspect = aspect !== "native" ? aspectMap[aspect] : null;
+    if (!parsedRes && !parsedAspect) {
+      return {
+        mode: "native",
+        width: screenW,
+        height: screenH,
+        label: "No custom size — Roblox keeps your monitor’s native resolution.",
+      };
+    }
+    let width = 0;
+    let height = 0;
+    if (parsedRes && parsedAspect) {
+      width = parsedRes[0];
+      height = Math.max(480, Math.round((parsedRes[0] * parsedAspect[1]) / parsedAspect[0]));
+    } else if (parsedRes) {
+      width = parsedRes[0];
+      height = parsedRes[1];
+    } else if (parsedAspect) {
+      width = Math.min(screenW, 1920);
+      height = Math.max(480, Math.round((width * parsedAspect[1]) / parsedAspect[0]));
+      if (height > screenH) {
+        height = screenH;
+        width = Math.max(640, Math.round((height * parsedAspect[0]) / parsedAspect[1]));
+      }
+    }
+    width = Math.min(Math.max(width, 640), Math.max(screenW, width));
+    height = Math.min(Math.max(height, 480), Math.max(screenH, height));
+    const fullscreen = windowMode === "fullscreen" || windowMode === "borderless";
+    if (fullscreen) {
+      const sameAsMonitor = width === screenW && height === screenH;
+      return {
+        mode: "custom",
+        width,
+        height,
+        label: sameAsMonitor
+          ? `Fullscreen at native ${width}×${height} — no display-mode change.`
+          : `Fullscreen like CS: on launch Windows switches to ~${width}×${height}, then restores when you leave Roblox. Closest supported mode is used.`,
+      };
+    }
+    return {
+      mode: "custom",
+      width,
+      height,
+      label: `Windowed: Roblox opens as a ${width}×${height} window. Close Roblox → Apply now (or enable Apply automatically).`,
+    };
+  }
+
+  const windowPreview = previewRobloxWindowSize();
 
   function applyPreset(preset: SafeGraphicsSettings["optimizationPreset"]) {
     const values: Record<
@@ -365,6 +448,60 @@ export function SettingsPage() {
               "Not signed in"
             )}
           </div>
+          <p className="sb-muted" style={{ margin: "0.55rem 0 0" }}>
+            Switching accounts changes SB Launcher identity only (friends, history, favorites,
+            ownership). Theme stays the same for every account. Before joining a game, SB Launcher
+            checks whether Roblox Player matches the active account and warns if it doesn&apos;t —
+            without storing Roblox cookies.
+          </p>
+          {(session?.accounts?.length ?? 0) > 0 ? (
+            <div className="settings-account-list">
+              {session!.accounts.map((account, index) => {
+                const active = account.id === (session?.activeUserId ?? session?.user?.id);
+                return (
+                  <motion.div
+                    key={account.id}
+                    className="settings-account-row"
+                    {...fadeUp(index, motionEnabled)}
+                  >
+                    <img
+                      src={account.avatarUrl || sbLogo}
+                      alt=""
+                      className="profile-avatar"
+                    />
+                    <div className="settings-account-row-meta">
+                      <strong>
+                        {account.displayName}
+                        {active ? " · Active" : ""}
+                      </strong>
+                      <span className="sb-muted">@{account.username}</span>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      disabled={removingUserId === account.id}
+                      onClick={() => {
+                        const ok = window.confirm(
+                          `Remove @${account.username} from this PC? You can add it again later.`,
+                        );
+                        if (!ok) return;
+                        setRemovingUserId(account.id);
+                        void removeAccount(account.id)
+                          .then(() => setMessage(`Removed @${account.username}`))
+                          .catch((err) =>
+                            setMessage(
+                              err instanceof Error ? err.message : "Could not remove account",
+                            ),
+                          )
+                          .finally(() => setRemovingUserId(null));
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </motion.div>
+                );
+              })}
+            </div>
+          ) : null}
           <div className="chips" style={{ marginTop: "0.75rem" }}>
             {oauthConfigured ? <Badge>Live OAuth ready</Badge> : <Badge>OAuth setup required</Badge>}
             {session?.capabilities.friends ? <Badge>Friends</Badge> : null}
@@ -401,7 +538,7 @@ export function SettingsPage() {
               disabled={!oauthConfigured}
               onClick={() => void window.sbDesktop?.openExternal(authStartUrl())}
             >
-              {session?.authenticated ? "Re-authorize" : "Sign in with Roblox"}
+              {session?.authenticated ? "Add or refresh account" : "Sign in with Roblox"}
             </Button>
             <Button
               variant="secondary"
@@ -503,6 +640,55 @@ export function SettingsPage() {
               <option value="borderless">Borderless (treated as fullscreen)</option>
             </select>
           </label>
+          <label>
+            Resolution
+            <select
+              className="sb-input"
+              value={graphics.preferredResolution}
+              onChange={(e) =>
+                patch({
+                  preferredResolution: e.target
+                    .value as SafeGraphicsSettings["preferredResolution"],
+                })
+              }
+            >
+              <option value="native">Native (monitor default)</option>
+              <option value="2560x1440">2560 × 1440</option>
+              <option value="1920x1080">1920 × 1080</option>
+              <option value="1600x900">1600 × 900</option>
+              <option value="1366x768">1366 × 768</option>
+              <option value="1280x720">1280 × 720</option>
+              <option value="1024x768">1024 × 768</option>
+            </select>
+          </label>
+          <label>
+            Aspect ratio
+            <select
+              className="sb-input"
+              value={graphics.preferredAspectRatio}
+              onChange={(e) =>
+                patch({
+                  preferredAspectRatio: e.target
+                    .value as SafeGraphicsSettings["preferredAspectRatio"],
+                })
+              }
+            >
+              <option value="native">Native (keep resolution ratio)</option>
+              <option value="16:9">16:9</option>
+              <option value="16:10">16:10</option>
+              <option value="4:3">4:3</option>
+              <option value="21:9">21:9 ultrawide</option>
+              <option value="1:1">1:1</option>
+            </select>
+          </label>
+          <p className="sb-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+            {windowPreview.label}
+          </p>
+          <p className="sb-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+            Fullscreen + custom resolution changes the Windows display mode on launch (like CS),
+            then restores your normal resolution when Roblox closes. Windowed only resizes the
+            Roblox window. Enable “Apply automatically” or click Apply now before testing.
+          </p>
           <label>
             FPS cap
             <select
@@ -636,6 +822,14 @@ export function SettingsPage() {
                 />
                 <span>Pause voxel lighting updates</span>
               </label>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={graphics.disableDpiScale}
+                  onChange={(e) => patch({ disableDpiScale: e.target.checked })}
+                />
+                <span>Preserve render resolution (disable DPI scale)</span>
+              </label>
             </>
           ) : null}
         </div>
@@ -659,6 +853,8 @@ export function SettingsPage() {
             <h3>Roblox application icon</h3>
             <p className="sb-muted" style={{ margin: "0.35rem 0 0" }}>
               Icon on Windows shortcuts for Roblox Player (desktop / Start menu).
+              Click Apply icon after choosing. If Windows still shows the old
+              picture, press F5 on the desktop or unpin and pin Roblox again.
             </p>
           </div>
           <Button variant="secondary" onClick={() => void applyRobloxAppIcon()}>
