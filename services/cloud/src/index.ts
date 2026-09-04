@@ -96,12 +96,12 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  */
 const SHIPPED_UPDATE: UpdateManifest = {
   version: "3.0.0",
-  buildId: "20260904231732",
+  buildId: "20260904234027",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 3.0 — Liquid Glass\n\n- New 3D volumetric icons (Home, Discover, Friends, Visuals, Settings, About) with dynamic accent colors\n- Layout & positioning: sidebar, topbar, content alignment, card gap, columns — fully animated\n- Scroll & overscroll: sticky topbar gap fix, overscroll modes, scroll animations (fade/slide/scale/parallax)\n- Visuals & Settings now accordion — each group opens separately, no clutter\n- Glass unified to topbar beauty: see-through cards/sidebar with backdrop blur\n- Theme presets with avatars, names, reorder, delete — saved in same grid\n- Instant scroll reset on navigation (no fly-up)\n- Custom wallpapers removed (bundled only)\n- Bubble reverted to previous liquid glass (48% + spring 540) per 3.0 rollback",
+    "SB Launcher 3.0 — Liquid Glass\n\n- New 3D volumetric icons with dynamic accent colors\n- Layout & positioning: sidebar, topbar, content alignment, card gap, columns — fully animated\n- Scroll & overscroll: sticky topbar gap fix, overscroll modes, scroll animations (fade/slide/scale/parallax)\n- Visuals & Settings now accordion — each group opens separately, no clutter\n- Glass unified to topbar beauty & instant scroll reset\n- Theme presets with avatars, names, reorder, delete — saved in same grid\n- Bubble reverted to previous liquid glass (48% + spring 540) per 3.0 rollback\n- Custom wallpapers removed (bundled only)",
   title: "SB Launcher 3.0",
-  publishedAt: "2026-09-04T23:17:32.000Z",
+  publishedAt: "2026-09-04T23:40:27.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {
