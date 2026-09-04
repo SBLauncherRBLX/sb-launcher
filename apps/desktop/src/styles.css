@@ -5,7 +5,12 @@ body,
 #root {
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none;
   font-family: var(--sb-font);
+}
+
+html {
+  scrollbar-gutter: stable;
 }
 
 .app-root {
@@ -679,6 +684,11 @@ button,
   transform: rotate(-5deg) scale(1.12);
 }
 
+.motion-medium .nav a:hover .nav-icon-3d,
+.motion-high .nav a:hover .nav-icon-3d {
+  transform: rotate(-4deg) scale(1.1);
+}
+
 .nav-icon {
   transition: transform var(--sb-motion-duration-hover) var(--sb-ease-emphasized);
 }
@@ -826,7 +836,7 @@ button,
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 272px 1fr;
+  grid-template-columns: var(--sb-sidebar-width, 272px) 1fr;
   grid-template-rows: minmax(0, 1fr);
   height: 100%;
   max-height: 100%;
@@ -836,12 +846,30 @@ button,
   padding-bottom: 0;
 }
 
+.app-shell.layout-right {
+  grid-template-columns: 1fr var(--sb-sidebar-width, 272px);
+}
+
+.app-shell.layout-right .sidebar {
+  order: 2;
+  margin: 0.75rem 0.75rem 0.75rem 0;
+}
+
+.app-shell.layout-hidden {
+  grid-template-columns: 1fr;
+}
+
+.app-shell.layout-hidden .sidebar {
+  display: none;
+}
+
 .app-shell.compact .page {
-  padding: 1rem;
+  /* density still slightly tightens but respects slider base */
+  padding: calc(var(--sb-content-padding, 22px) * 0.7);
 }
 
 .app-shell.spacious .page {
-  padding: 2rem 2.4rem;
+  padding: calc(var(--sb-content-padding, 22px) * 1.25);
 }
 
 .sidebar {
@@ -868,12 +896,12 @@ button,
       var(--sb-glass-tint, var(--sb-primary)) calc(var(--sb-glass-tint-strength, 0) * 100%),
       color-mix(
         in srgb,
-        var(--sb-surface-container-low) calc(var(--sb-glass-opacity, 0.52) * 100%),
+        var(--sb-surface-container) calc(var(--sb-glass-opacity, 0.52) * 100%),
         transparent
       )
     )
       calc(var(--sb-glass-sidebar, 0) * 100%),
-    color-mix(in srgb, var(--sb-surface-container-low) 88%, transparent)
+    color-mix(in srgb, var(--sb-surface-container) 78%, transparent)
   );
   backdrop-filter: var(--sb-sidebar-glass-filter);
   -webkit-backdrop-filter: var(--sb-sidebar-glass-filter);
@@ -907,12 +935,12 @@ button,
       var(--sb-glass-tint, var(--sb-primary)) calc(var(--sb-glass-tint-strength, 0) * 100%),
       color-mix(
         in srgb,
-        var(--sb-surface-container) calc(var(--sb-glass-opacity, 0.52) * 88%),
+        var(--sb-surface-container) calc(var(--sb-glass-opacity, 0.52) * 100%),
         transparent
       )
     )
       calc(max(var(--sb-glass-sidebar, 0), 0.65) * 100%),
-    color-mix(in srgb, var(--sb-surface-container) 48%, transparent)
+    color-mix(in srgb, var(--sb-surface-container) 78%, transparent)
   );
   backdrop-filter: blur(calc(var(--sb-glass-blur, var(--sb-blur)) * max(var(--sb-glass-sidebar, 0), 0.95)))
     saturate(var(--sb-glass-saturate, 1.2))
@@ -1307,13 +1335,79 @@ button,
   transform: scale(1.08);
 }
 
+.nav-icon-3d {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  flex: 0 0 28px;
+  border-radius: 9px;
+  display: block;
+  object-fit: contain;
+  overflow: visible;
+  filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.28));
+  transition:
+    transform var(--sb-motion-duration-hover) var(--sb-ease-emphasized),
+    filter var(--sb-motion-duration) var(--sb-ease-standard);
+}
+
+.nav a.active .nav-icon-3d {
+  transform: scale(1.08);
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.38));
+}
+
 .nav-pill {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--sb-secondary-container);
+  /* Liquid Glass — iOS 26 style: translucent + blur + refraction highlight + chromatic edge */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 55%, rgba(255, 255, 255, 0.01) 100%),
+    color-mix(in srgb, var(--sb-secondary-container) 48%, transparent);
+  backdrop-filter: blur(22px) saturate(1.9) brightness(1.06) contrast(1.01);
+  -webkit-backdrop-filter: blur(22px) saturate(1.9) brightness(1.06) contrast(1.01);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-top-color: rgba(255, 255, 255, 0.28);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 28px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 0 0 1px color-mix(in srgb, var(--sb-primary) 10%, transparent);
   z-index: 0;
-  box-shadow: none;
+  overflow: hidden;
+  will-change: transform, backdrop-filter;
+  transform: translateZ(0);
+}
+
+.nav-pill::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: radial-gradient(120% 90% at 28% 18%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.08) 38%, transparent 62%);
+  pointer-events: none;
+}
+
+.nav-pill::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 59, 122, 0.42), rgba(124, 92, 255, 0.36), rgba(0, 212, 255, 0.32), rgba(60, 255, 136, 0.28), rgba(255, 59, 122, 0.32));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.52;
+  pointer-events: none;
+}
+
+.nav-pill-liquid {
+  will-change: transform;
 }
 
 .nav-label {
@@ -1377,11 +1471,30 @@ button,
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  height: auto;
-  max-height: none;
+  height: 100%;
+  max-height: 100%;
   align-self: stretch;
   overflow: hidden;
   background: transparent;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Sticky layer: main becomes the scroll container so page scrolls UNDER topbar */
+.main.scroll-sticky {
+  overflow: auto;
+  overscroll-behavior: var(--sb-overscroll, contain);
+  overscroll-behavior-y: contain;
+  scroll-behavior: var(--sb-scroll-behavior, smooth);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--sb-on-surface-variant) 40%, transparent) transparent;
+}
+
+.main.scroll-sticky .page {
+  overflow: visible;
+  flex: none;
+  min-height: auto;
 }
 
 .topbar {
@@ -1423,6 +1536,51 @@ button,
       color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * var(--sb-glass-topbar, 0) * 35%), transparent),
     var(--sb-shadow-1);
   flex: 0 0 auto;
+  min-height: var(--sb-topbar-height, 64px);
+  transition:
+    transform var(--sb-dur-medium2) var(--sb-ease-emphasized),
+    opacity var(--sb-dur-medium2) var(--sb-ease-standard),
+    backdrop-filter var(--sb-dur-medium2) var(--sb-ease-standard);
+}
+
+/* Sticky topbar - stays on top while page scrolls underneath */
+.main.scroll-sticky .topbar {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 20;
+  margin-bottom: 0;
+  backdrop-filter: blur(var(--sb-topbar-blur, 12px)) var(--sb-topbar-glass-filter);
+  -webkit-backdrop-filter: blur(var(--sb-topbar-blur, 12px)) var(--sb-topbar-glass-filter);
+}
+
+.main.scroll-sticky .topbar.is-hidden {
+  transform: translateY(calc(-100% - 1rem));
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Floating topbar - over content with extra shadow */
+.main.topbar-floating .topbar {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 20;
+  margin-bottom: -0.4rem;
+  box-shadow:
+    0 8px 24px color-mix(in srgb, #000 28%, transparent),
+    var(--sb-shadow-1);
+}
+
+.main.topbar-static .topbar {
+  position: relative;
+}
+
+.topbar-height-compact {
+  min-height: 52px;
+  padding: 0.45rem 0.65rem;
+}
+.topbar-height-spacious {
+  min-height: 76px;
+  padding: 0.85rem 1rem;
 }
 
 
@@ -1459,10 +1617,203 @@ button,
 }
 
 .page {
-  padding: 1.35rem 1.45rem 2rem;
+  padding: var(--sb-content-padding, 22px);
   overflow: auto;
   flex: 1 1 auto;
   min-height: 0;
+  overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
+  scroll-behavior: var(--sb-scroll-behavior, smooth);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--sb-on-surface-variant) 35%, transparent) transparent;
+}
+
+.page.scrollbar-hidden {
+  scrollbar-width: none;
+}
+.page.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+.page.scrollbar-overlay {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--sb-primary) 45%, transparent) transparent;
+}
+
+/* Content alignment / width / padding driven by layout vars */
+.page-content {
+  width: 100%;
+  max-width: var(--sb-content-max-width, 1280px);
+  margin-inline: auto;
+  padding-inline: var(--sb-content-padding, 22px);
+  display: grid;
+  gap: var(--sb-card-gap, 16px);
+}
+
+html[data-columns="2"] .grid-games {
+  grid-template-columns: repeat(2, 1fr);
+}
+html[data-columns="3"] .grid-games {
+  grid-template-columns: repeat(3, 1fr);
+}
+html[data-columns="4"] .grid-games {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.page-content.align-left {
+  margin-inline: 0;
+}
+.page-content.align-center {
+  margin-inline: auto;
+}
+.page-content.align-stretch {
+  max-width: none;
+  margin-inline: 0;
+}
+
+/* Scroll reveal — IntersectionObserver adds .is-visible */
+html[data-reveal="true"] .page .sb-card {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity var(--sb-scroll-duration) var(--sb-scroll-easing),
+    transform var(--sb-scroll-duration) var(--sb-scroll-easing);
+  transition-delay: calc(var(--card-index, 0) * var(--sb-scroll-stagger));
+  will-change: transform, opacity;
+}
+html[data-reveal="true"][data-scroll-animation="slide"] .page .sb-card {
+  transform: translateY(22px) scale(0.96);
+}
+html[data-reveal="true"][data-scroll-animation="scale"] .page .sb-card {
+  transform: scale(0.94);
+}
+html[data-reveal="true"][data-scroll-animation="parallax"] .page .sb-card {
+  transform: translateY(18px);
+}
+html[data-reveal="true"] .page .sb-card.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+html[data-reveal="false"] .page .sb-card,
+html[data-scroll-animation="none"] .page .sb-card {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+.scroll-animate {
+  will-change: transform, opacity;
+}
+
+.scroll-animate.scroll-fade {
+  animation: scrollFadeIn var(--sb-scroll-duration) var(--sb-scroll-easing) both;
+}
+
+.scroll-animate.scroll-slide {
+  animation: scrollSlideIn var(--sb-scroll-duration) var(--sb-scroll-easing) both;
+}
+
+.scroll-animate.scroll-scale {
+  animation: scrollScaleIn var(--sb-scroll-duration) var(--sb-scroll-easing) both;
+}
+
+.scroll-animate.scroll-parallax {
+  transform: translateY(calc(var(--sb-parallax-intensity, 0.5) * 12px));
+}
+
+@keyframes scrollFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scrollSlideIn {
+  from { opacity: 0; transform: translateY(22px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes scrollScaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Accordion sections */
+.section-collapsible {
+  padding: 0;
+  overflow: hidden;
+}
+
+.section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--sb-dur-short3) var(--sb-ease-standard);
+}
+
+.section-header:hover {
+  background: color-mix(in srgb, var(--sb-on-surface) 4%, transparent);
+}
+
+.section-icon {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+.section-icon svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+
+.section-titles {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.section-titles h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.section-titles p {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.section-chevron {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--sb-on-surface-variant);
+  user-select: none;
+}
+
+.section-body {
+  padding: 0 1.15rem 1.15rem;
+  border-top: 1px solid var(--sb-outline-variant);
+}
+
+/* Respect reduced motion / disabled animations */
+.motion-off .page .sb-card,
+.motion-off .scroll-animate,
+html[data-reveal="false"] .page .sb-card {
+  animation: none !important;
 }
 
 .page-motion {
@@ -1986,10 +2337,42 @@ button,
 .grid-games {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
+  gap: var(--sb-card-gap, 1rem);
   align-items: stretch;
   padding: 0.45rem 0.1rem 0.35rem;
   margin: -0.35rem 0 0;
+}
+
+.grid-games.cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-games.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-games.cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 900px) {
+  .grid-games.cols-2,
+  .grid-games.cols-3,
+  .grid-games.cols-4 {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+}
+
+/* Scroll progress bar */
+.scroll-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--sb-primary), var(--sb-secondary));
+  transform-origin: left;
+  z-index: 30;
+  pointer-events: none;
 }
 
 .grid-games .game-card-wrap {

@@ -2190,6 +2190,7 @@ public partial class MainWindow : Window
             throw new ArgumentException("Unsupported wallpaper format.");
 
         var id = $"custom-{Guid.NewGuid():N}";
+        Directory.CreateDirectory(_wallpaperDirectory);
         var target = Path.Combine(_wallpaperDirectory, $"{id}{extension}");
         File.Copy(dialog.FileName, target, true);
         return new

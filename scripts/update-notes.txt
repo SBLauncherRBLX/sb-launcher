@@ -1,7 +1,8 @@
-﻿SB Launcher 2.5.0
+﻿SB Launcher 3.0 — Liquid Glass
 
-- Private servers: join by invite, save, rename, copy link, remove
-- Startup splash uses your Visuals wallpaper (native + web)
-- Roblox app icon Apply fixed on desktop / Start Menu
-- Profile photo and nick badge upload fixed
-- Game card hover clipping fix; Friends Playing online counts
+- New 3D volumetric icons with dynamic accent colors
+- Layout & positioning + Scroll & overscroll fully animated
+- Visuals & Settings now accordion — each group opens separately
+- Glass unified to topbar beauty, instant scroll reset, custom wallpapers removed
+- Theme presets with avatars, names, reorder and delete in same grid
+- Bubble reverted to previous liquid glass (48% + spring 540) per 3.0 rollback

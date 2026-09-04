@@ -1,0 +1,35 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="set-base" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2b2930"/>
+      <stop offset="1" stop-color="#1d1b20"/>
+    </linearGradient>
+    <linearGradient id="set-primary" x1="7" y1="6" x2="25" y2="26" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#efb8c8"/>
+      <stop offset="1" stop-color="#9a82db"/>
+    </linearGradient>
+    <radialGradient id="set-spec" cx="0.32" cy="0.22" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="set-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="1.1" stdDeviation="1" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect x="2" y="2" width="28" height="28" rx="9" fill="url(#set-base)"/>
+  <g filter="url(#set-shadow)" stroke="#ffffff" stroke-opacity="0.15" stroke-width="0.5">
+    <g fill="url(#set-primary)">
+      <rect x="14.7" y="4.6" width="2.6" height="4.2" rx="1.3" transform="rotate(0 16 16)"/>
+      <rect x="14.7" y="4.6" width="2.6" height="4.2" rx="1.3" transform="rotate(45 16 16)"/>
+      <rect x="14.7" y="4.6" width="2.6" height="4.2" rx="1.3" transform="rotate(90 16 16)"/>
+      <rect x="14.7" y="4.6" width="2.6" height="4.2" rx="1.3" transform="rotate(135 16 16)"/>
+      <rect x="14.7" y="4.6" width="2.6" height="4.2" rx="1.3" transform="rotate(180 16 16)"/>
+      <rect x="14.7" y="4.6" width="2.6" height="4.2" rx="1.3" transform="rotate(225 16 16)"/>
+      <rect x="14.7" y="4.6" width="2.6" height="4.2" rx="1.3" transform="rotate(270 16 16)"/>
+      <rect x="14.7" y="4.6" width="2.6" height="4.2" rx="1.3" transform="rotate(315 16 16)"/>
+    </g>
+    <circle cx="16" cy="16" r="8" fill="url(#set-primary)"/>
+  </g>
+  <circle cx="16" cy="16" r="4.4" fill="url(#set-base)"/>
+  <ellipse cx="12.3" cy="12.3" rx="4" ry="2.6" fill="url(#set-spec)"/>
+</svg>

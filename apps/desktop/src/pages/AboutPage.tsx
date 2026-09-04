@@ -103,7 +103,7 @@ export function AboutPage() {
       <section className="about-patchnotes sb-card" aria-label="Patch notes">
         <header className="about-patchnotes-header">
           <h2>Patch notes</h2>
-          <p className="sb-muted">What is new in the 2.x line (shipped with this build)</p>
+          <p className="sb-muted">Major 3.0 + last 3 updates (shipped with this build)</p>
         </header>
 
         <article className="about-patch-block about-patch-block--major">

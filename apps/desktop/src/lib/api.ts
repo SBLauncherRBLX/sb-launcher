@@ -196,13 +196,22 @@ export const api = {
     }),
   themes: () =>
     request<{
-      items: Array<{ id: string; name: string; theme: import("@sb/contracts").VisualTheme }>;
+      items: Array<{ id: string; name: string; theme: import("@sb/contracts").VisualTheme; avatarUrl?: string | null; sortOrder?: number; createdAt?: string; updatedAt?: string }>;
     }>("/api/themes"),
-  saveTheme: (name: string, theme: import("@sb/contracts").VisualTheme) =>
+  saveTheme: (name: string, theme: import("@sb/contracts").VisualTheme, avatarUrl?: string | null) =>
     request("/api/themes", {
       method: "POST",
-      body: JSON.stringify({ name, theme }),
+      body: JSON.stringify({ name, theme, avatarUrl: avatarUrl ?? null }),
     }),
+  deleteTheme: (id: string) =>
+    request<{ ok: boolean }>(`/api/themes/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  updateTheme: (id: string, body: { name?: string; avatarUrl?: string | null; theme?: import("@sb/contracts").VisualTheme; sortOrder?: number }) =>
+    request<{ id: string; name: string; theme: import("@sb/contracts").VisualTheme; avatarUrl?: string | null }>(
+      `/api/themes/${encodeURIComponent(id)}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+    ),
+  reorderThemes: (order: string[]) =>
+    request<{ ok: boolean }>("/api/themes/reorder", { method: "POST", body: JSON.stringify({ order }) }),
   logout: () => request("/auth/logout", { method: "POST" }),
   accounts: () =>
     request<{ items: import("@sb/contracts").SavedAccount[] }>("/api/accounts"),

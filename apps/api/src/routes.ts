@@ -909,39 +909,124 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     if (!auth) return;
     const rows = await prisma.themePreset.findMany({
       where: { userId: auth.user.id },
-      orderBy: { updatedAt: "desc" },
+      orderBy: [{ sortOrder: "asc" }, { updatedAt: "desc" }],
     });
     return {
-      items: rows.map((r: { id: string; name: string; payload: string; createdAt: Date; updatedAt: Date }) => ({
-        id: r.id,
-        name: r.name,
-        theme: VisualThemeSchema.parse(JSON.parse(r.payload)),
-        createdAt: r.createdAt.toISOString(),
-        updatedAt: r.updatedAt.toISOString(),
-      })),
+      items: rows.map(
+        (r: { id: string; name: string; payload: string; avatarUrl?: string | null; sortOrder: number; createdAt: Date; updatedAt: Date }) => ({
+          id: r.id,
+          name: r.name,
+          theme: VisualThemeSchema.parse(JSON.parse(r.payload)),
+          avatarUrl: r.avatarUrl ?? null,
+          sortOrder: r.sortOrder,
+          createdAt: r.createdAt.toISOString(),
+          updatedAt: r.updatedAt.toISOString(),
+        }),
+      ),
     };
   });
 
-  app.post<{ Body: { name: string; theme: unknown } }>("/api/themes", async (request, reply) => {
+  app.post<{ Body: { name: string; theme: unknown; avatarUrl?: string | null } }>("/api/themes", async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     const name = request.body?.name?.trim();
     if (!name) return reply.code(400).send({ error: "name is required" });
     const theme = normalizeTheme(request.body.theme);
+    const rawAvatar = typeof request.body?.avatarUrl === "string" ? request.body.avatarUrl.trim() : null;
+    const avatarUrl = rawAvatar
+      ? rawAvatar.startsWith("data:image/")
+        ? rawAvatar.slice(0, 500_000)
+        : sanitizeMediaUrl(rawAvatar) ?? null
+      : null;
+    const maxOrder = await prisma.themePreset.aggregate({
+      where: { userId: auth.user.id },
+      _max: { sortOrder: true },
+    });
+    const nextOrder = (maxOrder._max.sortOrder ?? -1) + 1;
     const row = await prisma.themePreset.create({
       data: {
         userId: auth.user.id,
         name,
         payload: JSON.stringify(theme),
+        avatarUrl,
+        sortOrder: nextOrder,
       },
     });
     return {
       id: row.id,
       name: row.name,
       theme,
+      avatarUrl: row.avatarUrl ?? null,
+      sortOrder: row.sortOrder,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     };
+  });
+
+  app.delete<{ Params: { id: string } }>("/api/themes/:id", async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const id = request.params.id;
+    const existing = await prisma.themePreset.findFirst({ where: { id, userId: auth.user.id } });
+    if (!existing) return reply.code(404).send({ error: "Preset not found" });
+    await prisma.themePreset.delete({ where: { id } });
+    return { ok: true };
+  });
+
+  app.patch<{ Params: { id: string }; Body: { name?: string; avatarUrl?: string | null; sortOrder?: number; theme?: unknown } }>(
+    "/api/themes/:id",
+    async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      const id = request.params.id;
+      const existing = await prisma.themePreset.findFirst({ where: { id, userId: auth.user.id } });
+      if (!existing) return reply.code(404).send({ error: "Preset not found" });
+      const data: Record<string, unknown> = {};
+      if (typeof request.body?.name === "string") {
+        const n = request.body.name.trim();
+        if (!n) return reply.code(400).send({ error: "name cannot be empty" });
+        data.name = n;
+      }
+      if ("avatarUrl" in (request.body ?? {})) {
+        const raw = typeof request.body?.avatarUrl === "string" ? request.body.avatarUrl.trim() : null;
+        data.avatarUrl = raw
+          ? raw.startsWith("data:image/")
+            ? raw.slice(0, 500_000)
+            : sanitizeMediaUrl(raw) ?? null
+          : null;
+      }
+      if (typeof request.body?.sortOrder === "number" && Number.isFinite(request.body.sortOrder)) {
+        data.sortOrder = Math.max(0, Math.min(1000, Math.round(request.body.sortOrder)));
+      }
+      if (request.body?.theme !== undefined) {
+        const t = normalizeTheme(request.body.theme);
+        data.payload = JSON.stringify(t);
+      }
+      const row = await prisma.themePreset.update({ where: { id }, data });
+      return {
+        id: row.id,
+        name: row.name,
+        theme: VisualThemeSchema.parse(JSON.parse(row.payload)),
+        avatarUrl: (row as { avatarUrl?: string | null }).avatarUrl ?? null,
+        sortOrder: (row as { sortOrder: number }).sortOrder,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+      };
+    },
+  );
+
+  app.post<{ Body: { order: string[] } }>("/api/themes/reorder", async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const order = Array.isArray(request.body?.order) ? request.body.order.map(String) : null;
+    if (!order || !order.length) return reply.code(400).send({ error: "order is required" });
+    const rows = await prisma.themePreset.findMany({ where: { userId: auth.user.id }, select: { id: true } });
+    const ids = new Set(rows.map((r) => r.id));
+    if (!order.every((id) => ids.has(id))) return reply.code(400).send({ error: "Invalid preset id in order" });
+    await prisma.$transaction(
+      order.map((id, idx) => prisma.themePreset.update({ where: { id }, data: { sortOrder: idx } })),
+    );
+    return { ok: true };
   });
 }
 

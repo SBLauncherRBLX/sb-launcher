@@ -1,6 +1,6 @@
 import type { CSSProperties, ButtonHTMLAttributes, PropsWithChildren } from "react";
 import type { VisualTheme } from "@sb/contracts";
-import { DEFAULT_THEME_EFFECTS } from "@sb/contracts";
+import { DEFAULT_THEME_EFFECTS, DEFAULT_LAYOUT, DEFAULT_SCROLL } from "@sb/contracts";
 import { resolveFontStack } from "./fonts";
 
 export { FONT_OPTIONS, DEFAULT_FONT_ID, resolveFontStack } from "./fonts";
@@ -8,10 +8,21 @@ export type { FontOption } from "./fonts";
 
 export function themeToCssVars(theme: VisualTheme): CSSProperties {
   const effects = { ...DEFAULT_THEME_EFFECTS, ...(theme.effects ?? {}) };
+  const layout = { ...DEFAULT_LAYOUT, ...(theme.layout ?? {}) };
+  const scroll = { ...DEFAULT_SCROLL, ...(theme.scroll ?? {}) };
   const radius = theme.cornerRadius;
   const glassOn = effects.glass ? 1 : 0;
   const glassBlur = effects.glassBlur ?? theme.blur;
   const glassTint = effects.glassTintColor || theme.accent;
+  const topbarH = layout.topbarHeight === "compact" ? "56px" : layout.topbarHeight === "spacious" ? "76px" : "64px";
+  const easingMap: Record<string, string> = {
+    linear: "linear",
+    ease: "ease",
+    easeIn: "cubic-bezier(0.42,0,1,1)",
+    easeOut: "cubic-bezier(0,0,0.58,1)",
+    easeInOut: "cubic-bezier(0.42,0,0.58,1)",
+    spring: "cubic-bezier(0.34,1.56,0.64,1)",
+  };
   return {
     ["--sb-font" as string]: resolveFontStack(theme.fontId),
     ["--sb-accent" as string]: theme.accent,
@@ -113,6 +124,21 @@ export function themeToCssVars(theme: VisualTheme): CSSProperties {
     ["--sb-shape-md" as string]: `${Math.max(16, Math.round(radius * 0.6))}px`,
     ["--sb-shape-lg" as string]: `${radius}px`,
     ["--sb-shape-xl" as string]: `${Math.round(radius * 1.2)}px`,
+    // Layout vars
+    ["--sb-sidebar-width" as string]: `${layout.sidebarWidth}px`,
+    ["--sb-topbar-height" as string]: topbarH,
+    ["--sb-topbar-blur" as string]: `${layout.topbarBlur}px`,
+    ["--sb-content-max-width" as string]: `${layout.contentMaxWidth}px`,
+    ["--sb-content-padding" as string]: `${layout.contentPadding}px`,
+    ["--sb-card-gap" as string]: `${layout.cardGap}px`,
+    ["--sb-layout-alignment" as string]: layout.contentAlignment,
+    // Scroll vars
+    ["--sb-scroll-duration" as string]: `${scroll.scrollAnimationDuration}ms`,
+    ["--sb-scroll-easing" as string]: easingMap[scroll.scrollAnimationEasing] ?? "ease",
+    ["--sb-scroll-stagger" as string]: `${scroll.scrollStagger}ms`,
+    ["--sb-parallax-intensity" as string]: String(scroll.parallaxIntensity),
+    ["--sb-overscroll" as string]: scroll.overscrollBehavior,
+    ["--sb-scroll-behavior" as string]: scroll.scrollBehavior,
   };
 }
 

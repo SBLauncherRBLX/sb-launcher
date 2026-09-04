@@ -95,13 +95,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "2.4.3",
-  buildId: "20260727192929",
+  version: "3.0.0",
+  buildId: "20260904231732",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 2.4.3\n\n- Startup splash screens (native + web) now match your Visuals theme colors.\n- Background glow, snake spinner, and text use the saved accent and palette from cold start.",
-  title: "SB Launcher 2.4.3",
-  publishedAt: "2026-07-27T12:29:29.000Z",
+    "SB Launcher 3.0 — Liquid Glass\n\n- New 3D volumetric icons (Home, Discover, Friends, Visuals, Settings, About) with dynamic accent colors\n- Layout & positioning: sidebar, topbar, content alignment, card gap, columns — fully animated\n- Scroll & overscroll: sticky topbar gap fix, overscroll modes, scroll animations (fade/slide/scale/parallax)\n- Visuals & Settings now accordion — each group opens separately, no clutter\n- Glass unified to topbar beauty: see-through cards/sidebar with backdrop blur\n- Theme presets with avatars, names, reorder, delete — saved in same grid\n- Instant scroll reset on navigation (no fly-up)\n- Custom wallpapers removed (bundled only)\n- Bubble reverted to previous liquid glass (48% + spring 540) per 3.0 rollback",
+  title: "SB Launcher 3.0",
+  publishedAt: "2026-09-04T23:17:32.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

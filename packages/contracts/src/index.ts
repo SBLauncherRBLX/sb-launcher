@@ -405,6 +405,35 @@ export const OutfitPresetSchema = z.object({
 });
 export type OutfitPreset = z.infer<typeof OutfitPresetSchema>;
 
+export const LayoutSettingsSchema = z.object({
+  sidebarPosition: z.enum(["left", "right", "hidden"]).default("left"),
+  sidebarWidth: z.number().min(200).max(360).default(272),
+  topbarPosition: z.enum(["sticky", "floating", "static"]).default("sticky"),
+  topbarHeight: z.enum(["compact", "comfortable", "spacious"]).default("comfortable"),
+  contentAlignment: z.enum(["left", "center", "stretch"]).default("stretch"),
+  contentMaxWidth: z.number().min(720).max(1800).default(1280),
+  contentPadding: z.number().min(8).max(48).default(22),
+  cardGap: z.number().min(8).max(32).default(16),
+  cardColumns: z.enum(["auto", "2", "3", "4"]).default("auto"),
+  topbarBlur: z.number().min(0).max(40).default(12),
+});
+export type LayoutSettings = z.infer<typeof LayoutSettingsSchema>;
+
+export const ScrollSettingsSchema = z.object({
+  overscrollBehavior: z.enum(["contain", "none", "auto"]).default("contain"),
+  scrollBehavior: z.enum(["auto", "smooth"]).default("smooth"),
+  scrollbarStyle: z.enum(["thin", "hidden", "overlay"]).default("thin"),
+  scrollAnimation: z.enum(["none", "fade", "slide", "scale", "parallax"]).default("fade"),
+  scrollAnimationDuration: z.number().min(120).max(900).default(360),
+  scrollAnimationEasing: z.enum(["linear", "ease", "easeIn", "easeOut", "easeInOut", "spring"]).default("easeOut"),
+  scrollStagger: z.number().min(0).max(120).default(40),
+  enableScrollProgress: z.boolean().default(false),
+  hideTopbarOnScroll: z.boolean().default(false),
+  parallaxIntensity: z.number().min(0).max(1).default(0.5),
+  revealOnScroll: z.boolean().default(true),
+});
+export type ScrollSettings = z.infer<typeof ScrollSettingsSchema>;
+
 export const ThemeEffectsSchema = z.object({
   glass: z.boolean().default(true),
   /** Backdrop blur strength in px when glass is on. */
@@ -472,6 +501,8 @@ export const VisualThemeSchema = z.object({
   wallpaperBlur: z.number().min(0).max(40).optional(),
   wallpaperDim: z.number().min(0).max(0.9).optional(),
   effects: ThemeEffectsSchema.optional(),
+  layout: LayoutSettingsSchema.optional(),
+  scroll: ScrollSettingsSchema.optional(),
   motionIntensity: z.enum(["off", "low", "medium", "high"]).optional(),
   buttonStyle: z.enum(["gradient", "solid", "tonal"]).optional(),
   cardStyle: z.enum(["glass", "solid", "outline"]).optional(),
@@ -595,6 +626,33 @@ export const DEFAULT_THEME_EFFECTS: ThemeEffects = {
   parallax: false,
 };
 
+export const DEFAULT_LAYOUT: LayoutSettings = {
+  sidebarPosition: "left",
+  sidebarWidth: 272,
+  topbarPosition: "sticky",
+  topbarHeight: "comfortable",
+  contentAlignment: "stretch",
+  contentMaxWidth: 1280,
+  contentPadding: 22,
+  cardGap: 16,
+  cardColumns: "auto",
+  topbarBlur: 12,
+};
+
+export const DEFAULT_SCROLL: ScrollSettings = {
+  overscrollBehavior: "contain",
+  scrollBehavior: "smooth",
+  scrollbarStyle: "thin",
+  scrollAnimation: "fade",
+  scrollAnimationDuration: 360,
+  scrollAnimationEasing: "easeOut",
+  scrollStagger: 40,
+  enableScrollProgress: false,
+  hideTopbarOnScroll: false,
+  parallaxIntensity: 0.5,
+  revealOnScroll: true,
+};
+
 export const DEFAULT_THEME: VisualTheme = {
   id: "sb-midnight",
   name: "SB Midnight",
@@ -630,6 +688,8 @@ export const DEFAULT_THEME: VisualTheme = {
     particles: false,
     parallax: false,
   },
+  layout: { ...DEFAULT_LAYOUT },
+  scroll: { ...DEFAULT_SCROLL },
   motionIntensity: "high",
   buttonStyle: "tonal",
   cardStyle: "solid",
@@ -642,6 +702,8 @@ export function normalizeTheme(input: unknown): VisualTheme {
     ...DEFAULT_THEME,
     ...parsed,
     effects: { ...DEFAULT_THEME_EFFECTS, ...(parsed.effects ?? {}) },
+    layout: { ...DEFAULT_LAYOUT, ...(parsed.layout ?? {}) },
+    scroll: { ...DEFAULT_SCROLL, ...(parsed.scroll ?? {}) },
     backgroundMode: parsed.backgroundMode ?? DEFAULT_THEME.backgroundMode,
     wallpaperId: parsed.wallpaperId ?? parsed.backgroundImage ?? null,
     wallpaperOpacity: parsed.wallpaperOpacity ?? DEFAULT_THEME.wallpaperOpacity,

@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import type { VisualTheme } from "@sb/contracts";
 import { themeToCssVars, LoadingState } from "@sb/ui";
 import { getWallpaperUrl } from "../assets/wallpapers";
@@ -11,15 +10,7 @@ export function BootSplash({
   theme: VisualTheme;
   label?: string;
 }) {
-  const [customWallpapers, setCustomWallpapers] = useState<Array<{ id: string; url: string }>>([]);
-
-  useEffect(() => {
-    void window.sbDesktop?.listCustomWallpapers?.().then((items) => {
-      setCustomWallpapers(items ?? []);
-    });
-  }, []);
-
-  const wallpaperUrl = getWallpaperUrl(theme.wallpaperId, customWallpapers);
+  const wallpaperUrl = getWallpaperUrl(theme.wallpaperId);
   const opacity = Math.max(theme.wallpaperOpacity ?? 0.55, wallpaperUrl ? 0.4 : 0);
   const blur = theme.wallpaperBlur ?? 0;
   const dim = theme.wallpaperDim ?? 0.45;

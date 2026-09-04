@@ -1,18 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { VisualTheme } from "@sb/contracts";
 import { getWallpaperUrl } from "../assets/wallpapers";
 import { ParticleField } from "./ParticleField";
 
 export function BackgroundScene({ theme }: { theme: VisualTheme }) {
-  const [customWallpapers, setCustomWallpapers] = useState<Array<{ id: string; url: string }>>([]);
   const sceneRef = useRef<HTMLDivElement>(null);
   const parallaxEnabled = Boolean(theme.effects?.parallax);
-
-  useEffect(() => {
-    void window.sbDesktop?.listCustomWallpapers?.().then((items) => {
-      setCustomWallpapers(items ?? []);
-    });
-  }, []);
 
   useEffect(() => {
     if (!parallaxEnabled) {
@@ -37,7 +30,7 @@ export function BackgroundScene({ theme }: { theme: VisualTheme }) {
     return () => window.removeEventListener("pointermove", onMove);
   }, [parallaxEnabled]);
 
-  const wallpaperUrl = getWallpaperUrl(theme.wallpaperId, customWallpapers);
+  const wallpaperUrl = getWallpaperUrl(theme.wallpaperId);
   const mode = theme.backgroundMode ?? "gradient";
   const showWallpaper = Boolean(wallpaperUrl) && (mode === "image" || mode === "layered");
   const style = {

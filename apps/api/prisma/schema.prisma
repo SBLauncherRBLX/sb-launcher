@@ -106,8 +106,12 @@ model ThemePreset {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
   payload   String
+  avatarUrl String?
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId, sortOrder])
 }
 
 model OutfitPreset {

@@ -1,0 +1,29 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="home-base" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2b2930"/>
+      <stop offset="1" stop-color="#1d1b20"/>
+    </linearGradient>
+    <linearGradient id="home-primary" x1="7.5" y1="7" x2="24.3" y2="25" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#efb8c8"/>
+      <stop offset="1" stop-color="#9a82db"/>
+    </linearGradient>
+    <radialGradient id="home-spec" cx="0.32" cy="0.22" r="0.55">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="home-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="1.1" stdDeviation="1" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect x="2" y="2" width="28" height="28" rx="9" fill="url(#home-base)"/>
+  <g filter="url(#home-shadow)">
+    <path d="M16 7.2 L24.3 14.3 C24.9 14.8 24.6 15.8 23.8 15.8 L8.2 15.8 C7.4 15.8 7.1 14.8 7.7 14.3 Z"
+          fill="url(#home-primary)" stroke="#ffffff" stroke-opacity="0.15" stroke-width="0.5"/>
+    <rect x="9" y="15" width="14" height="9.8" rx="3" fill="url(#home-primary)"
+          stroke="#ffffff" stroke-opacity="0.15" stroke-width="0.5"/>
+  </g>
+  <circle cx="16" cy="11.6" r="1.5" fill="url(#home-base)"/>
+  <rect x="13.4" y="19.4" width="5.2" height="5.4" rx="1.8" fill="url(#home-base)"/>
+  <ellipse cx="12" cy="10.6" rx="5" ry="3" fill="url(#home-spec)"/>
+</svg>

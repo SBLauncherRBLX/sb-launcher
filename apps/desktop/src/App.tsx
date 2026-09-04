@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { themeToCssVars } from "@sb/ui";
@@ -52,8 +52,8 @@ export default function App() {
   const session = useAppStore((s) => s.session);
   const bootstrap = useAppStore((s) => s.bootstrap);
   const setAuthToken = useAppStore((s) => s.setAuthToken);
-  const normalizedTheme = normalizeTheme(theme);
-  const cssVars = themeToCssVars(normalizedTheme);
+  const normalizedTheme = useMemo(() => normalizeTheme(theme), [theme]);
+  const cssVars = useMemo(() => themeToCssVars(normalizedTheme), [normalizedTheme]);
   const activeUserId = session?.activeUserId ?? session?.user?.id ?? "guest";
 
   useEffect(() => {
@@ -107,13 +107,15 @@ export default function App() {
 
   useEffect(() => {
     const root = document.documentElement;
-    const vars = themeToCssVars(normalizedTheme);
-    for (const [key, value] of Object.entries(vars)) {
+    for (const [key, value] of Object.entries(cssVars)) {
       if (typeof value === "string" || typeof value === "number") {
         root.style.setProperty(key, String(value));
       }
     }
-  }, [theme]);
+    root.dataset.columns = normalizedTheme.layout?.cardColumns ?? "auto";
+    root.dataset.scrollAnimation = normalizedTheme.scroll?.scrollAnimation ?? "fade";
+    root.dataset.reveal = String(normalizedTheme.scroll?.revealOnScroll ?? true);
+  }, [cssVars, normalizedTheme]);
 
   if (!ready) {
     return <BootSplash theme={normalizedTheme} label="Starting SB Launcher…" />;

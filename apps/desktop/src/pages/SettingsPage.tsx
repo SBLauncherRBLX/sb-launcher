@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import type { SafeGraphicsSettings } from "@sb/contracts";
 import { Button, Badge } from "@sb/ui";
 import { useAppStore } from "../store";
 import { authStartUrl } from "../lib/api";
 import { FontPreview } from "../components/FontPreview";
 import { fadeUp, useMotionEnabled } from "../lib/motion";
+import { Discord3D, Account3D, Player3D, Optimization3D, AppIcon3D, Appearance3D, Overlay3D } from "../components/Section3DIcons";
 import {
   applyRobloxAppIconPreference,
   getRobloxAppIconPreference,
@@ -24,6 +25,43 @@ const ROBLOX_APP_ICON_OPTIONS: Array<{
   { mode: "launcher", label: "SB Launcher", preview: sbLogo },
   { mode: "custom", label: "Custom", preview: null },
 ];
+
+function SettingsSection({
+  icon,
+  title,
+  subtitle,
+  defaultOpen = false,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="sb-card section-collapsible">
+      <button type="button" className="section-header" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span className="section-icon">{icon}</span>
+        <div className="section-titles">
+          <h3>{title}</h3>
+          <p className="sb-muted">{subtitle}</p>
+        </div>
+        <motion.span className="section-chevron" animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
+          ▾
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open ? (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.26, ease: [0.2, 0, 0, 1] as const }} style={{ overflow: "hidden" }}>
+            <div className="section-body">{children}</div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </section>
+  );
+}
 
 export function SettingsPage() {
   const session = useAppStore((s) => s.session);
@@ -335,9 +373,8 @@ export function SettingsPage() {
 
       {message ? <div className="notice">{message}</div> : null}
 
-      <div className="panel-grid">
-        <div className="sb-card" style={{ padding: "1.25rem" }}>
-          <h3>Discord</h3>
+      <div style={{ display: "grid", gap: "0.85rem" }}>
+        <SettingsSection icon={<Discord3D />} title="Discord" subtitle="Rich Presence — show your game on Discord">
           <p className="sb-muted" style={{ marginTop: "0.75rem" }}>
             Show what you&apos;re doing in Roblox on Discord — game name, playtime, thumbnail, Join
             server, and game page. Discord desktop must be running on this PC.
@@ -425,7 +462,7 @@ export function SettingsPage() {
                   placeholder="Leave empty for the built-in SB Launcher ID"
                   value={discordApplicationId}
                   onChange={(event) =>
-                    setDiscordApplicationId(event.target.value.replace(/\D/g, ""))
+                    setDiscordApplicationId(event.target.value.replace(/\\D/g, ""))
                   }
                 />
               </label>
@@ -435,10 +472,9 @@ export function SettingsPage() {
               </p>
             </div>
           ) : null}
-        </div>
+        </SettingsSection>
 
-        <div className="sb-card" style={{ padding: "1.25rem" }}>
-          <h3>Account</h3>
+        <SettingsSection icon={<Account3D />} title="Account" subtitle="Switch, manage and OAuth">
           <div style={{ marginTop: "0.75rem" }} className="sb-muted">
             {session?.authenticated ? (
               <>
@@ -521,7 +557,7 @@ export function SettingsPage() {
                 inputMode="numeric"
                 placeholder="Paste Client ID from Creator Dashboard"
                 value={oauthClientId}
-                onChange={(event) => setOauthClientId(event.target.value.replace(/\D/g, ""))}
+                onChange={(event) => setOauthClientId(event.target.value.replace(/\\D/g, ""))}
               />
             </label>
             <label>
@@ -549,10 +585,9 @@ export function SettingsPage() {
               Roblox account
             </Button>
           </div>
-        </div>
+        </SettingsSection>
 
-        <div className="sb-card" style={{ padding: "1.25rem" }}>
-          <h3>Roblox Player</h3>
+        <SettingsSection icon={<Player3D />} title="Roblox Player" subtitle="Detection and download">
           <p className="sb-muted">
             Status:{" "}
             {robloxInstalled ? "Detected on this PC" : "Not detected — install from Roblox.com"}
@@ -568,630 +603,442 @@ export function SettingsPage() {
           >
             Download Roblox
           </Button>
-        </div>
-      </div>
+        </SettingsSection>
 
-      <div className="sb-card" style={{ padding: "1.25rem", marginTop: "1rem" }}>
-        <div className="rail-title">
-          <div>
-            <h3>Roblox optimization</h3>
-            <p className="sb-muted rail-subtitle">
-              Uses Roblox settings plus only FastFlags from Roblox's official local allowlist.
-            </p>
+        <SettingsSection icon={<Optimization3D />} title="Roblox optimization" subtitle="Safe graphics and FastFlags">
+          <div className="rail-title">
+            <div>
+              <p className="sb-muted rail-subtitle">
+                Uses Roblox settings plus only FastFlags from Roblox&apos;s official local allowlist.
+              </p>
+            </div>
+            <Button variant="secondary" onClick={() => void applyOptimization()}>
+              Apply now
+            </Button>
           </div>
-          <Button variant="secondary" onClick={() => void applyOptimization()}>
-            Apply now
-          </Button>
-        </div>
-        <div className="chips" style={{ margin: "1rem 0" }}>
-          <button
-            className={`chip ${graphics.optimizationPreset === "maximum-fps" ? "active" : ""}`}
-            onClick={() => applyPreset("maximum-fps")}
-          >
-            Maximum FPS
-          </button>
-          <button
-            className={`chip ${graphics.optimizationPreset === "balanced" ? "active" : ""}`}
-            onClick={() => applyPreset("balanced")}
-          >
-            Balanced
-          </button>
-          <button
-            className={`chip ${graphics.optimizationPreset === "quality" ? "active" : ""}`}
-            onClick={() => applyPreset("quality")}
-          >
-            Best quality
-          </button>
-        </div>
-        <div className="form-grid" style={{ marginTop: "1rem", maxWidth: 520 }}>
-          <label className="check-row">
-            <input
-              type="checkbox"
-              checked={graphics.applyOnLaunch}
-              onChange={(e) =>
-                setGraphics({ ...graphics, applyOnLaunch: e.target.checked })
-              }
-            />
-            <span>Apply automatically before launching Roblox</span>
-          </label>
-          <label className="check-row">
-            <input
-              type="checkbox"
-              checked={graphics.returnToLauncherOnExit}
-              onChange={(e) =>
-                setGraphics({ ...graphics, returnToLauncherOnExit: e.target.checked })
-              }
-            />
-            <span>Close Roblox after leaving a place and return to SB Launcher</span>
-          </label>
-          <label>
-            Window mode
-            <select
-              className="sb-input"
-              value={graphics.preferredWindowMode}
-              onChange={(e) =>
-                patch({
-                  preferredWindowMode: e.target.value as SafeGraphicsSettings["preferredWindowMode"],
-                })
-              }
+          <div className="chips" style={{ margin: "1rem 0" }}>
+            <button
+              className={`chip ${graphics.optimizationPreset === "maximum-fps" ? "active" : ""}`}
+              onClick={() => applyPreset("maximum-fps")}
             >
-              <option value="windowed">Windowed</option>
-              <option value="fullscreen">Fullscreen</option>
-              <option value="borderless">Borderless (treated as fullscreen)</option>
-            </select>
-          </label>
-          <label>
-            Resolution
-            <select
-              className="sb-input"
-              value={graphics.preferredResolution}
-              onChange={(e) =>
-                patch({
-                  preferredResolution: e.target
-                    .value as SafeGraphicsSettings["preferredResolution"],
-                })
-              }
+              Maximum FPS
+            </button>
+            <button
+              className={`chip ${graphics.optimizationPreset === "balanced" ? "active" : ""}`}
+              onClick={() => applyPreset("balanced")}
             >
-              <option value="native">Native (monitor default)</option>
-              <option value="2560x1440">2560 × 1440</option>
-              <option value="1920x1080">1920 × 1080</option>
-              <option value="1600x900">1600 × 900</option>
-              <option value="1366x768">1366 × 768</option>
-              <option value="1280x720">1280 × 720</option>
-              <option value="1024x768">1024 × 768</option>
-            </select>
-          </label>
-          <label>
-            Aspect ratio
-            <select
-              className="sb-input"
-              value={graphics.preferredAspectRatio}
-              onChange={(e) =>
-                patch({
-                  preferredAspectRatio: e.target
-                    .value as SafeGraphicsSettings["preferredAspectRatio"],
-                })
-              }
+              Balanced
+            </button>
+            <button
+              className={`chip ${graphics.optimizationPreset === "quality" ? "active" : ""}`}
+              onClick={() => applyPreset("quality")}
             >
-              <option value="native">Native (keep resolution ratio)</option>
-              <option value="16:9">16:9</option>
-              <option value="16:10">16:10</option>
-              <option value="4:3">4:3</option>
-              <option value="21:9">21:9 ultrawide</option>
-              <option value="1:1">1:1</option>
-            </select>
-          </label>
-          <p className="sb-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
-            {windowPreview.label}
-          </p>
-          <p className="sb-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
-            Fullscreen + custom resolution changes the Windows display mode on launch (like CS),
-            then restores your normal resolution when Roblox closes. Windowed only resizes the
-            Roblox window. Enable “Apply automatically” or click Apply now before testing.
-          </p>
-          <label>
-            FPS cap
-            <select
-              className="sb-input"
-              value={graphics.fpsCapHint}
-              onChange={(e) =>
-                patch({ fpsCapHint: e.target.value as SafeGraphicsSettings["fpsCapHint"] })
-              }
-            >
-              <option value="unlimited">Maximum (240 FPS)</option>
-              <option value="240">240</option>
-              <option value="144">144</option>
-              <option value="120">120</option>
-              <option value="60">60</option>
-              <option value="30">30</option>
-            </select>
-          </label>
-          <label>
-            Graphics quality ({graphics.qualityLevel}/10)
-            <input
-              type="range"
-              min={1}
-              max={10}
-              step={1}
-              value={graphics.qualityLevel}
-              onChange={(e) => patch({ qualityLevel: Number(e.target.value) })}
-            />
-          </label>
-          <label className="check-row">
-            <input
-              type="checkbox"
-              checked={graphics.openRobloxSettingsOnLaunch}
-              onChange={(e) => patch({ openRobloxSettingsOnLaunch: e.target.checked })}
-            />
-            <span>Remind me to open Roblox settings after launch</span>
-          </label>
-          <label className="check-row">
-            <input
-              type="checkbox"
-              checked={graphics.useAllowlistedFastFlags}
-              onChange={(e) => patch({ useAllowlistedFastFlags: e.target.checked })}
-            />
-            <span>Use Roblox-allowlisted FastFlags</span>
-          </label>
-          {graphics.useAllowlistedFastFlags ? (
-            <>
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  checked={graphics.graySky}
-                  onChange={(e) => patch({ graySky: e.target.checked })}
-                />
-                <span>Gray sky (FPS)</span>
-              </label>
-              <label>
-                Texture quality override
-                <select
-                  className="sb-input"
-                  value={graphics.textureQualityOverride}
-                  onChange={(e) =>
-                    patch({
-                      textureQualityOverride:
-                        e.target.value as SafeGraphicsSettings["textureQualityOverride"],
-                    })
-                  }
-                >
-                  <option value="automatic">Automatic</option>
-                  <option value="1">Low</option>
-                  <option value="2">Medium</option>
-                  <option value="3">High</option>
-                </select>
-              </label>
-              <label>
-                Anti-aliasing
-                <select
-                  className="sb-input"
-                  value={graphics.antiAliasingSamples}
-                  onChange={(e) =>
-                    patch({
-                      antiAliasingSamples:
-                        e.target.value as SafeGraphicsSettings["antiAliasingSamples"],
-                    })
-                  }
-                >
-                  <option value="0">Off</option>
-                  <option value="2">2× MSAA</option>
-                  <option value="4">4× MSAA</option>
-                  <option value="8">8× MSAA</option>
-                </select>
-              </label>
-              <label>
-                Grass render distance
-                <select
-                  className="sb-input"
-                  value={graphics.grassDistance}
-                  onChange={(e) =>
-                    patch({
-                      grassDistance: e.target.value as SafeGraphicsSettings["grassDistance"],
-                    })
-                  }
-                >
-                  <option value="default">Default</option>
-                  <option value="0">Off</option>
-                  <option value="64">64 studs</option>
-                  <option value="128">128 studs</option>
-                  <option value="256">256 studs</option>
-                </select>
-              </label>
-              <label>
-                Rendering backend
-                <select
-                  className="sb-input"
-                  value={graphics.renderingMode}
-                  onChange={(e) =>
-                    patch({
-                      renderingMode: e.target.value as SafeGraphicsSettings["renderingMode"],
-                    })
-                  }
-                >
-                  <option value="automatic">Automatic</option>
-                  <option value="d3d11">Direct3D 11</option>
-                  <option value="vulkan">Vulkan</option>
-                  <option value="opengl">OpenGL</option>
-                </select>
-              </label>
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  checked={graphics.pauseVoxelizer}
-                  onChange={(e) => patch({ pauseVoxelizer: e.target.checked })}
-                />
-                <span>Pause voxel lighting updates</span>
-              </label>
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  checked={graphics.disableDpiScale}
-                  onChange={(e) => patch({ disableDpiScale: e.target.checked })}
-                />
-                <span>Preserve render resolution (disable DPI scale)</span>
-              </label>
-            </>
-          ) : null}
-        </div>
-        <div className="notice" style={{ marginTop: "1rem" }}>
-          Close Roblox before applying. SB Launcher creates a backup of the original settings and
-          changes graphics settings and the documented allowlisted flags only. It never injects code
-          or bypasses Roblox's whitelist. Roblox updates can replace ClientAppSettings.json.
-        </div>
-      </div>
+              Best quality
+            </button>
+          </div>
+          <div className="form-grid" style={{ marginTop: "1rem", maxWidth: 520 }}>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={graphics.applyOnLaunch}
+                onChange={(e) =>
+                  setGraphics({ ...graphics, applyOnLaunch: e.target.checked })
+                }
+              />
+              <span>Apply automatically before launching Roblox</span>
+            </label>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={graphics.returnToLauncherOnExit}
+                onChange={(e) =>
+                  setGraphics({ ...graphics, returnToLauncherOnExit: e.target.checked })
+                }
+              />
+              <span>Close Roblox after leaving a place and return to SB Launcher</span>
+            </label>
+            <label>
+              Window mode
+              <select
+                className="sb-input"
+                value={graphics.preferredWindowMode}
+                onChange={(e) =>
+                  patch({
+                    preferredWindowMode: e.target.value as SafeGraphicsSettings["preferredWindowMode"],
+                  })
+                }
+              >
+                <option value="windowed">Windowed</option>
+                <option value="fullscreen">Fullscreen</option>
+                <option value="borderless">Borderless (treated as fullscreen)</option>
+              </select>
+            </label>
+            <label>
+              Resolution
+              <select
+                className="sb-input"
+                value={graphics.preferredResolution}
+                onChange={(e) =>
+                  patch({
+                    preferredResolution: e.target
+                      .value as SafeGraphicsSettings["preferredResolution"],
+                  })
+                }
+              >
+                <option value="native">Native (monitor default)</option>
+                <option value="2560x1440">2560 × 1440</option>
+                <option value="1920x1080">1920 × 1080</option>
+                <option value="1600x900">1600 × 900</option>
+                <option value="1366x768">1366 × 768</option>
+                <option value="1280x720">1280 × 720</option>
+                <option value="1024x768">1024 × 768</option>
+              </select>
+            </label>
+            <label>
+              Aspect ratio
+              <select
+                className="sb-input"
+                value={graphics.preferredAspectRatio}
+                onChange={(e) =>
+                  patch({
+                    preferredAspectRatio: e.target
+                      .value as SafeGraphicsSettings["preferredAspectRatio"],
+                  })
+                }
+              >
+                <option value="native">Native (keep resolution ratio)</option>
+                <option value="16:9">16:9</option>
+                <option value="16:10">16:10</option>
+                <option value="4:3">4:3</option>
+                <option value="21:9">21:9 ultrawide</option>
+                <option value="1:1">1:1</option>
+              </select>
+            </label>
+            <p className="sb-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+              {windowPreview.label}
+            </p>
+            <p className="sb-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+              Fullscreen + custom resolution changes the Windows display mode on launch (like CS),
+              then restores your normal resolution when Roblox closes. Windowed only resizes the
+              Roblox window. Enable “Apply automatically” or click Apply now before testing.
+            </p>
+            <label>
+              FPS cap
+              <select
+                className="sb-input"
+                value={graphics.fpsCapHint}
+                onChange={(e) =>
+                  patch({ fpsCapHint: e.target.value as SafeGraphicsSettings["fpsCapHint"] })
+                }
+              >
+                <option value="unlimited">Maximum (240 FPS)</option>
+                <option value="240">240</option>
+                <option value="144">144</option>
+                <option value="120">120</option>
+                <option value="60">60</option>
+                <option value="30">30</option>
+              </select>
+            </label>
+            <label>
+              Graphics quality ({graphics.qualityLevel}/10)
+              <input
+                type="range"
+                min={1}
+                max={10}
+                step={1}
+                value={graphics.qualityLevel}
+                onChange={(e) => patch({ qualityLevel: Number(e.target.value) })}
+              />
+            </label>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={graphics.openRobloxSettingsOnLaunch}
+                onChange={(e) => patch({ openRobloxSettingsOnLaunch: e.target.checked })}
+              />
+              <span>Remind me to open Roblox settings after launch</span>
+            </label>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={graphics.useAllowlistedFastFlags}
+                onChange={(e) => patch({ useAllowlistedFastFlags: e.target.checked })}
+              />
+              <span>Use Roblox-allowlisted FastFlags</span>
+            </label>
+            {graphics.useAllowlistedFastFlags ? (
+              <>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={graphics.graySky}
+                    onChange={(e) => patch({ graySky: e.target.checked })}
+                  />
+                  <span>Gray sky (FPS)</span>
+                </label>
+                <label>
+                  Texture quality override
+                  <select
+                    className="sb-input"
+                    value={graphics.textureQualityOverride}
+                    onChange={(e) =>
+                      patch({
+                        textureQualityOverride:
+                          e.target.value as SafeGraphicsSettings["textureQualityOverride"],
+                      })
+                    }
+                  >
+                    <option value="automatic">Automatic</option>
+                    <option value="1">Low</option>
+                    <option value="2">Medium</option>
+                    <option value="3">High</option>
+                  </select>
+                </label>
+                <label>
+                  Anti-aliasing
+                  <select
+                    className="sb-input"
+                    value={graphics.antiAliasingSamples}
+                    onChange={(e) =>
+                      patch({
+                        antiAliasingSamples:
+                          e.target.value as SafeGraphicsSettings["antiAliasingSamples"],
+                      })
+                    }
+                  >
+                    <option value="0">Off</option>
+                    <option value="2">2× MSAA</option>
+                    <option value="4">4× MSAA</option>
+                    <option value="8">8× MSAA</option>
+                  </select>
+                </label>
+                <label>
+                  Grass render distance
+                  <select
+                    className="sb-input"
+                    value={graphics.grassDistance}
+                    onChange={(e) =>
+                      patch({
+                        grassDistance: e.target.value as SafeGraphicsSettings["grassDistance"],
+                      })
+                    }
+                  >
+                    <option value="default">Default</option>
+                    <option value="0">Off</option>
+                    <option value="64">64 studs</option>
+                    <option value="128">128 studs</option>
+                    <option value="256">256 studs</option>
+                  </select>
+                </label>
+                <label>
+                  Rendering backend
+                  <select
+                    className="sb-input"
+                    value={graphics.renderingMode}
+                    onChange={(e) =>
+                      patch({
+                        renderingMode: e.target.value as SafeGraphicsSettings["renderingMode"],
+                      })
+                    }
+                  >
+                    <option value="automatic">Automatic</option>
+                    <option value="d3d11">Direct3D 11</option>
+                    <option value="vulkan">Vulkan</option>
+                    <option value="opengl">OpenGL</option>
+                  </select>
+                </label>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={graphics.pauseVoxelizer}
+                    onChange={(e) => patch({ pauseVoxelizer: e.target.checked })}
+                  />
+                  <span>Pause voxel lighting updates</span>
+                </label>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={graphics.disableDpiScale}
+                    onChange={(e) => patch({ disableDpiScale: e.target.checked })}
+                  />
+                  <span>Preserve render resolution (disable DPI scale)</span>
+                </label>
+              </>
+            ) : null}
+          </div>
+          <div className="notice" style={{ marginTop: "1rem" }}>
+            Close Roblox before applying. SB Launcher creates a backup of the original settings and
+            changes graphics settings and the documented allowlisted flags only. It never injects code
+            or bypasses Roblox&apos;s whitelist. Roblox updates can replace ClientAppSettings.json.
+          </div>
+        </SettingsSection>
 
-      <div className="sb-card" style={{ padding: "1.25rem", marginTop: "1rem" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: "1rem",
-            alignItems: "flex-start",
-          }}
-        >
-          <div>
-            <h3>Roblox application icon</h3>
+        <SettingsSection icon={<AppIcon3D />} title="Roblox application icon" subtitle="Desktop and Start menu shortcut">
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "flex-start" }}>
             <p className="sb-muted" style={{ margin: "0.35rem 0 0" }}>
               Icon on Windows shortcuts for Roblox Player (desktop / Start menu).
               Click Apply icon after choosing. If Windows still shows the old
               picture, press F5 on the desktop or unpin and pin Roblox again.
             </p>
+            <Button variant="secondary" onClick={() => void applyRobloxAppIcon()}>Apply icon</Button>
           </div>
-          <Button variant="secondary" onClick={() => void applyRobloxAppIcon()}>
-            Apply icon
-          </Button>
-        </div>
-        <div className="app-icon-picker" style={{ marginTop: "1rem" }}>
-          {ROBLOX_APP_ICON_OPTIONS.map((option) => {
-            const preview =
-              option.mode === "custom"
-                ? robloxAppIconPreview(robloxAppIcon) ?? option.preview
-                : option.preview;
-            const selected = robloxAppIcon.mode === option.mode;
-            return (
-              <button
-                key={option.mode}
-                type="button"
-                className={`app-icon-option${selected ? " is-selected" : ""}`}
-                onClick={() =>
-                  setRobloxAppIcon({
-                    ...robloxAppIcon,
-                    mode: option.mode,
-                  })
-                }
-              >
-                {preview ? (
-                  <img src={preview} alt="" className="app-icon-option-preview" />
-                ) : (
-                  <span className="app-icon-option-fallback" aria-hidden>
-                    R
-                  </span>
-                )}
-                <span>{option.label}</span>
-              </button>
-            );
-          })}
-        </div>
-        {robloxAppIcon.mode === "custom" ? (
-          <div className="form-grid" style={{ marginTop: "1rem", maxWidth: 520 }}>
-            <label>
-              Custom app icon URL
-              <input
-                className="sb-input"
-                type="url"
-                placeholder="https://example.com/icon.png"
-                value={robloxAppIcon.customUrl}
-                onChange={(event) =>
-                  setRobloxAppIcon({
-                    ...robloxAppIcon,
-                    customUrl: event.target.value,
-                  })
-                }
-              />
-            </label>
-            {window.sbDesktop?.pickRobloxAppIcon ? (
-              <div className="row-actions">
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    void window.sbDesktop?.pickRobloxAppIcon().then((picked) => {
-                      if (picked) {
-                        setRobloxAppIcon({ mode: "custom", customUrl: picked.url });
-                      }
-                    })
-                  }
-                >
-                  Choose image file
-                </Button>
-              </div>
-            ) : null}
+          <div className="app-icon-picker" style={{ marginTop: "1rem" }}>
+            {ROBLOX_APP_ICON_OPTIONS.map((option) => {
+              const preview = option.mode === "custom" ? robloxAppIconPreview(robloxAppIcon) ?? option.preview : option.preview;
+              const selected = robloxAppIcon.mode === option.mode;
+              return (
+                <button key={option.mode} type="button" className={`app-icon-option${selected ? " is-selected" : ""}`} onClick={() => setRobloxAppIcon({ ...robloxAppIcon, mode: option.mode })}>
+                  {preview ? <img src={preview} alt="" className="app-icon-option-preview" /> : <span className="app-icon-option-fallback" aria-hidden>R</span>}
+                  <span>{option.label}</span>
+                </button>
+              );
+            })}
           </div>
-        ) : null}
-        <div className="notice" style={{ marginTop: "1rem" }}>
-          Click Apply icon after choosing. Windows may keep a cached shortcut icon until you refresh
-          the desktop or log out.
-        </div>
-      </div>
+          {robloxAppIcon.mode === "custom" ? (
+            <div className="form-grid" style={{ marginTop: "1rem", maxWidth: 520 }}>
+              <label>
+                Custom app icon URL
+                <input className="sb-input" type="url" placeholder="https://example.com/icon.png" value={robloxAppIcon.customUrl} onChange={(event) => setRobloxAppIcon({ ...robloxAppIcon, customUrl: event.target.value })} />
+              </label>
+              {window.sbDesktop?.pickRobloxAppIcon ? (
+                <div className="row-actions">
+                  <Button variant="secondary" onClick={() => void window.sbDesktop?.pickRobloxAppIcon().then((picked) => { if (picked) { setRobloxAppIcon({ mode: "custom", customUrl: picked.url }); } })}>
+                    Choose image file
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          <div className="notice" style={{ marginTop: "1rem" }}>
+            Click Apply icon after choosing. Windows may keep a cached shortcut icon until you refresh
+            the desktop or log out.
+          </div>
+        </SettingsSection>
 
-      <div className="sb-card" style={{ padding: "1.25rem", marginTop: "1rem" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: "1rem",
-            alignItems: "flex-start",
-          }}
-        >
-          <div>
-            <h3>Roblox appearance</h3>
+        <SettingsSection icon={<Appearance3D />} title="Roblox appearance" subtitle="Custom client font">
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "flex-start" }}>
             <p className="sb-muted" style={{ margin: "0.35rem 0 0" }}>
               Custom client font. Applied with optimization (and on every Roblox launch while custom
               mode is on). Close Roblox first.
             </p>
+            <Button variant="secondary" onClick={() => void applyOptimization()}>Apply now</Button>
           </div>
-          <Button variant="secondary" onClick={() => void applyOptimization()}>
-            Apply now
-          </Button>
-        </div>
-        <div className="form-grid" style={{ marginTop: "1rem", maxWidth: 520 }}>
-          <label>
-            Client font
-            <select
-              className="sb-input"
-              value={graphics.robloxFontMode}
-              onChange={(e) =>
-                patch({
-                  robloxFontMode: e.target.value as SafeGraphicsSettings["robloxFontMode"],
-                })
-              }
-            >
-              <option value="vanilla">Vanilla (default Roblox fonts)</option>
-              <option value="custom">Custom font (replace all UI fonts)</option>
-            </select>
-          </label>
-          {graphics.robloxFontMode === "custom" ? (
-            <div className="row-actions" style={{ alignItems: "center", gap: "0.75rem" }}>
-              <Button variant="secondary" onClick={() => void pickCustomFont()}>
-                Choose font (.ttf / .otf)
-              </Button>
-              <span className="sb-muted">
-                {graphics.robloxCustomFontName
-                  ? `Selected: ${graphics.robloxCustomFontName}`
-                  : "No font selected"}
-              </span>
-            </div>
-          ) : null}
-          <FontPreview
-            label="Preview on “Always better”"
-            useCustomFile={graphics.robloxFontMode === "custom"}
-            fontId={graphics.robloxCustomFontId}
-          />
-        </div>
-        <div className="notice" style={{ marginTop: "1rem" }}>
-          Custom font copies your file over every local Roblox font slot. Switch back to Vanilla and
-          Apply to restore defaults.
-        </div>
-      </div>
-
-      <div className="sb-card" style={{ padding: "1.25rem", marginTop: "1rem" }}>
-        <h3>Launch overlay</h3>
-        <p className="sb-muted" style={{ margin: "0.35rem 0 1rem" }}>
-          A small window shown for a few seconds when you join an experience from SB Launcher — not
-          Roblox’s own splash files.
-        </p>
-        <div className="launch-overlay-layout">
-          <div className="form-grid" style={{ maxWidth: 420 }}>
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={graphics.launchOverlayEnabled ?? true}
-                onChange={(e) => patch({ launchOverlayEnabled: e.target.checked })}
-              />
-              Show overlay when launching
-            </label>
+          <div className="form-grid" style={{ marginTop: "1rem", maxWidth: 520 }}>
             <label>
-              Duration ({Math.round((graphics.launchOverlayDurationMs ?? 4000) / 1000)}s)
-              <input
-                type="range"
-                min={2000}
-                max={8000}
-                step={500}
-                value={graphics.launchOverlayDurationMs ?? 4000}
-                onChange={(e) => patch({ launchOverlayDurationMs: Number(e.target.value) })}
-              />
-            </label>
-            <label>
-              Label
-              <input
-                className="sb-input"
-                maxLength={48}
-                value={graphics.launchOverlayLabel ?? "Launching Roblox…"}
-                onChange={(e) => patch({ launchOverlayLabel: e.target.value })}
-              />
-            </label>
-            <label>
-              Background
-              <select
-                className="sb-input"
-                value={graphics.launchOverlayBgMode ?? "color"}
-                onChange={(e) =>
-                  patch({
-                    launchOverlayBgMode: e.target
-                      .value as SafeGraphicsSettings["launchOverlayBgMode"],
-                  })
-                }
-              >
-                <option value="color">Solid color</option>
-                <option value="image">Custom image</option>
-                <option value="gif">Custom GIF</option>
+              Client font
+              <select className="sb-input" value={graphics.robloxFontMode} onChange={(e) => patch({ robloxFontMode: e.target.value as SafeGraphicsSettings["robloxFontMode"] })}>
+                <option value="vanilla">Vanilla (default Roblox fonts)</option>
+                <option value="custom">Custom font (replace all UI fonts)</option>
               </select>
             </label>
-            {(graphics.launchOverlayBgMode ?? "color") === "color" ? (
-              <label>
-                Background color
-                <input
-                  type="color"
-                  value={graphics.launchOverlayBgColor ?? "#12141f"}
-                  onChange={(e) => patch({ launchOverlayBgColor: e.target.value })}
-                />
-              </label>
-            ) : (
+            {graphics.robloxFontMode === "custom" ? (
               <div className="row-actions" style={{ alignItems: "center", gap: "0.75rem" }}>
-                <Button variant="secondary" onClick={() => void pickLaunchOverlayMedia()}>
-                  Choose {(graphics.launchOverlayBgMode ?? "image") === "gif" ? "GIF" : "image"}
-                </Button>
-                <span className="sb-muted">
-                  {graphics.launchOverlayMediaName
-                    ? `Selected: ${graphics.launchOverlayMediaName}`
-                    : "No file selected"}
-                </span>
+                <Button variant="secondary" onClick={() => void pickCustomFont()}>Choose font (.ttf / .otf)</Button>
+                <span className="sb-muted">{graphics.robloxCustomFontName ? `Selected: ${graphics.robloxCustomFontName}` : "No font selected"}</span>
               </div>
-            )}
-            <label>
-              Window color
-              <input
-                type="color"
-                value={graphics.launchOverlayWindowColor ?? "#1a1d2b"}
-                onChange={(e) => patch({ launchOverlayWindowColor: e.target.value })}
-              />
-            </label>
-            <label>
-              Border color
-              <input
-                type="color"
-                value={graphics.launchOverlayBorderColor ?? "#3a4158"}
-                onChange={(e) => patch({ launchOverlayBorderColor: e.target.value })}
-              />
-            </label>
-            <label>
-              Snake color
-              <input
-                type="color"
-                value={graphics.launchOverlaySnakeColor ?? "#9a82db"}
-                onChange={(e) => patch({ launchOverlaySnakeColor: e.target.value })}
-              />
-            </label>
-            <label>
-              Snake track
-              <input
-                type="color"
-                value={graphics.launchOverlaySnakeTrackColor ?? "#4a4458"}
-                onChange={(e) => patch({ launchOverlaySnakeTrackColor: e.target.value })}
-              />
-            </label>
-            <label>
-              Text color
-              <input
-                type="color"
-                value={graphics.launchOverlayTextColor ?? "#e6e1e5"}
-                onChange={(e) => patch({ launchOverlayTextColor: e.target.value })}
-              />
-            </label>
+            ) : null}
+            <FontPreview label="Preview on “Always better”" useCustomFile={graphics.robloxFontMode === "custom"} fontId={graphics.robloxCustomFontId} />
           </div>
+          <div className="notice" style={{ marginTop: "1rem" }}>
+            Custom font copies your file over every local Roblox font slot. Switch back to Vanilla and
+            Apply to restore defaults.
+          </div>
+        </SettingsSection>
 
-          <div className="launch-overlay-preview-wrap">
-            <p className="sb-muted" style={{ margin: "0 0 0.65rem" }}>
-              Live preview
-            </p>
-            <div
-              className="launch-overlay-preview"
-              style={{
-                background: graphics.launchOverlayWindowColor ?? "#1a1d2b",
-                borderColor: graphics.launchOverlayBorderColor ?? "#3a4158",
-              }}
-            >
-              <div
-                className="launch-overlay-preview-bg"
-                style={{
-                  background:
-                    (graphics.launchOverlayBgMode ?? "color") === "color"
-                      ? (graphics.launchOverlayBgColor ?? "#12141f")
-                      : undefined,
-                }}
-              >
-                {(graphics.launchOverlayBgMode === "image" ||
-                  graphics.launchOverlayBgMode === "gif") &&
-                graphics.launchOverlayMediaUrl ? (
-                  <img
-                    src={graphics.launchOverlayMediaUrl}
-                    alt=""
-                    className="launch-overlay-preview-media"
-                  />
-                ) : null}
-                <div className="launch-overlay-preview-dim" />
-              </div>
-              <div className="launch-overlay-preview-content">
-                <svg
-                  className="launch-overlay-preview-snake"
-                  viewBox="0 0 100 100"
-                  aria-hidden
-                >
-                  <path
-                    d="M 1.95,49.90 L 2.93,44.04 L 5.18,39.45 L 8.20,35.64 L 11.82,32.32 L 15.72,29.39 L 19.63,26.46 L 23.14,23.14 L 26.46,19.63 L 29.39,15.72 L 32.32,11.82 L 35.64,8.20 L 39.45,5.18 L 44.04,2.93 L 50.00,1.95 L 55.86,2.93 L 60.45,5.18 L 64.26,8.30 L 67.58,11.82 L 70.51,15.72 L 73.44,19.63 L 76.76,23.14 L 80.27,26.46 L 84.18,29.39 L 88.09,32.32 L 91.60,35.64 L 94.73,39.45 L 96.97,44.04 L 97.95,50.00 L 96.97,55.86 L 94.73,60.45 L 91.70,64.26 L 88.09,67.58 L 84.18,70.51 L 80.27,73.44 L 76.66,76.66 L 73.44,80.27 L 70.51,84.18 L 67.58,88.09 L 64.26,91.70 L 60.45,94.73 L 55.86,96.97 L 49.90,97.95 L 44.04,96.97 L 39.45,94.73 L 35.64,91.70 L 32.32,88.09 L 29.39,84.18 L 26.46,80.27 L 23.24,76.66 L 19.63,73.44 L 15.72,70.51 L 11.82,67.58 L 8.20,64.26 L 5.18,60.45 L 2.93,55.86 Z"
-                    fill="none"
-                    stroke={graphics.launchOverlaySnakeTrackColor ?? "#4a4458"}
-                    strokeWidth="3.1"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    className="launch-overlay-preview-snake-head"
-                    d="M 1.95,49.90 L 2.93,44.04 L 5.18,39.45 L 8.20,35.64 L 11.82,32.32 L 15.72,29.39 L 19.63,26.46 L 23.14,23.14 L 26.46,19.63 L 29.39,15.72 L 32.32,11.82 L 35.64,8.20 L 39.45,5.18 L 44.04,2.93 L 50.00,1.95 L 55.86,2.93 L 60.45,5.18 L 64.26,8.30 L 67.58,11.82 L 70.51,15.72 L 73.44,19.63 L 76.76,23.14 L 80.27,26.46 L 84.18,29.39 L 88.09,32.32 L 91.60,35.64 L 94.73,39.45 L 96.97,44.04 L 97.95,50.00 L 96.97,55.86 L 94.73,60.45 L 91.70,64.26 L 88.09,67.58 L 84.18,70.51 L 80.27,73.44 L 76.66,76.66 L 73.44,80.27 L 70.51,84.18 L 67.58,88.09 L 64.26,91.70 L 60.45,94.73 L 55.86,96.97 L 49.90,97.95 L 44.04,96.97 L 39.45,94.73 L 35.64,91.70 L 32.32,88.09 L 29.39,84.18 L 26.46,80.27 L 23.24,76.66 L 19.63,73.44 L 15.72,70.51 L 11.82,67.58 L 8.20,64.26 L 5.18,60.45 L 2.93,55.86 Z"
-                    fill="none"
-                    stroke={graphics.launchOverlaySnakeColor ?? "#9a82db"}
-                    strokeWidth="3.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeDasharray="48 232"
-                  />
-                </svg>
-                <strong style={{ color: graphics.launchOverlayTextColor ?? "#e6e1e5" }}>
-                  {graphics.launchOverlayLabel || "Launching Roblox…"}
-                </strong>
-              </div>
+        <SettingsSection icon={<Overlay3D />} title="Launch overlay" subtitle="Window shown when joining">
+          <p className="sb-muted" style={{ margin: "0.35rem 0 1rem" }}>
+            A small window shown for a few seconds when you join an experience from SB Launcher — not
+            Roblox’s own splash files.
+          </p>
+          <div className="launch-overlay-layout">
+            <div className="form-grid" style={{ maxWidth: 420 }}>
+              <label className="checkbox-row">
+                <input type="checkbox" checked={graphics.launchOverlayEnabled ?? true} onChange={(e) => patch({ launchOverlayEnabled: e.target.checked })} />
+                Show overlay when launching
+              </label>
+              <label>
+                Duration ({Math.round((graphics.launchOverlayDurationMs ?? 4000) / 1000)}s)
+                <input type="range" min={2000} max={8000} step={500} value={graphics.launchOverlayDurationMs ?? 4000} onChange={(e) => patch({ launchOverlayDurationMs: Number(e.target.value) })} />
+              </label>
+              <label>
+                Label
+                <input className="sb-input" maxLength={48} value={graphics.launchOverlayLabel ?? "Launching Roblox…"} onChange={(e) => patch({ launchOverlayLabel: e.target.value })} />
+              </label>
+              <label>
+                Background
+                <select className="sb-input" value={graphics.launchOverlayBgMode ?? "color"} onChange={(e) => patch({ launchOverlayBgMode: e.target.value as SafeGraphicsSettings["launchOverlayBgMode"] })}>
+                  <option value="color">Solid color</option>
+                  <option value="image">Custom image</option>
+                  <option value="gif">Custom GIF</option>
+                </select>
+              </label>
+              {(graphics.launchOverlayBgMode ?? "color") === "color" ? (
+                <label>
+                  Background color
+                  <input type="color" value={graphics.launchOverlayBgColor ?? "#12141f"} onChange={(e) => patch({ launchOverlayBgColor: e.target.value })} />
+                </label>
+              ) : (
+                <div className="row-actions" style={{ alignItems: "center", gap: "0.75rem" }}>
+                  <Button variant="secondary" onClick={() => void pickLaunchOverlayMedia()}>
+                    Choose {(graphics.launchOverlayBgMode ?? "image") === "gif" ? "GIF" : "image"}
+                  </Button>
+                  <span className="sb-muted">{graphics.launchOverlayMediaName ? `Selected: ${graphics.launchOverlayMediaName}` : "No file selected"}</span>
+                </div>
+              )}
+              <label>
+                Window color
+                <input type="color" value={graphics.launchOverlayWindowColor ?? "#1a1d2b"} onChange={(e) => patch({ launchOverlayWindowColor: e.target.value })} />
+              </label>
+              <label>
+                Border color
+                <input type="color" value={graphics.launchOverlayBorderColor ?? "#3a4158"} onChange={(e) => patch({ launchOverlayBorderColor: e.target.value })} />
+              </label>
+              <label>
+                Snake color
+                <input type="color" value={graphics.launchOverlaySnakeColor ?? "#9a82db"} onChange={(e) => patch({ launchOverlaySnakeColor: e.target.value })} />
+              </label>
+              <label>
+                Snake track
+                <input type="color" value={graphics.launchOverlaySnakeTrackColor ?? "#4a4458"} onChange={(e) => patch({ launchOverlaySnakeTrackColor: e.target.value })} />
+              </label>
+              <label>
+                Text color
+                <input type="color" value={graphics.launchOverlayTextColor ?? "#e6e1e5"} onChange={(e) => patch({ launchOverlayTextColor: e.target.value })} />
+              </label>
             </div>
-            <p className="sb-muted" style={{ margin: "0.7rem 0 0", fontSize: "0.85rem" }}>
-              {(graphics.launchOverlayEnabled ?? true)
-                ? `Appears for ~${Math.round((graphics.launchOverlayDurationMs ?? 4000) / 1000)}s when you join a game.`
-                : "Overlay is off — joining goes straight to Roblox."}
-            </p>
+            <div className="launch-overlay-preview-wrap">
+              <p className="sb-muted" style={{ margin: "0 0 0.65rem" }}>Live preview</p>
+              <div className="launch-overlay-preview" style={{ background: graphics.launchOverlayWindowColor ?? "#1a1d2b", borderColor: graphics.launchOverlayBorderColor ?? "#3a4158" }}>
+                <div className="launch-overlay-preview-bg" style={{ background: (graphics.launchOverlayBgMode ?? "color") === "color" ? (graphics.launchOverlayBgColor ?? "#12141f") : undefined }}>
+                  {(graphics.launchOverlayBgMode === "image" || graphics.launchOverlayBgMode === "gif") && graphics.launchOverlayMediaUrl ? (
+                    <img src={graphics.launchOverlayMediaUrl} alt="" className="launch-overlay-preview-media" />
+                  ) : null}
+                  <div className="launch-overlay-preview-dim" />
+                </div>
+                <div className="launch-overlay-preview-content">
+                  <svg className="launch-overlay-preview-snake" viewBox="0 0 100 100" aria-hidden>
+                    <path d="M 1.95,49.90 L 2.93,44.04 L 5.18,39.45 L 8.20,35.64 L 11.82,32.32 L 15.72,29.39 L 19.63,26.46 L 23.14,23.14 L 26.46,19.63 L 29.39,15.72 L 32.32,11.82 L 35.64,8.20 L 39.45,5.18 L 44.04,2.93 L 50.00,1.95 L 55.86,2.93 L 60.45,5.18 L 64.26,8.30 L 67.58,11.82 L 70.51,15.72 L 73.44,19.63 L 76.76,23.14 L 80.27,26.46 L 84.18,29.39 L 88.09,32.32 L 91.60,35.64 L 94.73,39.45 L 96.97,44.04 L 97.95,50.00 L 96.97,55.86 L 94.73,60.45 L 91.70,64.26 L 88.09,67.58 L 84.18,70.51 L 80.27,73.44 L 76.66,76.66 L 73.44,80.27 L 70.51,84.18 L 67.58,88.09 L 64.26,91.70 L 60.45,94.73 L 55.86,96.97 L 49.90,97.95 L 44.04,96.97 L 39.45,94.73 L 35.64,91.70 L 32.32,88.09 L 29.39,84.18 L 26.46,80.27 L 23.24,76.66 L 19.63,73.44 L 15.72,70.51 L 11.82,67.58 L 8.20,64.26 L 5.18,60.45 L 2.93,55.86 Z" fill="none" stroke={graphics.launchOverlaySnakeTrackColor ?? "#4a4458"} strokeWidth="3.1" strokeLinecap="round" strokeLinejoin="round" />
+                    <path className="launch-overlay-preview-snake-head" d="M 1.95,49.90 L 2.93,44.04 L 5.18,39.45 L 8.20,35.64 L 11.82,32.32 L 15.72,29.39 L 19.63,26.46 L 23.14,23.14 L 26.46,19.63 L 29.39,15.72 L 32.32,11.82 L 35.64,8.20 L 39.45,5.18 L 44.04,2.93 L 50.00,1.95 L 55.86,2.93 L 60.45,5.18 L 64.26,8.30 L 67.58,11.82 L 70.51,15.72 L 73.44,19.63 L 76.76,23.14 L 80.27,26.46 L 84.18,29.39 L 88.09,32.32 L 91.60,35.64 L 94.73,39.45 L 96.97,44.04 L 97.95,50.00 L 96.97,55.86 L 94.73,60.45 L 91.70,64.26 L 88.09,67.58 L 84.18,70.51 L 80.27,73.44 L 76.66,76.66 L 73.44,80.27 L 70.51,84.18 L 67.58,88.09 L 64.26,91.70 L 60.45,94.73 L 55.86,96.97 L 49.90,97.95 L 44.04,96.97 L 39.45,94.73 L 35.64,91.70 L 32.32,88.09 L 29.39,84.18 L 26.46,80.27 L 23.24,76.66 L 19.63,73.44 L 15.72,70.51 L 11.82,67.58 L 8.20,64.26 L 5.18,60.45 L 2.93,55.86 Z" fill="none" stroke={graphics.launchOverlaySnakeColor ?? "#9a82db"} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="48 232" />
+                  </svg>
+                  <strong style={{ color: graphics.launchOverlayTextColor ?? "#e6e1e5" }}>{graphics.launchOverlayLabel || "Launching Roblox…"}</strong>
+                </div>
+              </div>
+              <p className="sb-muted" style={{ margin: "0.7rem 0 0", fontSize: "0.85rem" }}>{(graphics.launchOverlayEnabled ?? true) ? `Appears for ~${Math.round((graphics.launchOverlayDurationMs ?? 4000) / 1000)}s when you join a game.` : "Overlay is off — joining goes straight to Roblox."}</p>
+            </div>
           </div>
-        </div>
-      </div>
+        </SettingsSection>
 
-      <div className="sb-card" style={{ padding: "1.25rem", marginTop: "1rem" }}>
-        <h3>About</h3>
-        <p>
-          <strong>SB Launcher</strong> is an independent companion app and is not affiliated with,
-          endorsed by, or sponsored by Roblox Corporation.
-        </p>
-        <div className="row-actions">
-          <Button
-            variant="ghost"
-            onClick={() => void window.sbDesktop?.openExternal("https://en.help.roblox.com/")}
-          >
-            Roblox Help
-          </Button>
+        <div className="sb-card" style={{ padding: "1.25rem", marginTop: "1rem" }}>
+          <h3>About</h3>
+          <p>
+            <strong>SB Launcher</strong> is an independent companion app and is not affiliated with,
+            endorsed by, or sponsored by Roblox Corporation.
+          </p>
+          <div className="row-actions">
+            <Button variant="ghost" onClick={() => void window.sbDesktop?.openExternal("https://en.help.roblox.com/")}>
+              Roblox Help
+            </Button>
+          </div>
         </div>
       </div>
     </div>

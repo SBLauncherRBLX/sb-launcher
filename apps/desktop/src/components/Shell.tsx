@@ -1,11 +1,12 @@
 import { NavLink, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import type { PropsWithChildren, FormEvent, ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button } from "@sb/ui";
 import { useAppStore } from "../store";
 import { authStartUrl } from "../lib/api";
 import sbLogo from "../assets/sb-logo.png";
+import { Home3D, Discover3D, Friends3D, Visuals3D, Settings3D, About3D } from "./Nav3DIcons";
 import { fadeUp, springSnappy, useMotionEnabled } from "../lib/motion";
 import { APP_VERSION } from "../lib/version";
 import {
@@ -51,67 +52,32 @@ const links: Array<{ to: string; label: string; icon: ReactNode }> = [
   {
     to: "/",
     label: "Home",
-    icon: (
-      <NavIcon>
-        <path d="M4.5 10.5 12 4l7.5 6.5" />
-        <path d="M6.5 9.8V19a1 1 0 0 0 1 1H10v-5h4v5h2.5a1 1 0 0 0 1-1V9.8" />
-      </NavIcon>
-    ),
+    icon: <Home3D className="nav-icon-3d" />,
   },
   {
     to: "/discover",
     label: "Discover",
-    icon: (
-      <NavIcon>
-        <circle cx="12" cy="12" r="8.25" />
-        <path d="m14.8 9.2-1.6 4.6-4.6 1.6 1.6-4.6z" />
-      </NavIcon>
-    ),
+    icon: <Discover3D className="nav-icon-3d" />,
   },
   {
     to: "/friends",
     label: "Friends",
-    icon: (
-      <NavIcon>
-        <circle cx="9" cy="8.2" r="3.1" />
-        <path d="M3.6 19c.7-3 3-4.8 5.4-4.8s4.7 1.8 5.4 4.8" />
-        <circle cx="16.6" cy="9" r="2.35" />
-        <path d="M15.4 14.3c1.7.3 3.1 1.4 3.8 3.2" />
-      </NavIcon>
-    ),
+    icon: <Friends3D className="nav-icon-3d" />,
   },
   {
     to: "/visuals",
     label: "Visuals",
-    icon: (
-      <NavIcon>
-        <path d="M12 4.2a7.8 7.8 0 1 0 0 15.6c1.4 0 1.85-.9 1.2-1.9-.8-1.3.2-2.8 1.75-2.8H17a2.7 2.7 0 0 0 2.7-2.7C19.7 7.5 16.3 4.2 12 4.2Z" />
-        <circle cx="8.2" cy="11" r="0.9" fill="currentColor" stroke="none" />
-        <circle cx="10.8" cy="8.2" r="0.9" fill="currentColor" stroke="none" />
-        <circle cx="14.4" cy="8.4" r="0.9" fill="currentColor" stroke="none" />
-      </NavIcon>
-    ),
+    icon: <Visuals3D className="nav-icon-3d" />,
   },
   {
     to: "/settings",
     label: "Settings",
-    icon: (
-      <NavIcon>
-        <circle cx="12" cy="12" r="3.1" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.86 1 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
-      </NavIcon>
-    ),
+    icon: <Settings3D className="nav-icon-3d" />,
   },
   {
     to: "/about",
     label: "About",
-    icon: (
-      <NavIcon>
-        <circle cx="12" cy="12" r="8.25" />
-        <path d="M12 10.2v5.1" />
-        <circle cx="12" cy="7.6" r="0.85" fill="currentColor" stroke="none" />
-      </NavIcon>
-    ),
+    icon: <About3D className="nav-icon-3d" />,
   },
 ];
 
@@ -133,6 +99,7 @@ export function Shell({ children }: PropsWithChildren) {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [accountBusy, setAccountBusy] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
   const [avatarPreference, setAvatarPreference] = useState<ProfileAvatarPreference>(
     getProfileAvatarPreference,
   );
@@ -140,6 +107,18 @@ export function Shell({ children }: PropsWithChildren) {
   const profileAvatar = resolveProfileAvatar(session?.user?.avatarUrl, avatarPreference);
   const accounts = session?.accounts ?? [];
   const activeUserId = session?.activeUserId ?? session?.user?.id ?? null;
+
+  const layout = useMemo(
+    () => theme.layout ?? { sidebarPosition: "left", sidebarWidth: 272, topbarPosition: "sticky", topbarHeight: "comfortable", contentAlignment: "stretch", contentMaxWidth: 1280, contentPadding: 22, cardGap: 16, cardColumns: "auto", topbarBlur: 12, pageTransition: "slide" } as NonNullable<typeof theme.layout>,
+    [theme.layout],
+  );
+  const scroll = useMemo(
+    () => theme.scroll ?? { overscrollBehavior: "contain", scrollBehavior: "smooth", scrollbarStyle: "thin", scrollAnimation: "fade", scrollAnimationDuration: 360, scrollAnimationEasing: "easeOut", scrollStagger: 40, enableScrollProgress: false, hideTopbarOnScroll: false, parallaxIntensity: 0.5, revealOnScroll: true } as NonNullable<typeof theme.scroll>,
+    [theme.scroll],
+  );
+  const [topbarHidden, setTopbarHidden] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
     if (location.pathname.startsWith("/discover")) {
@@ -175,6 +154,125 @@ export function Shell({ children }: PropsWithChildren) {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [accountMenuOpen]);
+
+  // Reset hidden state immediately when feature is disabled (bug #3)
+  useEffect(() => {
+    if (!scroll.hideTopbarOnScroll) {
+      setTopbarHidden(false);
+      lastScrollY.current = 0;
+    }
+    if (!scroll.enableScrollProgress) {
+      setScrollProgress(0);
+    }
+  }, [scroll.hideTopbarOnScroll, scroll.enableScrollProgress]);
+
+  useEffect(() => {
+    const isSticky = layout.topbarPosition !== "static";
+    const scrollEl: HTMLElement | null = isSticky
+      ? mainRef.current
+      : (mainRef.current?.querySelector(".page") as HTMLElement | null) ?? mainRef.current;
+    if (!scrollEl) return;
+    if (!scroll.hideTopbarOnScroll && !scroll.enableScrollProgress) return;
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const y = scrollEl.scrollTop;
+        const delta = y - lastScrollY.current;
+        if (scroll.hideTopbarOnScroll) {
+          if (y > 80 && delta > 4) setTopbarHidden(true);
+          else if (delta < -6 || y < 20) setTopbarHidden(false);
+        }
+        if (scroll.enableScrollProgress) {
+          const max = scrollEl.scrollHeight - scrollEl.clientHeight;
+          setScrollProgress(max > 0 ? Math.min(1, y / max) : 0);
+        }
+        lastScrollY.current = y;
+      });
+    };
+    scrollEl.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      scrollEl.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [scroll.hideTopbarOnScroll, scroll.enableScrollProgress, layout.topbarPosition]);
+
+  useLayoutEffect(() => {
+    // instant scroll reset without animation — completely invisible (before paint)
+    const isSticky = layout.topbarPosition !== "static";
+    const scrollEl: HTMLElement | null = isSticky
+      ? mainRef.current
+      : (mainRef.current?.querySelector(".page") as HTMLElement | null) ?? null;
+    const instantReset = (el: HTMLElement | null) => {
+      if (!el) return;
+      const prev = el.style.scrollBehavior;
+      el.style.scrollBehavior = "auto";
+      el.scrollTop = 0;
+      try {
+        (el as unknown as { scrollTo: (o: ScrollToOptions) => void }).scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+      } catch {}
+      // restore on next frame to avoid smooth reappearing
+      requestAnimationFrame(() => {
+        el.style.scrollBehavior = prev;
+      });
+    };
+    instantReset(scrollEl);
+    if (!isSticky) instantReset(mainRef.current);
+    // also reset window if needed
+    try { window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }); } catch { window.scrollTo(0, 0); }
+    setTopbarHidden(false);
+    setScrollProgress(0);
+    lastScrollY.current = 0;
+  }, [location.pathname, layout.topbarPosition]);
+
+  // Scroll reveal — makes scroll animations actually work on scroll (not just on load)
+  useEffect(() => {
+    if (!scroll.revealOnScroll || scroll.scrollAnimation === "none") {
+      document.querySelectorAll(".page .sb-card").forEach((el) => el.classList.add("is-visible"));
+      return;
+    }
+    const isSticky = layout.topbarPosition !== "static";
+    const scrollRoot: HTMLElement | null = isSticky ? mainRef.current : (mainRef.current?.querySelector(".page") as HTMLElement | null);
+    const pageEl = mainRef.current?.querySelector(".page") as HTMLElement | null;
+    if (!pageEl) return;
+    const cards = Array.from(pageEl.querySelectorAll(".sb-card")) as HTMLElement[];
+    cards.forEach((el, idx) => {
+      el.style.setProperty("--card-index", String(idx));
+      el.classList.remove("is-visible");
+    });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            (entry.target as HTMLElement).classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        root: scrollRoot,
+        threshold: 0.12,
+        rootMargin: "0px 0px -8% 0px",
+      },
+    );
+    cards.forEach((el) => observer.observe(el));
+    const mo = new MutationObserver(() => {
+      const newCards = Array.from(pageEl.querySelectorAll(".sb-card")) as HTMLElement[];
+      newCards.forEach((el, idx) => {
+        if (!el.style.getPropertyValue("--card-index")) el.style.setProperty("--card-index", String(idx));
+        if (!el.classList.contains("is-visible")) observer.observe(el);
+      });
+    });
+    mo.observe(pageEl, { childList: true, subtree: true });
+    // fallback: make visible after short delay if observer doesn't fire (e.g., already in view)
+    const t = window.setTimeout(() => cards.forEach((el) => el.classList.add("is-visible")), 900);
+    return () => {
+      observer.disconnect();
+      mo.disconnect();
+      window.clearTimeout(t);
+    };
+  }, [location.pathname, scroll.revealOnScroll, scroll.scrollAnimation, scroll.scrollAnimationDuration, scroll.scrollAnimationEasing, scroll.scrollStagger, layout.topbarPosition]);
 
   async function signIn() {
     const url = authStartUrl();
@@ -212,8 +310,63 @@ export function Shell({ children }: PropsWithChildren) {
     navigate(`/discover?q=${encodeURIComponent(term)}&tab=${activeTab}`);
   }
 
+  const isSticky = layout.topbarPosition !== "static";
+  const shellClasses = useMemo(
+    () => [
+      "app-shell",
+      theme.density,
+      layout.sidebarPosition === "right" ? "layout-right" : layout.sidebarPosition === "hidden" ? "layout-hidden" : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    [theme.density, layout.sidebarPosition],
+  );
+
+  const scrollbarClass = scroll.scrollbarStyle === "hidden" ? "scrollbar-hidden" : scroll.scrollbarStyle === "overlay" ? "scrollbar-overlay" : "";
+
+  const mainClasses = useMemo(
+    () => [
+      "main",
+      isSticky ? "scroll-sticky" : "",
+      layout.topbarPosition === "floating" ? "topbar-floating" : layout.topbarPosition === "static" ? "topbar-static" : "",
+      `topbar-height-${layout.topbarHeight}`,
+      isSticky ? scrollbarClass : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    [isSticky, layout.topbarPosition, layout.topbarHeight, scrollbarClass],
+  );
+
+  const pageClasses = useMemo(
+    () => ["page", !isSticky ? scrollbarClass : ""].filter(Boolean).join(" "),
+    [isSticky, scrollbarClass],
+  );
+
   return (
-    <div className={`app-shell ${theme.density}`}>
+    <>
+      <svg width="0" height="0" style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }} aria-hidden>
+        <defs>
+          <filter id="liquid-glass-filter" x="-20%" y="-20%" width="140%" height="140%" colorInterpolationFilters="sRGB">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+            <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 13 -5" result="goo" />
+            <feComposite in="SourceGraphic" in2="goo" operator="atop" result="composite" />
+            <feGaussianBlur in="composite" stdDeviation="0.5" result="finalBlur" />
+          </filter>
+          <radialGradient id="liquid-highlight-3d" cx="0.3" cy="0.22" r="0.8">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.42" />
+            <stop offset="45%" stopColor="#ffffff" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+          </radialGradient>
+          <linearGradient id="liquid-edge" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#ff3b7a" stopOpacity="0.45" />
+            <stop offset="18%" stopColor="#7c5cff" stopOpacity="0.38" />
+            <stop offset="42%" stopColor="#00d4ff" stopOpacity="0.32" />
+            <stop offset="68%" stopColor="#3cff88" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="#ff3b7a" stopOpacity="0.35" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className={shellClasses}>
       <aside className={`sidebar ${theme.sidebarStyle}`}>
         <div className="brand">
           <span
@@ -239,12 +392,28 @@ export function Shell({ children }: PropsWithChildren) {
             >
               {({ isActive }) => (
                 <>
-                  {motionEnabled && isActive ? (
-                    <motion.span
-                      layoutId="nav-pill"
-                      className="nav-pill"
-                      transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                    />
+                  {isActive ? (
+                    motionEnabled ? (
+                      <motion.div
+                        layoutId="nav-pill-liquid"
+                        className="nav-pill nav-pill-liquid"
+                        initial={{ scale: 0.94, opacity: 0.88 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.94, opacity: 0.88 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 540,
+                          damping: 32,
+                          mass: 0.82,
+                          restDelta: 0.001,
+                          restSpeed: 0.001,
+                        }}
+                        layout
+                        style={{ willChange: "transform, opacity" }}
+                      />
+                    ) : (
+                      <span className="nav-pill nav-pill-liquid" />
+                    )
                   ) : null}
                   {link.icon}
                   <span className="nav-label">{link.label}</span>
@@ -365,8 +534,11 @@ export function Shell({ children }: PropsWithChildren) {
           )}
         </div>
       </aside>
-      <div className="main">
-        <header className="topbar">
+      <div className={mainClasses} ref={mainRef}>
+        {scroll.enableScrollProgress ? (
+          <div className="scroll-progress" style={{ transform: `scaleX(${scrollProgress})`, opacity: scrollProgress > 0 ? 1 : 0 }} />
+        ) : null}
+        <header className={`topbar ${topbarHidden ? "is-hidden" : ""}`}>
           <form className="search m3-search" onSubmit={onSearch}>
             <svg
               className="m3-search-icon"
@@ -422,7 +594,7 @@ export function Shell({ children }: PropsWithChildren) {
             </div>
           </div>
         ) : null}
-        <main className="page">{children}</main>
+        <main className={pageClasses}>{children}</main>
         {updateNotesOpen && updateAvailable ? (
           <UpdateInstallModal
             update={updateAvailable}
@@ -432,5 +604,6 @@ export function Shell({ children }: PropsWithChildren) {
         <LaunchGateModal />
       </div>
     </div>
+    </>
   );
 }

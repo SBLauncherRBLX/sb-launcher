@@ -32,14 +32,9 @@ export const BUNDLED_WALLPAPERS = [
   },
 ] as const;
 
-export function getWallpaperUrl(
-  wallpaperId: string | null | undefined,
-  customWallpapers: Array<{ id: string; url: string }> = [],
-): string | null {
+export function getWallpaperUrl(wallpaperId: string | null | undefined): string | null {
   if (!wallpaperId) return null;
   const bundled = BUNDLED_WALLPAPERS.find((item) => item.id === wallpaperId);
   if (bundled) return bundled.url;
-  const custom = customWallpapers.find((item) => item.id === wallpaperId);
-  if (custom) return custom.url;
   return null;
 }

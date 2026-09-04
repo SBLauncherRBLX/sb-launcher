@@ -286,6 +286,7 @@ button,
   position: relative;
   min-width: 0;
   max-width: 100%;
+  /* Unified glass — identical to topbar search for that beautiful see-through */
   --sb-glass-filter: blur(calc(var(--sb-glass-blur, var(--sb-blur)) * var(--sb-glass-cards, 0)))
     saturate(calc(1 + (var(--sb-glass-saturate, 1) - 1) * var(--sb-glass-cards, 0)))
     brightness(calc(1 + (var(--sb-glass-brightness, 1) - 1) * var(--sb-glass-cards, 0)))
@@ -302,7 +303,7 @@ button,
       )
     )
       calc(var(--sb-glass-cards, 0) * 100%),
-    var(--sb-surface-container)
+    color-mix(in srgb, var(--sb-surface-container) 78%, transparent)
   );
   border: 1px solid
     color-mix(
