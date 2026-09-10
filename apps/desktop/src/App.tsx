@@ -124,7 +124,7 @@ export default function App() {
   return (
     <div
       style={cssVars}
-      className={`app-root density-${normalizedTheme.density} motion-${normalizedTheme.motionIntensity ?? "medium"} button-style-${normalizedTheme.buttonStyle ?? "gradient"} card-style-${normalizedTheme.cardStyle ?? "glass"}`}
+      className={`app-root density-${normalizedTheme.density} motion-${normalizedTheme.motionIntensity ?? "medium"} button-style-${normalizedTheme.buttonStyle ?? "gradient"} card-style-${normalizedTheme.cardStyle ?? "glass"} nav-pill-${normalizedTheme.layout?.navPillStyle ?? "glass"}`}
     >
       <BackgroundScene theme={normalizedTheme} />
       <Shell>

@@ -95,13 +95,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "3.0.0",
-  buildId: "20260904234027",
+  version: "3.1.0",
+  buildId: "20260910224820",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 3.0 — Liquid Glass\n\n- New 3D volumetric icons with dynamic accent colors\n- Layout & positioning: sidebar, topbar, content alignment, card gap, columns — fully animated\n- Scroll & overscroll: sticky topbar gap fix, overscroll modes, scroll animations (fade/slide/scale/parallax)\n- Visuals & Settings now accordion — each group opens separately, no clutter\n- Glass unified to topbar beauty & instant scroll reset\n- Theme presets with avatars, names, reorder, delete — saved in same grid\n- Bubble reverted to previous liquid glass (48% + spring 540) per 3.0 rollback\n- Custom wallpapers removed (bundled only)",
-  title: "SB Launcher 3.0",
-  publishedAt: "2026-09-04T23:40:27.000Z",
+    "SB Launcher 3.1 — Frosted buttons & tidy settings\n\n- All buttons unified to dark-gray frosted glass like the account pill\n- Sidebar bubble can switch back to classic Material You in Visuals\n- Visuals & Settings regrouped — no duplicate controls, bigger section icons\n- Custom wallpapers back (100% working), static About logo, no cursor parallax\n- Installer no longer fails on locked files — closes the app before updating",
+  title: "SB Launcher 3.1",
+  publishedAt: "2026-09-10T15:48:20.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

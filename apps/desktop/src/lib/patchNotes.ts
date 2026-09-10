@@ -19,6 +19,17 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "3.1.0",
+    title: "Frosted buttons & tidy settings",
+    items: [
+      "All buttons unified to dark-gray frosted glass like the account pill.",
+      "Sidebar bubble can switch back to classic Material You in Visuals.",
+      "Visuals & Settings regrouped — no duplicate controls, bigger section icons.",
+      "Custom wallpapers back (100% working), static About logo, no cursor parallax.",
+      "Installer no longer fails on locked files — closes the app before updating.",
+    ],
+  },
+  {
     version: "3.0.0",
     title: "Liquid Glass & 3D icons",
     items: [

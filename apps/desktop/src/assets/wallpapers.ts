@@ -36,5 +36,22 @@ export function getWallpaperUrl(wallpaperId: string | null | undefined): string 
   if (!wallpaperId) return null;
   const bundled = BUNDLED_WALLPAPERS.find((item) => item.id === wallpaperId);
   if (bundled) return bundled.url;
+  // Custom wallpapers are stored as "custom-xxx" ids with virtual-host URLs.
+  // Direct data: URLs (fallback for browser mode) are also valid.
+  if (wallpaperId.startsWith("data:")) return wallpaperId;
+  if (wallpaperId.startsWith("https://wallpapers.sblauncher/")) return wallpaperId;
+  if (wallpaperId.startsWith("custom-")) {
+    // If id already contains an extension, use it as filename; otherwise the
+    // BackgroundScene will resolve via listCustomWallpapers(). This fallback
+    // keeps old presets from breaking.
+    if (/\.(png|jpg|jpeg|webp|bmp)$/i.test(wallpaperId)) {
+      return `https://wallpapers.sblauncher/${wallpaperId}`;
+    }
+    return `__custom_lookup__:${wallpaperId}`;
+  }
   return null;
+}
+
+export function isCustomWallpaperId(wallpaperId: string | null | undefined): boolean {
+  return typeof wallpaperId === "string" && wallpaperId.startsWith("custom-");
 }

@@ -66,6 +66,8 @@ export function VisualsPage() {
   const [editAvatar, setEditAvatar] = useState<string | null>(null);
   const presetAvatarInputRef = useRef<HTMLInputElement>(null);
   const editAvatarInputRef = useRef<HTMLInputElement>(null);
+  const [customWallpapers, setCustomWallpapers] = useState<Array<{ id: string; name: string; url: string }>>([]);
+  const customWallpaperInputRef = useRef<HTMLInputElement>(null);
 
   const exportJson = useMemo(() => JSON.stringify(theme, null, 2), [theme]);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -108,9 +110,70 @@ export function VisualsPage() {
     } catch {}
   };
 
+  const refreshCustomWallpapers = async () => {
+    try {
+      const list = await window.sbDesktop?.listCustomWallpapers?.();
+      if (Array.isArray(list)) setCustomWallpapers(list as typeof customWallpapers);
+    } catch {
+      // ignore — not in desktop or folder missing
+    }
+  };
+
   useEffect(() => {
     void loadPresets();
+    void refreshCustomWallpapers();
   }, [session?.authenticated]);
+
+  const onPickCustomWallpaper = async () => {
+    try {
+      // Native path: copies file to %LOCALAPPDATA%\SB Launcher\wallpapers and returns id/url
+      if (window.sbDesktop?.pickWallpaper) {
+        const picked = (await window.sbDesktop.pickWallpaper()) as { id: string; name: string; url: string } | null;
+        if (!picked?.id) return;
+        setCustomWallpapers((prev) => (prev.some((w) => w.id === picked.id) ? prev : [...prev, picked]));
+        const current = useAppStore.getState().theme;
+        setTheme(
+          normalizeTheme({
+            ...current,
+            wallpaperId: picked.id,
+            backgroundMode: current.backgroundMode === "solid" || current.backgroundMode === "gradient" ? "image" : current.backgroundMode,
+            wallpaperOpacity: picked.id && (current.wallpaperOpacity ?? 0) < 0.2 ? 0.55 : current.wallpaperOpacity,
+          }),
+        );
+        schedulePersist();
+        setMessage(`Custom wallpaper “${picked.name}” applied.`);
+        return;
+      }
+      // Browser fallback: use data URL (stored directly as wallpaperId)
+      customWallpaperInputRef.current?.click();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Could not pick wallpaper");
+    }
+  };
+
+  const onPickCustomWallpaperFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    if (!f.type.startsWith("image/")) { setMessage("Please pick an image file"); return; }
+    if (f.size > 8_000_000) { setMessage("Image must be < 8MB"); return; }
+    try {
+      const url = await fileToDataUrl(f);
+      const current = useAppStore.getState().theme;
+      setTheme(
+        normalizeTheme({
+          ...current,
+          wallpaperId: url,
+          backgroundMode: current.backgroundMode === "solid" || current.backgroundMode === "gradient" ? "image" : current.backgroundMode,
+          wallpaperOpacity: (current.wallpaperOpacity ?? 0) < 0.2 ? 0.55 : current.wallpaperOpacity,
+        }),
+      );
+      schedulePersist();
+      setMessage(`Custom wallpaper “${f.name}” applied (browser mode — saved locally).`);
+    } catch {
+      setMessage("Could not read image");
+    }
+  };
 
   const fileToDataUrl = (file: File) =>
     new Promise<string>((resolve, reject) => {
@@ -297,6 +360,15 @@ export function VisualsPage() {
   }
 
   const wallpapers = BUNDLED_WALLPAPERS;
+  const allWallpapers = useMemo(() => {
+    // Bundled first, then custom — de-dupe by id, keep url for preview
+    const map = new Map<string, { id: string; name: string; url: string }>();
+    for (const w of wallpapers as unknown as Array<{ id: string; name: string; url: string }>) map.set(w.id, w);
+    for (const w of customWallpapers) map.set(w.id, w as { id: string; name: string; url: string });
+    return Array.from(map.values());
+  }, [customWallpapers]);
+  const isCustomWallpaperSelected = typeof theme.wallpaperId === "string" && (theme.wallpaperId.startsWith("custom-") || theme.wallpaperId.startsWith("data:") || theme.wallpaperId.startsWith("https://wallpapers.sblauncher/"));
+  const customMissing = typeof theme.wallpaperId === "string" && theme.wallpaperId.startsWith("custom-") && !allWallpapers.some((w) => w.id === theme.wallpaperId);
 
   return (
     <div>
@@ -417,6 +489,11 @@ export function VisualsPage() {
               <Button onClick={() => void save()}>Save as preset</Button>
             </div>
           </div>
+
+          <h3 style={{ marginTop: "1.5rem" }}>Export / Import</h3>
+          <textarea className="sb-input" style={{ minHeight: 160, marginTop: "0.75rem", fontFamily: "ui-monospace, monospace" }} value={exportJson} readOnly />
+          <textarea className="sb-input" style={{ minHeight: 120, marginTop: "0.75rem", fontFamily: "ui-monospace, monospace" }} placeholder="Paste theme JSON to import…" value={importText} onChange={(e) => setImportText(e.target.value)} />
+          <Button variant="secondary" style={{ marginTop: "0.75rem" }} onClick={importTheme}>Import JSON</Button>
         </VisualsSection>
 
         <VisualsSection icon={<Background3D />} title="Background" subtitle="Wallpapers, opacity and blur">
@@ -453,13 +530,55 @@ export function VisualsPage() {
                 }}
               >
                 <option value="">None</option>
-                {wallpapers.map((wallpaper) => (
+                {allWallpapers.map((wallpaper) => (
                   <option key={wallpaper.id} value={wallpaper.id}>
                     {wallpaper.name}
+                    {customWallpapers.some((c) => c.id === wallpaper.id) ? " · Custom" : ""}
                   </option>
                 ))}
+                {isCustomWallpaperSelected && !allWallpapers.some((w) => w.id === theme.wallpaperId) ? <option value={theme.wallpaperId!}>{theme.wallpaperId!.slice(0, 32)} · Custom (missing)</option> : null}
               </select>
             </label>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+              <Button variant="secondary" onClick={() => void onPickCustomWallpaper()}>
+                Pick custom image
+              </Button>
+              <Button variant="ghost" onClick={() => void refreshCustomWallpapers()}>
+                Refresh
+              </Button>
+              {isCustomWallpaperSelected ? <Button variant="ghost" onClick={() => patch({ wallpaperId: null })}>Clear custom</Button> : null}
+              <span className="sb-muted" style={{ fontSize: "0.78rem" }}>
+                {customWallpapers.length ? `${customWallpapers.length} custom saved` : "PNG / JPG / WebP / BMP — saved to wallpapers folder"}
+              </span>
+              <input ref={customWallpaperInputRef} type="file" accept="image/*" hidden onChange={onPickCustomWallpaperFile} />
+            </div>
+            {customMissing ? <div className="notice" style={{ gridColumn: "1 / -1", marginTop: "0.2rem" }}>Custom file not found on disk — it was deleted or moved. Pick again.</div> : null}
+            {theme.wallpaperId ? (
+              <div style={{ gridColumn: "1 / -1", display: "flex", gap: "0.6rem", alignItems: "center", marginTop: "0.2rem" }}>
+                <div style={{ width: 72, height: 44, borderRadius: 8, overflow: "hidden", border: "1px solid var(--sb-outline-variant)", background: "var(--sb-surface-container)" }}>
+                  {/* Preview uses same URL logic as BackgroundScene */}
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      backgroundImage:
+                        theme.wallpaperId?.startsWith("data:") || theme.wallpaperId?.startsWith("https://")
+                          ? `url("${theme.wallpaperId}")`
+                          : allWallpapers.find((w) => w.id === theme.wallpaperId)
+                            ? `url("${(allWallpapers.find((w) => w.id === theme.wallpaperId) as { url?: string })?.url ?? ""}")`
+                            : customWallpapers.find((w) => w.id === theme.wallpaperId)?.url
+                              ? `url("${customWallpapers.find((w) => w.id === theme.wallpaperId)!.url}")`
+                              : "none",
+                    }}
+                  />
+                </div>
+                <span className="sb-muted" style={{ fontSize: "0.8rem" }}>
+                  {isCustomWallpaperSelected ? "Custom wallpaper — works on splash + app background + installs" : "Bundled wallpaper"}
+                </span>
+              </div>
+            ) : null}
             <label>
               Wallpaper opacity ({(theme.wallpaperOpacity ?? 0.35).toFixed(2)})
               <input type="range" min={0} max={1} step={0.01} value={theme.wallpaperOpacity ?? 0.35} onChange={(e) => patch({ wallpaperOpacity: Number(e.target.value) })} />
@@ -576,7 +695,7 @@ export function VisualsPage() {
           </div>
         </VisualsSection>
 
-        <VisualsSection icon={<Visuals3D />} title="Layout & positioning" subtitle="Sidebar, topbar and content">
+        <VisualsSection icon={<Layout3D />} title="Layout & navigation" subtitle="Sidebar, nav bubble, topbar and content">
           <div
             className="layout-preview"
             style={{
@@ -638,6 +757,13 @@ export function VisualsPage() {
                 <option value="left">Left</option>
                 <option value="right">Right</option>
                 <option value="hidden">Hidden</option>
+              </select>
+            </label>
+            <label>
+              Active nav bubble
+              <select className="sb-input" value={theme.layout?.navPillStyle ?? "glass"} onChange={(e) => patchLayout({ navPillStyle: e.target.value as NonNullable<VisualTheme["layout"]>["navPillStyle"] })}>
+                <option value="glass">Glass — Liquid Glass</option>
+                <option value="material">Material You (classic)</option>
               </select>
             </label>
             <label>
@@ -771,12 +897,8 @@ export function VisualsPage() {
           </div>
         </VisualsSection>
 
-        <VisualsSection icon={<Visuals3D />} title="Colors & layout" subtitle="Palette, density and shapes">
+        <VisualsSection icon={<Colors3D />} title="Colors & typography" subtitle="Palette, font and density">
           <div className="form-grid" style={{ marginTop: "0.5rem" }}>
-            <label>
-              Preset name
-              <input className="sb-input" value={presetName} onChange={(e) => setPresetName(e.target.value)} />
-            </label>
             <label>
               Accent
               <input type="color" value={theme.accent} onChange={(e) => patch({ accent: e.target.value })} />
@@ -798,18 +920,6 @@ export function VisualsPage() {
               <input type="color" value={theme.text} onChange={(e) => patch({ text: e.target.value })} />
             </label>
             <label>
-              Blur ({theme.blur}px)
-              <input type="range" min={0} max={100} value={theme.blur} onChange={(e) => patch({ blur: Number(e.target.value) })} />
-            </label>
-            <label>
-              Panel opacity ({theme.opacity.toFixed(2)})
-              <input type="range" min={0.05} max={1} step={0.01} value={theme.opacity} onChange={(e) => patch({ opacity: Number(e.target.value) })} />
-            </label>
-            <label>
-              Window corner radius ({theme.cornerRadius}px)
-              <input type="range" min={0} max={48} value={theme.cornerRadius} onChange={(e) => patch({ cornerRadius: Number(e.target.value) })} />
-            </label>
-            <label>
               Font
               <select className="sb-input" value={theme.fontId ?? "figtree"} onChange={(e) => patch({ fontId: e.target.value })}>
                 {FONT_OPTIONS.map((font) => (
@@ -827,20 +937,18 @@ export function VisualsPage() {
                 <option value="spacious">Spacious</option>
               </select>
             </label>
-            <label>
-              Sidebar style
-              <select className="sb-input" value={theme.sidebarStyle} onChange={(e) => patch({ sidebarStyle: e.target.value as VisualTheme["sidebarStyle"] })}>
-                <option value="solid">Solid</option>
-                <option value="glass">Glass</option>
-                <option value="minimal">Minimal</option>
-              </select>
-            </label>
+          </div>
+        </VisualsSection>
+
+        <VisualsSection icon={<Visuals3D />} title="Components" subtitle="Buttons, cards, sidebar style and shapes">
+          <div className="form-grid" style={{ marginTop: "0.5rem" }}>
             <label>
               Button style
               <select className="sb-input" value={theme.buttonStyle ?? "gradient"} onChange={(e) => patch({ buttonStyle: e.target.value as VisualTheme["buttonStyle"] })}>
-                <option value="gradient">Gradient</option>
-                <option value="solid">Solid</option>
-                <option value="tonal">Tonal</option>
+                <option value="gradient">Gradient (M3)</option>
+                <option value="solid">Solid (M3)</option>
+                <option value="tonal">Tonal (M3)</option>
+                <option value="glass">Glass — Liquid Glass</option>
               </select>
             </label>
             <label>
@@ -851,10 +959,45 @@ export function VisualsPage() {
                 <option value="outline">Outline</option>
               </select>
             </label>
+            <label>
+              Sidebar style
+              <select className="sb-input" value={theme.sidebarStyle} onChange={(e) => patch({ sidebarStyle: e.target.value as VisualTheme["sidebarStyle"] })}>
+                <option value="solid">Solid</option>
+                <option value="glass">Glass</option>
+                <option value="minimal">Minimal</option>
+              </select>
+            </label>
+            <label>
+              Blur ({theme.blur}px)
+              <input type="range" min={0} max={100} value={theme.blur} onChange={(e) => patch({ blur: Number(e.target.value) })} />
+            </label>
+            <label>
+              Panel opacity ({theme.opacity.toFixed(2)})
+              <input type="range" min={0.05} max={1} step={0.01} value={theme.opacity} onChange={(e) => patch({ opacity: Number(e.target.value) })} />
+            </label>
+            <label>
+              Window corner radius ({theme.cornerRadius}px)
+              <input type="range" min={0} max={48} value={theme.cornerRadius} onChange={(e) => patch({ cornerRadius: Number(e.target.value) })} />
+            </label>
+          </div>
+          <h3 style={{ marginTop: "1.5rem" }}>Live preview</h3>
+          <div
+            style={{
+              marginTop: "1rem",
+              padding: "1.25rem",
+              borderRadius: `${theme.cornerRadius}px`,
+              background: theme.backgroundMode === "solid" ? theme.surface : `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo}), ${theme.surface}`,
+              border: `1px solid ${theme.border}`,
+              color: theme.text,
+            }}
+          >
+            <strong style={{ color: theme.accent }}>{theme.name || "Custom Visual"}</strong>
+            <p style={{ color: theme.textMuted }}>Cards, buttons, and sidebar update instantly as you tweak values.</p>
+            <button className="sb-button">Sample action</button>
           </div>
         </VisualsSection>
 
-        <VisualsSection icon={<Motion3D />} title="Motion" subtitle="Animations and export">
+        <VisualsSection icon={<Motion3D />} title="Motion" subtitle="Animations and playback">
           <p className="sb-muted" style={{ marginTop: "0.35rem" }}>Material You 3 motion — enter uses decelerate, exit uses accelerate, and on-screen changes use emphasized easing with short/medium/long duration tokens.</p>
           <div className="form-grid" style={{ marginTop: "1rem" }}>
             <label className="check-row">
@@ -875,25 +1018,6 @@ export function VisualsPage() {
               </select>
             </label>
           </div>
-          <h3 style={{ marginTop: "1.5rem" }}>Live preview</h3>
-          <div
-            style={{
-              marginTop: "1rem",
-              padding: "1.25rem",
-              borderRadius: `${theme.cornerRadius}px`,
-              background: theme.backgroundMode === "solid" ? theme.surface : `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo}), ${theme.surface}`,
-              border: `1px solid ${theme.border}`,
-              color: theme.text,
-            }}
-          >
-            <strong style={{ color: theme.accent }}>{theme.name || "Custom Visual"}</strong>
-            <p style={{ color: theme.textMuted }}>Cards, buttons, and sidebar update instantly as you tweak values.</p>
-            <button className="sb-button">Sample action</button>
-          </div>
-          <h3 style={{ marginTop: "1.5rem" }}>Export / Import</h3>
-          <textarea className="sb-input" style={{ minHeight: 160, marginTop: "0.75rem", fontFamily: "ui-monospace, monospace" }} value={exportJson} readOnly />
-          <textarea className="sb-input" style={{ minHeight: 120, marginTop: "0.75rem", fontFamily: "ui-monospace, monospace" }} placeholder="Paste theme JSON to import…" value={importText} onChange={(e) => setImportText(e.target.value)} />
-          <Button variant="secondary" style={{ marginTop: "0.75rem" }} onClick={importTheme}>Import JSON</Button>
         </VisualsSection>
       </div>
     </div>

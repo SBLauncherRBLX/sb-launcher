@@ -137,6 +137,13 @@ export function Shell({ children }: PropsWithChildren) {
     return () => window.removeEventListener(PROFILE_AVATAR_EVENT, update);
   }, []);
 
+  // After bootstrap hydrates prefs (async), re-read cached preference so
+  // the top-right avatar shows the newly picked custom photo, not the
+  // stale value from before getPrefs() resolved.
+  useEffect(() => {
+    setAvatarPreference(getProfileAvatarPreference());
+  }, [session?.user?.id, session?.activeUserId]);
+
   useEffect(() => {
     if (!accountMenuOpen) return;
     const onPointerDown = (event: MouseEvent) => {
@@ -464,10 +471,15 @@ export function Shell({ children }: PropsWithChildren) {
                   <motion.div
                     className="account-popover"
                     role="menu"
-                    initial={motionEnabled ? { opacity: 0, y: 10, scale: 0.96 } : false}
+                    initial={motionEnabled ? { opacity: 0, y: 14, scale: 0.84 } : false}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={motionEnabled ? { opacity: 0, y: 8, scale: 0.97 } : undefined}
-                    transition={springSnappy}
+                    exit={motionEnabled ? { opacity: 0, y: 10, scale: 0.88 } : undefined}
+                    transition={
+                      motionEnabled
+                        ? { type: "spring", stiffness: 520, damping: 28, mass: 0.7, restDelta: 0.001 }
+                        : undefined
+                    }
+                    style={{ originX: 0.5, originY: 1 }}
                   >
                     {accounts.map((account, index) => {
                       const active = account.id === activeUserId;

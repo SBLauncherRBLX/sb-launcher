@@ -153,7 +153,11 @@ button,
   flex: 0 0 auto;
   border-radius: 999px;
   background: var(--sb-secondary-container);
-  box-shadow: none;
+  border: 1.5px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 52%), transparent),
+    0 4px 12px color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * 32%), transparent),
+    0 0 0 1px color-mix(in srgb, var(--sb-outline-variant) 22%, transparent);
   overflow: hidden;
   transition: transform var(--sb-motion-duration-hover) var(--sb-ease-emphasized);
 }
@@ -1075,9 +1079,16 @@ button,
 .account-add-button {
   flex: 0 0 auto;
   width: 2.35rem;
-  border: 0;
-  border-radius: var(--sb-shape-lg);
-  background: var(--sb-surface-container-high);
+  border: 1.5px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
+  border-radius: 999px;
+  /* Frosted like .game-card-remove: highest 82% + blur 8px */
+  --sb-glass-filter: blur(8px);
+  background: color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent);
+  backdrop-filter: var(--sb-glass-filter);
+  -webkit-backdrop-filter: var(--sb-glass-filter);
+  box-shadow:
+    0 calc(1px + 4px * var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0)) calc(4px + 12px * var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0)) color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0) * 30%), transparent),
+    var(--sb-shadow-1);
   color: var(--sb-on-surface);
   font-size: 1.35rem;
   font-weight: 700;
@@ -1085,12 +1096,23 @@ button,
   cursor: pointer;
   transition:
     background var(--sb-motion-duration) var(--sb-ease-standard),
+    border-color var(--sb-motion-duration) var(--sb-ease-standard),
+    backdrop-filter var(--sb-motion-duration) var(--sb-ease-standard),
     transform var(--sb-motion-duration-hover) var(--sb-ease-emphasized);
 }
 
 .account-add-button:hover:not(:disabled) {
   background: color-mix(in srgb, var(--sb-primary) 14%, var(--sb-surface-container-high));
   transform: scale(1.04);
+}
+
+.app-root:not(.card-style-solid):not(.card-style-outline) .account-add-button:hover:not(:disabled) {
+  background: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--sb-primary) 16%, color-mix(in srgb, var(--sb-surface-container) calc(var(--sb-glass-opacity, 0.52) * 100%), transparent)) calc(var(--sb-glass-cards, 0) * 100%),
+    color-mix(in srgb, var(--sb-primary) 14%, var(--sb-surface-container-high))
+  );
+  border-color: color-mix(in srgb, var(--sb-primary) 22%, var(--sb-outline-variant));
 }
 
 .account-add-button:active:not(:disabled) {
@@ -1106,17 +1128,46 @@ button,
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(100% + 0.4rem);
+  bottom: calc(100% + 0.6rem);
   z-index: 40;
   display: grid;
-  gap: 0.2rem;
-  padding: 0.4rem;
-  border-radius: var(--sb-shape-lg);
-  background: var(--sb-surface-container-highest);
-  border: 1px solid var(--sb-outline-variant);
-  box-shadow: 0 10px 28px color-mix(in srgb, #000 28%, transparent);
+  gap: 0.22rem;
+  padding: 0.5rem;
+  border-radius: 20px;
+  /* Liquid Glass like buttons — same as Surprise card / iOS 26 bubble */
+  --sb-glass-filter: blur(calc(var(--sb-glass-blur, 20) * 1px)) saturate(calc(var(--sb-glass-saturation, 1.35))) brightness(calc(var(--sb-glass-brightness, 1))) contrast(calc(var(--sb-glass-contrast, 1)));
+  background: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--sb-glass-tint, var(--sb-primary)) calc(var(--sb-glass-tint-strength, 0.15) * 100%), color-mix(in srgb, var(--sb-surface-container) calc(var(--sb-glass-opacity, 0.52) * 100%), transparent)) calc(var(--sb-glass-cards, 0) * 100%),
+    color-mix(in srgb, var(--sb-surface-container-highest) 92%, var(--sb-surface))
+  );
+  border: 1px solid color-mix(in srgb, var(--sb-outline-variant) calc((0.38 + var(--sb-glass-border, 0.42) * 0.62) * 100%), transparent);
+  backdrop-filter: var(--sb-glass-filter);
+  -webkit-backdrop-filter: var(--sb-glass-filter);
+  box-shadow:
+    0 12px 32px color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * 42% + 12%), transparent),
+    0 2px 8px color-mix(in srgb, #000 14%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 42%), transparent);
   max-height: min(18rem, 46vh);
   overflow: auto;
+  isolation: isolate;
+  transform-origin: bottom center;
+}
+
+.account-popover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(165deg, color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 52%), transparent) 0%, transparent 54%);
+  opacity: calc(var(--sb-glass-cards, 0) * var(--sb-glass-specular, 0.28) * 0.95);
+  z-index: 0;
+}
+
+.account-popover > * {
+  position: relative;
+  z-index: 1;
 }
 
 .account-popover-item {
@@ -1151,11 +1202,13 @@ button,
 }
 
 .account-popover-item:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--sb-primary) 10%, transparent);
+  background: color-mix(in srgb, var(--sb-primary) 14%, color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sb-outline-variant) 55%, transparent);
 }
 
 .account-popover-item.active {
-  background: color-mix(in srgb, var(--sb-secondary-container) 72%, transparent);
+  background: color-mix(in srgb, var(--sb-primary) 20%, color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sb-primary) 42%, transparent);
 }
 
 .account-popover-item .profile-avatar {
@@ -1193,8 +1246,9 @@ button,
 }
 
 .account-popover-link:hover {
-  background: color-mix(in srgb, var(--sb-on-surface) 8%, transparent);
+  background: color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent);
   color: var(--sb-on-surface);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sb-outline-variant) 55%, transparent);
 }
 
 .settings-account-list {
@@ -1410,6 +1464,22 @@ button,
   will-change: transform;
 }
 
+/* Legacy Material You bubble: flat tonal container, no blur/refraction/chromatic edge. */
+.app-root.nav-pill-material .nav-pill {
+  background: var(--sb-secondary-container);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid transparent;
+  box-shadow: none;
+  will-change: transform;
+  transform: none;
+}
+
+.app-root.nav-pill-material .nav-pill::before,
+.app-root.nav-pill-material .nav-pill::after {
+  display: none;
+}
+
 .nav-label {
   position: relative;
   z-index: 1;
@@ -1428,18 +1498,50 @@ button,
 
 .profile-chip,
 .guest-profile {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.55rem 0.65rem;
-  border-radius: var(--sb-shape-lg);
-  background: var(--sb-surface-container-high);
+  border-radius: 999px;
+  --sb-glass-filter: blur(calc(var(--sb-glass-blur, var(--sb-blur)) * var(--sb-glass-cards, 0))) saturate(calc(1 + (var(--sb-glass-saturation, 1.35) - 1) * var(--sb-glass-cards, 0))) brightness(calc(1 + (var(--sb-glass-brightness, 1) - 1) * var(--sb-glass-cards, 0))) contrast(calc(1 + (var(--sb-glass-contrast, 1) - 1) * var(--sb-glass-cards, 0)));
+  background: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--sb-glass-tint, var(--sb-primary)) calc(var(--sb-glass-tint-strength, 0.15) * 100%), color-mix(in srgb, var(--sb-surface-container) calc(var(--sb-glass-opacity, 0.52) * 100%), transparent)) calc(var(--sb-glass-cards, 0) * 100%),
+    var(--sb-surface-container-high)
+  );
+  /* Visible outline + 3D inflated rim like iOS 26 */
+  border: 1.5px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
+  backdrop-filter: var(--sb-glass-filter);
+  -webkit-backdrop-filter: var(--sb-glass-filter);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 52%), transparent),
+    inset 0 -1px 0 color-mix(in srgb, #000 8%, transparent),
+    0 6px 18px color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * 36% + 10%), transparent),
+    0 1px 4px color-mix(in srgb, #000 14%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--sb-outline-variant) 22%, transparent);
   min-width: 0;
   overflow: hidden;
+  transform: translateZ(0);
+}
+
+.profile-chip::after,
+.guest-profile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(165deg, color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 55%), transparent) 0%, transparent 52%);
+  opacity: calc(var(--sb-glass-cards, 0) * var(--sb-glass-specular, 0.28) * 0.85);
+  z-index: 0;
 }
 
 .profile-chip > div,
 .guest-profile > div {
+  position: relative;
+  z-index: 1;
   min-width: 0;
   flex: 1 1 auto;
   overflow: hidden;
@@ -1459,11 +1561,23 @@ button,
 .guest-profile .profile-avatar,
 .profile-chip .profile-avatar-tint,
 .guest-profile .profile-avatar-tint {
+  position: relative;
+  z-index: 1;
   flex: 0 0 auto;
 }
 
 .profile-chip:hover {
   background: color-mix(in srgb, var(--sb-primary) 10%, var(--sb-surface-container-high));
+}
+
+.app-root:not(.card-style-solid):not(.card-style-outline) .profile-chip:hover,
+.app-root:not(.card-style-solid):not(.card-style-outline) .guest-profile:hover {
+  background: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--sb-primary) 14%, color-mix(in srgb, var(--sb-surface-container) calc(var(--sb-glass-opacity, 0.52) * 100%), transparent)) calc(var(--sb-glass-cards, 0) * 100%),
+    var(--sb-surface-container-high)
+  );
+  border-color: color-mix(in srgb, var(--sb-primary) 22%, var(--sb-outline-variant));
 }
 
 .main {
@@ -1763,19 +1877,32 @@ html[data-scroll-animation="none"] .page .sb-card {
 }
 
 .section-icon {
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
 .section-icon svg {
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   display: block;
+}
+
+.subsection-title {
+  margin: 1.15rem 0 0.2rem;
+  font-size: 0.82rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sb-on-surface-variant);
+}
+
+.subsection-title:first-child {
+  margin-top: 0.75rem;
 }
 
 .section-titles {
@@ -2420,7 +2547,7 @@ html[data-reveal="false"] .page .sb-card {
   font-size: 1.2rem;
   line-height: 1;
   color: var(--sb-on-surface);
-  background: color-mix(in srgb, var(--sb-surface-container-highest) 82%, transparent);
+  background: color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent);
   backdrop-filter: blur(8px);
   opacity: 0;
   cursor: pointer;
@@ -2598,18 +2725,29 @@ html[data-reveal="false"] .page .sb-card {
 }
 
 .rail-arrow {
+  position: relative;
+  isolation: isolate;
   appearance: none;
   width: 2.15rem;
   height: 2.15rem;
   padding: 0;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--sb-outline-variant) 80%, transparent);
-  background: color-mix(in srgb, var(--sb-surface-container-high, var(--sb-surface-container)) 88%, transparent);
+  /* Frosted like .game-card-remove: highest 82% + blur 8px, visible outline + 3D rim */
+  border: 1.5px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
+  background: color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 52%), transparent),
+    inset 0 -1px 0 color-mix(in srgb, #000 8%, transparent),
+    0 4px 12px color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * 32%), transparent),
+    0 0 0 1px color-mix(in srgb, var(--sb-outline-variant) 22%, transparent);
   color: var(--sb-on-surface);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  overflow: hidden;
   transition:
     background var(--sb-motion-duration) var(--sb-ease-standard),
     border-color var(--sb-motion-duration) var(--sb-ease-standard),
@@ -2618,8 +2756,18 @@ html[data-reveal="false"] .page .sb-card {
     transform var(--sb-motion-duration-hover) var(--sb-ease-emphasized);
 }
 
+.rail-arrow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(165deg, color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 55%), transparent) 0%, transparent 55%);
+  opacity: calc(var(--sb-glass-specular, 0.28) * 0.85);
+}
+
 .rail-arrow:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--sb-primary) 16%, var(--sb-surface-container));
+  background: color-mix(in srgb, var(--sb-primary) 18%, color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent));
   border-color: color-mix(in srgb, var(--sb-primary) 45%, var(--sb-outline-variant));
   transform: translateY(-1px);
 }
@@ -2656,15 +2804,44 @@ html[data-reveal="false"] .page .sb-card {
 }
 
 .surprise-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 180px 156px;
   gap: 1.1rem;
   align-items: center;
   min-height: 236px;
   padding: 1rem 1.1rem;
-  border: 1px solid var(--sb-border);
-  border-radius: var(--sb-radius);
-  background: color-mix(in srgb, var(--sb-accent) 10%, var(--sb-surface));
+  border-radius: var(--sb-shape-lg);
+  --sb-glass-filter: blur(calc(var(--sb-glass-blur, var(--sb-blur)) * var(--sb-glass-cards, 0))) saturate(calc(1 + (var(--sb-glass-saturation, 1.35) - 1) * var(--sb-glass-cards, 0))) brightness(calc(1 + (var(--sb-glass-brightness, 1) - 1) * var(--sb-glass-cards, 0))) contrast(calc(1 + (var(--sb-glass-contrast, 1) - 1) * var(--sb-glass-cards, 0)));
+  background: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--sb-glass-tint, var(--sb-primary)) calc(var(--sb-glass-tint-strength, 0.15) * 100%), color-mix(in srgb, var(--sb-surface-container) calc(var(--sb-glass-opacity, 0.52) * 100%), transparent)) calc(var(--sb-glass-cards, 0) * 100%),
+    color-mix(in srgb, var(--sb-surface-container) 82%, var(--sb-surface))
+  );
+  border: 1px solid color-mix(in srgb, var(--sb-outline-variant) calc((0.35 + var(--sb-glass-border, 0.42) * 0.65) * 100%), transparent);
+  backdrop-filter: var(--sb-glass-filter);
+  -webkit-backdrop-filter: var(--sb-glass-filter);
+  box-shadow:
+    0 calc(2px + 10px * var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0)) calc(8px + 24px * var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0)) color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0) * 45%), transparent),
+    var(--sb-shadow-1);
+}
+
+.surprise-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(165deg, color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 55%), transparent) 0%, transparent 46%);
+  opacity: calc(var(--sb-glass-cards, 0) * var(--sb-glass-specular, 0.28));
+  z-index: 0;
+}
+
+.surprise-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .surprise-card > .game-card-wrap,
@@ -3045,8 +3222,14 @@ label.check-row input[type="checkbox"] {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border: none;
-  background: transparent;
+  /* Frosted like .game-card-remove: highest 82% + blur 8px */
+  border: 1px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
+  background: color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 42%), transparent),
+    0 3px 10px color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * 28%), transparent);
   color: var(--sb-on-surface-variant);
   border-radius: 999px;
   padding: 0.55rem 1.05rem;
@@ -3055,12 +3238,12 @@ label.check-row input[type="checkbox"] {
   letter-spacing: 0.01em;
   user-select: none;
   -webkit-user-select: none;
-  box-shadow: inset 0 0 0 1px var(--sb-outline);
   transition:
     transform var(--sb-motion-duration-hover) var(--sb-ease-emphasized),
     background var(--sb-motion-duration) var(--sb-ease-standard),
     color var(--sb-motion-duration) var(--sb-ease-standard),
-    box-shadow var(--sb-motion-duration) var(--sb-ease-standard);
+    box-shadow var(--sb-motion-duration) var(--sb-ease-standard),
+    border-color var(--sb-motion-duration) var(--sb-ease-standard);
 }
 
 .chip::before {
@@ -3079,9 +3262,12 @@ label.check-row input[type="checkbox"] {
 }
 
 .chip.active {
-  color: var(--sb-on-secondary-container);
-  background: var(--sb-secondary-container);
-  box-shadow: none;
+  color: var(--sb-on-surface);
+  background: color-mix(in srgb, var(--sb-primary) 20%, color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent));
+  border-color: color-mix(in srgb, var(--sb-primary) 48%, var(--sb-outline-variant));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 52%), transparent),
+    0 3px 10px color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * 28%), transparent);
   transform: scale(1.03);
 }
 

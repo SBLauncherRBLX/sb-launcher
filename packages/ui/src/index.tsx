@@ -260,7 +260,7 @@ export const THEME_PRESETS: VisualTheme[] = [
       parallax: false,
     },
     motionIntensity: "high",
-    buttonStyle: "tonal",
+    buttonStyle: "glass",
     cardStyle: "solid",
   },
   {
@@ -291,7 +291,7 @@ export const THEME_PRESETS: VisualTheme[] = [
     wallpaperDim: 0.5,
     effects: { ...DEFAULT_THEME_EFFECTS, glass: true, noise: true, vignette: true, glow: true, particles: true, parallax: false },
     motionIntensity: "medium",
-    buttonStyle: "gradient",
+    buttonStyle: "glass",
     cardStyle: "glass",
   },
   {
@@ -322,7 +322,7 @@ export const THEME_PRESETS: VisualTheme[] = [
     wallpaperDim: 0,
     effects: { ...DEFAULT_THEME_EFFECTS, glass: false, noise: false, vignette: false, glow: false, particles: false, parallax: false },
     motionIntensity: "low",
-    buttonStyle: "solid",
+    buttonStyle: "glass",
     cardStyle: "solid",
   },
   {
@@ -353,7 +353,7 @@ export const THEME_PRESETS: VisualTheme[] = [
     wallpaperDim: 0.35,
     effects: { ...DEFAULT_THEME_EFFECTS, glass: true, noise: true, vignette: true, glow: true, particles: false, parallax: true },
     motionIntensity: "medium",
-    buttonStyle: "gradient",
+    buttonStyle: "glass",
     cardStyle: "glass",
   },
   {
@@ -384,7 +384,7 @@ export const THEME_PRESETS: VisualTheme[] = [
     wallpaperDim: 0.4,
     effects: { ...DEFAULT_THEME_EFFECTS, glass: true, noise: false, vignette: true, glow: true, particles: true, parallax: true },
     motionIntensity: "high",
-    buttonStyle: "tonal",
+    buttonStyle: "glass",
     cardStyle: "glass",
   },
   {
@@ -415,7 +415,7 @@ export const THEME_PRESETS: VisualTheme[] = [
     wallpaperDim: 0,
     effects: { ...DEFAULT_THEME_EFFECTS, glass: false, noise: false, vignette: false, glow: false, particles: false, parallax: false },
     motionIntensity: "low",
-    buttonStyle: "solid",
+    buttonStyle: "glass",
     cardStyle: "outline",
   },
   {
@@ -446,7 +446,7 @@ export const THEME_PRESETS: VisualTheme[] = [
     wallpaperDim: 0.6,
     effects: { ...DEFAULT_THEME_EFFECTS, glass: false, noise: true, vignette: true, glow: false, particles: false, parallax: false },
     motionIntensity: "medium",
-    buttonStyle: "tonal",
+    buttonStyle: "glass",
     cardStyle: "solid",
   },
 ];

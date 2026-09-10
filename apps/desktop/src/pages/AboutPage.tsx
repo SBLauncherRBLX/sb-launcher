@@ -49,7 +49,7 @@ export function AboutPage() {
   return (
     <div className="about-page">
       <section aria-label="About SB Launcher" style={{ width: "100%", display: "grid", placeItems: "center", gap: "1rem", padding: "1.25rem 0 0.5rem" }}>
-        <div style={{ width: "100%", maxWidth: 520, cursor: "grab" }} onClick={onBannerClick} role="button" tabIndex={0} aria-label="SB Launcher 3D logo — drag to rotate" onKeyDown={(e) => e.key === "Enter" && onBannerClick()}>
+        <div style={{ width: "100%", maxWidth: 520 }} onClick={onBannerClick} role="button" tabIndex={0} aria-label="SB Launcher logo" onKeyDown={(e) => e.key === "Enter" && onBannerClick()}>
           <BrandModelViewer />
         </div>
         <div style={{ textAlign: "center" }}>

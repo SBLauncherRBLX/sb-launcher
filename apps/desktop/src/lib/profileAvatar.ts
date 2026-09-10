@@ -34,6 +34,8 @@ export function hydrateProfileAvatarPreference(prefs: Record<string, unknown>) {
   const fromPrefs = parsePreference(prefs.profileAvatar);
   if (fromPrefs) {
     cached = fromPrefs;
+    // Notify listeners (Shell) — bootstrap happens after Shell mount
+    window.dispatchEvent(new CustomEvent(PROFILE_AVATAR_EVENT, { detail: fromPrefs }));
     return;
   }
 
@@ -42,6 +44,7 @@ export function hydrateProfileAvatarPreference(prefs: Record<string, unknown>) {
   if (legacy.mode === "custom" && legacy.customUrl.trim()) {
     void window.sbDesktop?.setPrefs({ profileAvatar: legacy });
   }
+  window.dispatchEvent(new CustomEvent(PROFILE_AVATAR_EVENT, { detail: legacy }));
 }
 
 export function getProfileAvatarPreference(): ProfileAvatarPreference {

@@ -416,6 +416,8 @@ export const LayoutSettingsSchema = z.object({
   cardGap: z.number().min(8).max(32).default(16),
   cardColumns: z.enum(["auto", "2", "3", "4"]).default("auto"),
   topbarBlur: z.number().min(0).max(40).default(12),
+  /** Active sidebar item bubble: Liquid Glass or legacy Material You tonal. */
+  navPillStyle: z.enum(["glass", "material"]).default("glass"),
 });
 export type LayoutSettings = z.infer<typeof LayoutSettingsSchema>;
 
@@ -504,7 +506,7 @@ export const VisualThemeSchema = z.object({
   layout: LayoutSettingsSchema.optional(),
   scroll: ScrollSettingsSchema.optional(),
   motionIntensity: z.enum(["off", "low", "medium", "high"]).optional(),
-  buttonStyle: z.enum(["gradient", "solid", "tonal"]).optional(),
+  buttonStyle: z.enum(["gradient", "solid", "tonal", "glass"]).optional(),
   cardStyle: z.enum(["glass", "solid", "outline"]).optional(),
   fontId: z.string().optional(),
 });
@@ -637,6 +639,7 @@ export const DEFAULT_LAYOUT: LayoutSettings = {
   cardGap: 16,
   cardColumns: "auto",
   topbarBlur: 12,
+  navPillStyle: "glass",
 };
 
 export const DEFAULT_SCROLL: ScrollSettings = {
@@ -691,7 +694,7 @@ export const DEFAULT_THEME: VisualTheme = {
   layout: { ...DEFAULT_LAYOUT },
   scroll: { ...DEFAULT_SCROLL },
   motionIntensity: "high",
-  buttonStyle: "tonal",
+  buttonStyle: "glass",
   cardStyle: "solid",
   fontId: "figtree",
 };

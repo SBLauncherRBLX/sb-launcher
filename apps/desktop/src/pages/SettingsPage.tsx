@@ -6,7 +6,7 @@ import { useAppStore } from "../store";
 import { authStartUrl } from "../lib/api";
 import { FontPreview } from "../components/FontPreview";
 import { fadeUp, useMotionEnabled } from "../lib/motion";
-import { Discord3D, Account3D, Player3D, Optimization3D, AppIcon3D, Appearance3D, Overlay3D } from "../components/Section3DIcons";
+import { Discord3D, Account3D, Player3D, Optimization3D, Overlay3D } from "../components/Section3DIcons";
 import {
   applyRobloxAppIconPreference,
   getRobloxAppIconPreference,
@@ -366,7 +366,7 @@ export function SettingsPage() {
       <div className="page-header">
         <div>
           <h2>Settings</h2>
-          <p className="sb-muted">Safe graphics preferences and account options.</p>
+          <p className="sb-muted">Account, Roblox client, graphics and integrations.</p>
         </div>
         <Button onClick={() => void save()}>Save</Button>
       </div>
@@ -374,107 +374,7 @@ export function SettingsPage() {
       {message ? <div className="notice">{message}</div> : null}
 
       <div style={{ display: "grid", gap: "0.85rem" }}>
-        <SettingsSection icon={<Discord3D />} title="Discord" subtitle="Rich Presence — show your game on Discord">
-          <p className="sb-muted" style={{ marginTop: "0.75rem" }}>
-            Show what you&apos;re doing in Roblox on Discord — game name, playtime, thumbnail, Join
-            server, and game page. Discord desktop must be running on this PC.
-          </p>
-          <label className="check-row" style={{ marginTop: "1rem" }}>
-            <input
-              type="checkbox"
-              checked={discordRichPresence}
-              onChange={(event) => void toggleDiscordRichPresence(event.target.checked)}
-            />
-            <span>Enable Discord Rich Presence</span>
-          </label>
-
-          {discordRichPresence ? (
-            <div className="form-grid" style={{ marginTop: "1rem" }}>
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  checked={discordShowWhenBrowsing}
-                  onChange={(event) => {
-                    const next = event.target.checked;
-                    setDiscordShowWhenBrowsing(next);
-                    void patchDiscordPrefs({ discordShowWhenBrowsing: next });
-                  }}
-                />
-                <span>Show activity while browsing the launcher</span>
-              </label>
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  checked={discordShowGameThumbnail}
-                  onChange={(event) => {
-                    const next = event.target.checked;
-                    setDiscordShowGameThumbnail(next);
-                    void patchDiscordPrefs({ discordShowGameThumbnail: next });
-                  }}
-                />
-                <span>Show game thumbnail</span>
-              </label>
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  checked={discordShowElapsed}
-                  onChange={(event) => {
-                    const next = event.target.checked;
-                    setDiscordShowElapsed(next);
-                    void patchDiscordPrefs({ discordShowElapsed: next });
-                  }}
-                />
-                <span>Show time elapsed in game</span>
-              </label>
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  checked={discordShowJoinButton}
-                  onChange={(event) => {
-                    const next = event.target.checked;
-                    setDiscordShowJoinButton(next);
-                    void patchDiscordPrefs({ discordShowJoinButton: next });
-                  }}
-                />
-                <span>Join button (server when known, otherwise the game)</span>
-              </label>
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  checked={discordShowGamePageButton}
-                  onChange={(event) => {
-                    const next = event.target.checked;
-                    setDiscordShowGamePageButton(next);
-                    void patchDiscordPrefs({ discordShowGamePageButton: next });
-                  }}
-                />
-                <span>See game page button</span>
-              </label>
-              <p className="sb-muted" style={{ gridColumn: "1 / -1", margin: 0 }}>
-                Discord hides activity buttons on your own profile. Friends still see Join / See game
-                page on your activity.
-              </p>
-              <label style={{ gridColumn: "1 / -1" }}>
-                Discord Application ID
-                <input
-                  className="sb-input"
-                  inputMode="numeric"
-                  placeholder="Leave empty for the built-in SB Launcher ID"
-                  value={discordApplicationId}
-                  onChange={(event) =>
-                    setDiscordApplicationId(event.target.value.replace(/\\D/g, ""))
-                  }
-                />
-              </label>
-              <p className="sb-muted" style={{ gridColumn: "1 / -1", margin: 0 }}>
-                Leave empty to use the built-in app ID. Change this only if you use your own Discord
-                application. Optional Rich Presence art asset name: sblogo.
-              </p>
-            </div>
-          ) : null}
-        </SettingsSection>
-
-        <SettingsSection icon={<Account3D />} title="Account" subtitle="Switch, manage and OAuth">
+        <SettingsSection icon={<Account3D />} title="Account & sign-in" subtitle="Switch accounts, manage and OAuth">
           <div style={{ marginTop: "0.75rem" }} className="sb-muted">
             {session?.authenticated ? (
               <>
@@ -587,7 +487,8 @@ export function SettingsPage() {
           </div>
         </SettingsSection>
 
-        <SettingsSection icon={<Player3D />} title="Roblox Player" subtitle="Detection and download">
+        <SettingsSection icon={<Player3D />} title="Roblox client" subtitle="Player install, shortcut icon and client font">
+          <h4 className="subsection-title">Player install</h4>
           <p className="sb-muted">
             Status:{" "}
             {robloxInstalled ? "Detected on this PC" : "Not detected — install from Roblox.com"}
@@ -603,9 +504,79 @@ export function SettingsPage() {
           >
             Download Roblox
           </Button>
+
+          <h4 className="subsection-title">Shortcut icon</h4>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "flex-start" }}>
+            <p className="sb-muted" style={{ margin: "0.35rem 0 0" }}>
+              Icon on Windows shortcuts for Roblox Player (desktop / Start menu).
+              Click Apply icon after choosing. If Windows still shows the old
+              picture, press F5 on the desktop or unpin and pin Roblox again.
+            </p>
+            <Button variant="secondary" onClick={() => void applyRobloxAppIcon()}>Apply icon</Button>
+          </div>
+          <div className="app-icon-picker" style={{ marginTop: "1rem" }}>
+            {ROBLOX_APP_ICON_OPTIONS.map((option) => {
+              const preview = option.mode === "custom" ? robloxAppIconPreview(robloxAppIcon) ?? option.preview : option.preview;
+              const selected = robloxAppIcon.mode === option.mode;
+              return (
+                <button key={option.mode} type="button" className={`app-icon-option${selected ? " is-selected" : ""}`} onClick={() => setRobloxAppIcon({ ...robloxAppIcon, mode: option.mode })}>
+                  {preview ? <img src={preview} alt="" className="app-icon-option-preview" /> : <span className="app-icon-option-fallback" aria-hidden>R</span>}
+                  <span>{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          {robloxAppIcon.mode === "custom" ? (
+            <div className="form-grid" style={{ marginTop: "1rem", maxWidth: 520 }}>
+              <label>
+                Custom app icon URL
+                <input className="sb-input" type="url" placeholder="https://example.com/icon.png" value={robloxAppIcon.customUrl} onChange={(event) => setRobloxAppIcon({ ...robloxAppIcon, customUrl: event.target.value })} />
+              </label>
+              {window.sbDesktop?.pickRobloxAppIcon ? (
+                <div className="row-actions">
+                  <Button variant="secondary" onClick={() => void window.sbDesktop?.pickRobloxAppIcon().then((picked) => { if (picked) { setRobloxAppIcon({ mode: "custom", customUrl: picked.url }); } })}>
+                    Choose image file
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          <div className="notice" style={{ marginTop: "1rem" }}>
+            Click Apply icon after choosing. Windows may keep a cached shortcut icon until you refresh
+            the desktop or log out.
+          </div>
+
+          <h4 className="subsection-title">Client font</h4>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "flex-start" }}>
+            <p className="sb-muted" style={{ margin: "0.35rem 0 0" }}>
+              Custom client font. Applied with optimization (and on every Roblox launch while custom
+              mode is on). Close Roblox first.
+            </p>
+            <Button variant="secondary" onClick={() => void applyOptimization()}>Apply now</Button>
+          </div>
+          <div className="form-grid" style={{ marginTop: "1rem", maxWidth: 520 }}>
+            <label>
+              Client font
+              <select className="sb-input" value={graphics.robloxFontMode} onChange={(e) => patch({ robloxFontMode: e.target.value as SafeGraphicsSettings["robloxFontMode"] })}>
+                <option value="vanilla">Vanilla (default Roblox fonts)</option>
+                <option value="custom">Custom font (replace all UI fonts)</option>
+              </select>
+            </label>
+            {graphics.robloxFontMode === "custom" ? (
+              <div className="row-actions" style={{ alignItems: "center", gap: "0.75rem" }}>
+                <Button variant="secondary" onClick={() => void pickCustomFont()}>Choose font (.ttf / .otf)</Button>
+                <span className="sb-muted">{graphics.robloxCustomFontName ? `Selected: ${graphics.robloxCustomFontName}` : "No font selected"}</span>
+              </div>
+            ) : null}
+            <FontPreview label="Preview on “Always better”" useCustomFile={graphics.robloxFontMode === "custom"} fontId={graphics.robloxCustomFontId} />
+          </div>
+          <div className="notice" style={{ marginTop: "1rem" }}>
+            Custom font copies your file over every local Roblox font slot. Switch back to Vanilla and
+            Apply to restore defaults.
+          </div>
         </SettingsSection>
 
-        <SettingsSection icon={<Optimization3D />} title="Roblox optimization" subtitle="Safe graphics and FastFlags">
+        <SettingsSection icon={<Optimization3D />} title="Graphics & performance" subtitle="Safe graphics, FPS and allowlisted FastFlags">
           <div className="rail-title">
             <div>
               <p className="sb-muted rail-subtitle">
@@ -873,78 +844,6 @@ export function SettingsPage() {
           </div>
         </SettingsSection>
 
-        <SettingsSection icon={<AppIcon3D />} title="Roblox application icon" subtitle="Desktop and Start menu shortcut">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "flex-start" }}>
-            <p className="sb-muted" style={{ margin: "0.35rem 0 0" }}>
-              Icon on Windows shortcuts for Roblox Player (desktop / Start menu).
-              Click Apply icon after choosing. If Windows still shows the old
-              picture, press F5 on the desktop or unpin and pin Roblox again.
-            </p>
-            <Button variant="secondary" onClick={() => void applyRobloxAppIcon()}>Apply icon</Button>
-          </div>
-          <div className="app-icon-picker" style={{ marginTop: "1rem" }}>
-            {ROBLOX_APP_ICON_OPTIONS.map((option) => {
-              const preview = option.mode === "custom" ? robloxAppIconPreview(robloxAppIcon) ?? option.preview : option.preview;
-              const selected = robloxAppIcon.mode === option.mode;
-              return (
-                <button key={option.mode} type="button" className={`app-icon-option${selected ? " is-selected" : ""}`} onClick={() => setRobloxAppIcon({ ...robloxAppIcon, mode: option.mode })}>
-                  {preview ? <img src={preview} alt="" className="app-icon-option-preview" /> : <span className="app-icon-option-fallback" aria-hidden>R</span>}
-                  <span>{option.label}</span>
-                </button>
-              );
-            })}
-          </div>
-          {robloxAppIcon.mode === "custom" ? (
-            <div className="form-grid" style={{ marginTop: "1rem", maxWidth: 520 }}>
-              <label>
-                Custom app icon URL
-                <input className="sb-input" type="url" placeholder="https://example.com/icon.png" value={robloxAppIcon.customUrl} onChange={(event) => setRobloxAppIcon({ ...robloxAppIcon, customUrl: event.target.value })} />
-              </label>
-              {window.sbDesktop?.pickRobloxAppIcon ? (
-                <div className="row-actions">
-                  <Button variant="secondary" onClick={() => void window.sbDesktop?.pickRobloxAppIcon().then((picked) => { if (picked) { setRobloxAppIcon({ mode: "custom", customUrl: picked.url }); } })}>
-                    Choose image file
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-          <div className="notice" style={{ marginTop: "1rem" }}>
-            Click Apply icon after choosing. Windows may keep a cached shortcut icon until you refresh
-            the desktop or log out.
-          </div>
-        </SettingsSection>
-
-        <SettingsSection icon={<Appearance3D />} title="Roblox appearance" subtitle="Custom client font">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "flex-start" }}>
-            <p className="sb-muted" style={{ margin: "0.35rem 0 0" }}>
-              Custom client font. Applied with optimization (and on every Roblox launch while custom
-              mode is on). Close Roblox first.
-            </p>
-            <Button variant="secondary" onClick={() => void applyOptimization()}>Apply now</Button>
-          </div>
-          <div className="form-grid" style={{ marginTop: "1rem", maxWidth: 520 }}>
-            <label>
-              Client font
-              <select className="sb-input" value={graphics.robloxFontMode} onChange={(e) => patch({ robloxFontMode: e.target.value as SafeGraphicsSettings["robloxFontMode"] })}>
-                <option value="vanilla">Vanilla (default Roblox fonts)</option>
-                <option value="custom">Custom font (replace all UI fonts)</option>
-              </select>
-            </label>
-            {graphics.robloxFontMode === "custom" ? (
-              <div className="row-actions" style={{ alignItems: "center", gap: "0.75rem" }}>
-                <Button variant="secondary" onClick={() => void pickCustomFont()}>Choose font (.ttf / .otf)</Button>
-                <span className="sb-muted">{graphics.robloxCustomFontName ? `Selected: ${graphics.robloxCustomFontName}` : "No font selected"}</span>
-              </div>
-            ) : null}
-            <FontPreview label="Preview on “Always better”" useCustomFile={graphics.robloxFontMode === "custom"} fontId={graphics.robloxCustomFontId} />
-          </div>
-          <div className="notice" style={{ marginTop: "1rem" }}>
-            Custom font copies your file over every local Roblox font slot. Switch back to Vanilla and
-            Apply to restore defaults.
-          </div>
-        </SettingsSection>
-
         <SettingsSection icon={<Overlay3D />} title="Launch overlay" subtitle="Window shown when joining">
           <p className="sb-muted" style={{ margin: "0.35rem 0 1rem" }}>
             A small window shown for a few seconds when you join an experience from SB Launcher — not
@@ -1026,6 +925,106 @@ export function SettingsPage() {
               <p className="sb-muted" style={{ margin: "0.7rem 0 0", fontSize: "0.85rem" }}>{(graphics.launchOverlayEnabled ?? true) ? `Appears for ~${Math.round((graphics.launchOverlayDurationMs ?? 4000) / 1000)}s when you join a game.` : "Overlay is off — joining goes straight to Roblox."}</p>
             </div>
           </div>
+        </SettingsSection>
+
+        <SettingsSection icon={<Discord3D />} title="Discord" subtitle="Rich Presence — show your game on Discord">
+          <p className="sb-muted" style={{ marginTop: "0.75rem" }}>
+            Show what you&apos;re doing in Roblox on Discord — game name, playtime, thumbnail, Join
+            server, and game page. Discord desktop must be running on this PC.
+          </p>
+          <label className="check-row" style={{ marginTop: "1rem" }}>
+            <input
+              type="checkbox"
+              checked={discordRichPresence}
+              onChange={(event) => void toggleDiscordRichPresence(event.target.checked)}
+            />
+            <span>Enable Discord Rich Presence</span>
+          </label>
+
+          {discordRichPresence ? (
+            <div className="form-grid" style={{ marginTop: "1rem" }}>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={discordShowWhenBrowsing}
+                  onChange={(event) => {
+                    const next = event.target.checked;
+                    setDiscordShowWhenBrowsing(next);
+                    void patchDiscordPrefs({ discordShowWhenBrowsing: next });
+                  }}
+                />
+                <span>Show activity while browsing the launcher</span>
+              </label>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={discordShowGameThumbnail}
+                  onChange={(event) => {
+                    const next = event.target.checked;
+                    setDiscordShowGameThumbnail(next);
+                    void patchDiscordPrefs({ discordShowGameThumbnail: next });
+                  }}
+                />
+                <span>Show game thumbnail</span>
+              </label>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={discordShowElapsed}
+                  onChange={(event) => {
+                    const next = event.target.checked;
+                    setDiscordShowElapsed(next);
+                    void patchDiscordPrefs({ discordShowElapsed: next });
+                  }}
+                />
+                <span>Show time elapsed in game</span>
+              </label>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={discordShowJoinButton}
+                  onChange={(event) => {
+                    const next = event.target.checked;
+                    setDiscordShowJoinButton(next);
+                    void patchDiscordPrefs({ discordShowJoinButton: next });
+                  }}
+                />
+                <span>Join button (server when known, otherwise the game)</span>
+              </label>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={discordShowGamePageButton}
+                  onChange={(event) => {
+                    const next = event.target.checked;
+                    setDiscordShowGamePageButton(next);
+                    void patchDiscordPrefs({ discordShowGamePageButton: next });
+                  }}
+                />
+                <span>See game page button</span>
+              </label>
+              <p className="sb-muted" style={{ gridColumn: "1 / -1", margin: 0 }}>
+                Discord hides activity buttons on your own profile. Friends still see Join / See game
+                page on your activity.
+              </p>
+              <label style={{ gridColumn: "1 / -1" }}>
+                Discord Application ID
+                <input
+                  className="sb-input"
+                  inputMode="numeric"
+                  placeholder="Leave empty for the built-in SB Launcher ID"
+                  value={discordApplicationId}
+                  onChange={(event) =>
+                    setDiscordApplicationId(event.target.value.replace(/\\D/g, ""))
+                  }
+                />
+              </label>
+              <p className="sb-muted" style={{ gridColumn: "1 / -1", margin: 0 }}>
+                Leave empty to use the built-in app ID. Change this only if you use your own Discord
+                application. Optional Rich Presence art asset name: sblogo.
+              </p>
+            </div>
+          ) : null}
         </SettingsSection>
 
         <div className="sb-card" style={{ padding: "1.25rem", marginTop: "1rem" }}>

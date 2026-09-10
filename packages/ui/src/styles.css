@@ -141,7 +141,6 @@ button,
   position: relative;
   isolation: isolate;
   appearance: none;
-  border: none;
   border-radius: 999px;
   padding: 0.82rem 1.5rem;
   min-height: 2.75rem;
@@ -152,8 +151,20 @@ button,
   text-align: center;
   line-height: 1.2;
   white-space: normal;
-  background: var(--sb-primary-container);
-  color: var(--sb-on-primary-container);
+  /* Frosted glass exactly like .game-card-remove (× from Last Played) */
+  --sb-glass-filter: blur(8px);
+  background: color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
+  backdrop-filter: var(--sb-glass-filter);
+  -webkit-backdrop-filter: var(--sb-glass-filter);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 52%), transparent),
+    inset 0 -1px 0 color-mix(in srgb, #000 8%, transparent),
+    0 6px 18px color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * 36% + 10%), transparent),
+    0 1px 4px color-mix(in srgb, #000 14%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--sb-outline-variant) 22%, transparent);
+  transform: translateZ(0);
+  color: var(--sb-on-surface);
   font-weight: 700;
   letter-spacing: 0.01em;
   cursor: pointer;
@@ -162,8 +173,21 @@ button,
     transform var(--sb-motion-duration-hover) var(--sb-ease-emphasized),
     background var(--sb-motion-duration) var(--sb-ease-standard),
     box-shadow var(--sb-motion-duration) var(--sb-ease-standard),
+    border-color var(--sb-motion-duration) var(--sb-ease-standard),
+    backdrop-filter var(--sb-motion-duration) var(--sb-ease-standard),
     color var(--sb-motion-duration) var(--sb-ease-standard),
     opacity var(--sb-motion-duration-short) var(--sb-ease-standard);
+}
+
+.sb-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(165deg, color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 55%), transparent) 0%, transparent 52%);
+  opacity: calc(var(--sb-glass-specular, 0.28) * 0.85);
+  z-index: 0;
 }
 
 .sb-button::before {
@@ -211,6 +235,78 @@ button,
   background: var(--sb-primary-container);
   color: var(--sb-on-primary-container);
   box-shadow: none;
+}
+
+.app-root.button-style-glass .sb-button:not(.secondary):not(.ghost) {
+  position: relative;
+  isolation: isolate;
+  color: var(--sb-on-surface);
+  --sb-glass-filter: blur(8px);
+  background: color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
+  backdrop-filter: var(--sb-glass-filter);
+  -webkit-backdrop-filter: var(--sb-glass-filter);
+  /* Same inflated 3D rim as account pill */
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 52%), transparent),
+    inset 0 -1px 0 color-mix(in srgb, #000 8%, transparent),
+    0 6px 18px color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * 36% + 10%), transparent),
+    0 1px 4px color-mix(in srgb, #000 14%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--sb-outline-variant) 22%, transparent);
+  overflow: hidden;
+  transform: translateZ(0);
+}
+
+.app-root.button-style-glass .sb-button:not(.secondary):not(.ghost)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(165deg, color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 55%), transparent) 0%, transparent 46%);
+  opacity: calc(var(--sb-glass-specular, 0.28) * 0.9);
+  z-index: 0;
+}
+
+.app-root.button-style-glass .sb-button:not(.secondary):not(.ghost) > * {
+  position: relative;
+  z-index: 1;
+}
+
+.app-root.button-style-glass .sb-button.secondary,
+.app-root.button-style-glass .sb-button.ghost {
+  position: relative;
+  isolation: isolate;
+  --sb-glass-filter: blur(8px);
+  background: color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
+  backdrop-filter: var(--sb-glass-filter);
+  -webkit-backdrop-filter: var(--sb-glass-filter);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 52%), transparent),
+    inset 0 -1px 0 color-mix(in srgb, #000 8%, transparent),
+    0 6px 18px color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * 36% + 10%), transparent),
+    0 1px 4px color-mix(in srgb, #000 12%, transparent);
+  overflow: hidden;
+  transform: translateZ(0);
+}
+
+.app-root.button-style-glass .sb-button.secondary::after,
+.app-root.button-style-glass .sb-button.ghost::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(165deg, color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 42%), transparent) 0%, transparent 50%);
+  opacity: calc(var(--sb-glass-specular, 0.28) * 0.7);
+  z-index: 0;
+}
+
+.app-root.button-style-glass .sb-button.secondary > *,
+.app-root.button-style-glass .sb-button.ghost > * {
+  position: relative;
+  z-index: 1;
 }
 
 .app-root.card-style-solid .sb-card {
@@ -265,21 +361,22 @@ button,
   box-shadow: none;
 }
 
-.sb-button.secondary {
-  background: var(--sb-surface-container-high);
-  color: var(--sb-on-surface);
-  box-shadow: var(--sb-shadow-1);
-}
-
+.sb-button.secondary,
 .sb-button.ghost {
-  background: transparent;
-  color: var(--sb-primary);
-  box-shadow: inset 0 0 0 1px var(--sb-outline);
+  /* Same frosted glass as primary — like .game-card-remove */
+  background: color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
+  color: var(--sb-on-surface);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 52%), transparent),
+    inset 0 -1px 0 color-mix(in srgb, #000 8%, transparent),
+    0 6px 18px color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * 36% + 10%), transparent),
+    0 1px 4px color-mix(in srgb, #000 14%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--sb-outline-variant) 22%, transparent);
 }
 
 .sb-button.ghost:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--sb-primary) 8%, transparent);
-  box-shadow: inset 0 0 0 1px var(--sb-primary);
+  border-color: color-mix(in srgb, var(--sb-primary) 32%, var(--sb-outline-variant));
 }
 
 .sb-card {

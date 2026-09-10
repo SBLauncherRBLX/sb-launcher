@@ -1,36 +1,57 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { VisualTheme } from "@sb/contracts";
 import { getWallpaperUrl } from "../assets/wallpapers";
 import { ParticleField } from "./ParticleField";
 
+type CustomWallpaperEntry = { id: string; url: string };
+
 export function BackgroundScene({ theme }: { theme: VisualTheme }) {
   const sceneRef = useRef<HTMLDivElement>(null);
-  const parallaxEnabled = Boolean(theme.effects?.parallax);
+  const [customMap, setCustomMap] = useState<Map<string, string>>(new Map());
+  const wallpaperId = theme.wallpaperId ?? null;
 
+  // Load custom wallpaper file map once + whenever the selected id changes.
+  // This makes "custom-xxx" ids resolve to their real file URL with extension.
   useEffect(() => {
-    if (!parallaxEnabled) {
-      const node = sceneRef.current;
-      if (node) {
-        node.style.setProperty("--sb-parallax-x", "0px");
-        node.style.setProperty("--sb-parallax-y", "0px");
-      }
-      return;
-    }
-
-    const onMove = (event: PointerEvent) => {
-      const node = sceneRef.current;
-      if (!node) return;
-      const x = (event.clientX / window.innerWidth - 0.5) * 18;
-      const y = (event.clientY / window.innerHeight - 0.5) * 12;
-      node.style.setProperty("--sb-parallax-x", `${x.toFixed(2)}px`);
-      node.style.setProperty("--sb-parallax-y", `${y.toFixed(2)}px`);
+    let cancelled = false;
+    if (!wallpaperId || !wallpaperId.startsWith("custom-")) return;
+    const api = window.sbDesktop?.listCustomWallpapers;
+    if (!api) return;
+    void api()
+      .then((list: CustomWallpaperEntry[]) => {
+        if (cancelled) return;
+        setCustomMap(new Map(list.map((w) => [w.id, w.url])));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
     };
+  }, [wallpaperId]);
 
-    window.addEventListener("pointermove", onMove, { passive: true });
-    return () => window.removeEventListener("pointermove", onMove);
-  }, [parallaxEnabled]);
+  // Parallax on cursor removed per user request — keep background static.
+  useEffect(() => {
+    const node = sceneRef.current;
+    if (node) {
+      node.style.setProperty("--sb-parallax-x", "0px");
+      node.style.setProperty("--sb-parallax-y", "0px");
+    }
+  }, []);
 
-  const wallpaperUrl = getWallpaperUrl(theme.wallpaperId);
+  const rawUrl = getWallpaperUrl(wallpaperId);
+  const wallpaperUrl = useMemo(() => {
+    if (!rawUrl) return null;
+    if (rawUrl.startsWith("__custom_lookup__:")) {
+      const id = rawUrl.slice("__custom_lookup__:".length);
+      // Exact file URL from the wallpapers folder (with correct extension)
+      if (customMap.has(id)) return customMap.get(id)!;
+      // Fallback: id may already be a filename with extension stored as wallpaperId
+      if (id.includes(".")) return `https://wallpapers.sblauncher/${id}`;
+      // Last resort — try common extensions; the virtual host will 404 if wrong,
+      // but at least we don't show a broken gradient with 0 opacity.
+      return null;
+    }
+    return rawUrl;
+  }, [rawUrl, customMap]);
   const mode = theme.backgroundMode ?? "gradient";
   const showWallpaper = Boolean(wallpaperUrl) && (mode === "image" || mode === "layered");
   const style = {
@@ -46,7 +67,7 @@ export function BackgroundScene({ theme }: { theme: VisualTheme }) {
   return (
     <div
       ref={sceneRef}
-      className={`background-scene mode-${mode}${parallaxEnabled ? " parallax" : ""}`}
+      className={`background-scene mode-${mode}`}
       style={style}
       aria-hidden
     >

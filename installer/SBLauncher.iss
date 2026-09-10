@@ -1,5 +1,5 @@
 #define MyAppName "SB Launcher"
-#define MyAppVersion "3.0.0"
+#define MyAppVersion "3.1.0"
 #define MyAppPublisher "SB Launcher"
 #define MyAppExeName "SB Launcher.exe"
 
@@ -29,6 +29,8 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#MyAppExeName}
 CloseApplications=yes
+CloseApplicationsFilter=*.exe,*.node
+RestartApplications=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -43,7 +45,7 @@ YesButton=Yes
 NoButton=No
 
 [Files]
-Source: "..\release\native\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\release\native\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"
@@ -185,10 +187,49 @@ begin
     ExpandConstant('{cm:UninstallRemoveDataTitle}'));
 end;
 
+{ The running app holds runtime api native node files locked (DeleteFile code 5). }
+{ taskkill /T on the main EXE also takes down its child node.exe API host; }
+{ the PowerShell sweep catches orphaned node.exe instances started from the app dir. }
+procedure KillRunningInstances;
+var
+  ResultCode: Integer;
+  AppDir, PsCmd: String;
+begin
+  try
+    Exec('taskkill.exe', '/F /IM "{#MyAppExeName}" /T', '', SW_HIDE,
+      ewWaitUntilTerminated, ResultCode);
+  except
+  end;
+  try
+    AppDir := ExpandConstant('{app}');
+    PsCmd := '-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "' +
+      '$p = Get-CimInstance Win32_Process -Filter ''Name=''''node.exe'''''' -ErrorAction SilentlyContinue; ' +
+      'foreach ($n in $p) { try { if ($n.CommandLine -like ''*' + AppDir + '*'') ' +
+      '{ Stop-Process -Id $n.ProcessId -Force -ErrorAction SilentlyContinue } } catch { } }"';
+    Exec('powershell.exe', PsCmd, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  except
+  end;
+  Sleep(900);
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  KillRunningInstances;
+  NeedsRestart := False;
+  Result := '';
+end;
+
+function InitializeUninstall(): Boolean;
+begin
+  KillRunningInstances;
+  Result := True;
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssInstall then
   begin
+    KillRunningInstances;
     if DirExists(ExpandConstant('{app}\runtime\web')) then
       DelTree(ExpandConstant('{app}\runtime\web'), False, True, False);
     if FileExists(ExpandConstant('{app}\runtime\api\index.cjs')) then

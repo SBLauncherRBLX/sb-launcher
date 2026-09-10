@@ -157,6 +157,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (theme.id === "pulse-midnight" || theme.id === "pixel-os") {
         theme = DEFAULT_THEME;
       }
+      // One-time migration: unify all buttons to the account-pill glass look.
+      // Afterwards the user can still pick Gradient/Solid/Tonal (M3) in Visuals.
+      if (!prefs.sbButtonUnifiedV1 && theme.buttonStyle !== "glass") {
+        theme = { ...theme, buttonStyle: "glass" };
+        void window.sbDesktop?.setPrefs({ theme, sbButtonUnifiedV1: true }).catch(() => undefined);
+        try {
+          localStorage.setItem("sb-button-unified-v1", "1");
+        } catch {}
+        if (session?.authenticated) {
+          void api.savePreferences({ theme, graphics }).catch(() => undefined);
+        }
+      }
 
       const detect = await window.sbDesktop?.detectRoblox();
       set({
