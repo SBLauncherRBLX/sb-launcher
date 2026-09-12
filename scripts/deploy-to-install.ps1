@@ -63,6 +63,15 @@ if ((Test-Path $exeSrc) -and (Test-Path $install)) {
   }
 
   $buildInfoSrc = Join-Path $release "runtime\build-info.json"
+  # Feature updates can add API routes as well as UI. Keep the installed API in sync.
+  $apiSource = Join-Path $release "runtime\api\index.cjs"
+  $apiTarget = Join-Path $install "runtime\api\index.cjs"
+  if (Test-Path $apiSource) {
+    New-Item (Split-Path $apiTarget -Parent) -ItemType Directory -Force | Out-Null
+    Copy-Item -LiteralPath $apiSource -Destination $apiTarget -Force
+    Copy-Item -LiteralPath (Join-Path $release "runtime\api\schema.prisma") -Destination (Join-Path $install "runtime\api\schema.prisma") -Force
+    Write-Host "Deployed API -> $apiTarget"
+  }
   if (-not (Test-Path $buildInfoSrc)) {
     $buildInfoSrc = Join-Path $root "apps\native\runtime\build-info.json"
   }

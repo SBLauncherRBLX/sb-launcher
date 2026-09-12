@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { matchServers } from "@sb/contracts";
+import { SmartServerControls, DEFAULT_SERVER_FILTER } from "../components/SmartServerControls";
 import type { GameDetails, GameEvent, ServerInfo } from "@sb/contracts";
 import { Badge, Button, EmptyState, LoadingState } from "@sb/ui";
 import { api } from "../lib/api";
@@ -26,6 +28,7 @@ export function GameDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "lowPing" | "space">("all");
   const [favorited, setFavorited] = useState(false);
+  const [smartFilter, setSmartFilter] = useState(DEFAULT_SERVER_FILTER);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,15 +73,15 @@ export function GameDetailsPage() {
     } else if (filter === "space") {
       list = list.filter((s) => s.playing < s.maxPlayers);
     }
-    return list;
-  }, [servers, filter]);
+    return matchServers(list, smartFilter);
+  }, [servers, filter, smartFilter]);
 
   async function loadMore() {
     if (!game || !cursor) return;
     setServersLoading(true);
     try {
       const page = await api.servers(game.placeId, cursor);
-      setServers((prev) => [...prev, ...page.items]);
+      setServers((prev) => [...new Map([...prev, ...page.items].map(s=>[s.id,s])).values()]);
       setCursor(page.nextCursor);
     } finally {
       setServersLoading(false);
@@ -191,6 +194,7 @@ export function GameDetailsPage() {
             >
               {favorited ? "Unfavorite" : "Favorite"}
             </Button>
+            <Link to={`/journal?game=${game.universeId}`}>Open journal</Link>
           </div>
           {needsPaidAccessPurchase(game) ? (
             <p className="sb-muted" style={{ marginTop: "0.65rem" }}>
@@ -256,6 +260,7 @@ export function GameDetailsPage() {
       ) : null}
 
       <PrivateServersPanel game={game} />
+      <SmartServerControls value={smartFilter} onChange={setSmartFilter} count={filteredServers.length} loaded={servers.length} onJoin={()=>{const best=filteredServers[0];if(best)void launchExperience({placeId:game.placeId,universeId:game.universeId,name:game.name,iconUrl:game.iconUrl,gameInstanceId:best.id,serverType:"public"}).catch(e=>setError(e instanceof Error?e.message:"Launch failed"));}}/>
 
       <section className="rail">
         <div className="rail-title">
@@ -334,6 +339,7 @@ export function GameDetailsPage() {
                     </strong>
                     <div className="sb-muted">
                       Ping: {server.ping ?? "—"} ms
+                      {" · FPS: "}{server.fps ?? "—"}
                     </div>
                     {serverFriends.length ? (
                       <div className="server-friends">

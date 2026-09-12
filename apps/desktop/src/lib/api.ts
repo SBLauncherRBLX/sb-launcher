@@ -21,7 +21,7 @@ export function getApiBase() {
   return API_BASE;
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (!headers.has("Content-Type") && init.body) {
     headers.set("Content-Type", "application/json");
@@ -33,6 +33,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...init,
     headers,
     credentials: "include",
+    signal: init.signal ?? AbortSignal.timeout(30_000),
   });
   if (!res.ok) {
     let message = `Request failed (${res.status})`;

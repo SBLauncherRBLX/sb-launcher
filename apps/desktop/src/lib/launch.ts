@@ -1,6 +1,7 @@
 import { api } from "./api";
 import { useAppStore } from "../store";
 import { ensureLaunchAccountMatches } from "./launchGate";
+import { startPlaySession } from "./content";
 
 async function resolveGameIconUrl(placeId?: string, iconUrl?: string | null): Promise<string | undefined> {
   const existing = iconUrl?.trim();
@@ -57,6 +58,7 @@ export async function launchExperience(input: {
     // Launch first — Discord art must not delay opening Roblox.
     const graphics = useAppStore.getState().graphics;
     const res = await open(result.deepLink, graphics);
+    if (res.ok) void startPlaySession(input);
     if (!res.ok) {
       await window.sbDesktop?.openExternal(result.webUrl);
     }

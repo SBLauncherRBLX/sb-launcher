@@ -217,6 +217,9 @@ public partial class MainWindow : Window
             hostConfig["cloudUrl"]?.GetValue<string>()?.Trim()
             ?? "https://sb-launcher-cloud.sblauncherrblx.workers.dev";
         start.Environment["SB_INSTANCE_TOKEN"] = _apiInstanceToken;
+        start.Environment["SB_CAPTURE_PICTURES"] = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Roblox");
+        start.Environment["SB_CAPTURE_VIDEOS"] = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Roblox");
+        start.Environment["SB_JOURNAL_MEDIA"] = Path.Combine(_dataDirectory, "journal-media");
 
         _apiProcess = Process.Start(start)
             ?? throw new InvalidOperationException("Could not start SB Launcher API.");

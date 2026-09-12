@@ -137,3 +137,22 @@ model CacheEntry {
   value     String
   expiresAt DateTime
 }
+
+model LauncherContent {
+  userId String @id
+  revision Int @default(0)
+  payload String
+}
+
+model PlaySession {
+  id String @id
+  userId String
+  universeId String
+  placeId String
+  name String
+  startedAt Float
+  lastSeen Float
+  seconds Float @default(0)
+  ended Int @default(0)
+  @@index([userId, startedAt], map: "PlaySession_user")
+}

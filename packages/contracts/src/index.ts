@@ -1,4 +1,5 @@
 import { z } from "zod";
+export * from "./content.js";
 
 export const UserProfileSchema = z.object({
   id: z.string(),
@@ -477,6 +478,8 @@ export const ThemeEffectsSchema = z.object({
 export type ThemeEffects = z.infer<typeof ThemeEffectsSchema>;
 
 export const VisualThemeSchema = z.object({
+  iconColorMode: z.enum(["multicolor", "custom"]).optional(),
+  iconColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   id: z.string(),
   name: z.string(),
   accent: z.string(),
@@ -657,6 +660,8 @@ export const DEFAULT_SCROLL: ScrollSettings = {
 };
 
 export const DEFAULT_THEME: VisualTheme = {
+  iconColorMode: "multicolor",
+  iconColor: "#a78bfa",
   id: "sb-midnight",
   name: "SB Midnight",
   accent: "#9a82db",
@@ -704,6 +709,8 @@ export function normalizeTheme(input: unknown): VisualTheme {
   return {
     ...DEFAULT_THEME,
     ...parsed,
+    iconColorMode: parsed.iconColorMode ?? "multicolor",
+    iconColor: parsed.iconColor ?? "#a78bfa",
     effects: { ...DEFAULT_THEME_EFFECTS, ...(parsed.effects ?? {}) },
     layout: { ...DEFAULT_LAYOUT, ...(parsed.layout ?? {}) },
     scroll: { ...DEFAULT_SCROLL, ...(parsed.scroll ?? {}) },

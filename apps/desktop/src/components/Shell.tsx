@@ -7,7 +7,8 @@ import { useAppStore } from "../store";
 import { authStartUrl } from "../lib/api";
 import sbLogo from "../assets/sb-logo.png";
 import { Home3D, Discover3D, Friends3D, Visuals3D, Settings3D, About3D } from "./Nav3DIcons";
-import { fadeUp, springSnappy, useMotionEnabled } from "../lib/motion";
+import { BoldDarkIcon } from "./BoldDarkIcon";
+import { fadeUp, springSnappy, useMotionEnabled, scrollEasingCss } from "../lib/motion";
 import { APP_VERSION } from "../lib/version";
 import {
   getProfileAvatarPreference,
@@ -64,6 +65,9 @@ const links: Array<{ to: string; label: string; icon: ReactNode }> = [
     label: "Friends",
     icon: <Friends3D className="nav-icon-3d" />,
   },
+  {to:"/rooms",label:"Rooms",icon:<BoldDarkIcon name="player" className="nav-icon-3d"/>},
+  {to:"/activity",label:"Activity",icon:<BoldDarkIcon name="motion" className="nav-icon-3d"/>},
+  {to:"/journal",label:"Journal",icon:<BoldDarkIcon name="appearance" className="nav-icon-3d"/>},
   {
     to: "/visuals",
     label: "Visuals",
@@ -233,53 +237,49 @@ export function Shell({ children }: PropsWithChildren) {
     lastScrollY.current = 0;
   }, [location.pathname, layout.topbarPosition]);
 
-  // Scroll reveal — makes scroll animations actually work on scroll (not just on load)
+  // Animate only intersecting content; never hide the entire page or a dialog in CSS.
   useEffect(() => {
-    if (!scroll.revealOnScroll || scroll.scrollAnimation === "none") {
-      document.querySelectorAll(".page .sb-card").forEach((el) => el.classList.add("is-visible"));
-      return;
-    }
-    const isSticky = layout.topbarPosition !== "static";
-    const scrollRoot: HTMLElement | null = isSticky ? mainRef.current : (mainRef.current?.querySelector(".page") as HTMLElement | null);
-    const pageEl = mainRef.current?.querySelector(".page") as HTMLElement | null;
-    if (!pageEl) return;
-    const cards = Array.from(pageEl.querySelectorAll(".sb-card")) as HTMLElement[];
-    cards.forEach((el, idx) => {
-      el.style.setProperty("--card-index", String(idx));
-      el.classList.remove("is-visible");
-    });
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            (entry.target as HTMLElement).classList.add("is-visible");
-            observer.unobserve(entry.target);
-          }
+    if (!motionEnabled || !scroll.revealOnScroll || scroll.scrollAnimation === "none") return;
+    const main=mainRef.current;
+    const page=main?.querySelector(".page");
+    if(!main||!page||typeof IntersectionObserver!=="function")return;
+    const root=layout.topbarPosition==="static"?page:main;
+    const visible=new Set<Element>();
+    const observed=new Set<Element>();
+    const animations=new Set<Animation>();
+    const observer=new IntersectionObserver(entries=>{
+      let index=0;
+      for(const entry of entries){
+        if(!entry.isIntersecting){visible.delete(entry.target);continue;}
+        if(visible.has(entry.target))continue;
+        visible.add(entry.target);
+        const element=entry.target as HTMLElement;
+        const kind=scroll.scrollAnimation;
+        const from:Keyframe={opacity:0};
+        if(kind==="slide"){from.translate="0 24px";from.scale=".97";}
+        if(kind==="scale")from.scale=".92";
+        if(kind==="parallax")from.translate=`0 ${scroll.parallaxIntensity*48}px`;
+        const animation=element.animate([from,{opacity:1,translate:"0 0",scale:1}],{
+          duration:scroll.scrollAnimationDuration,
+          delay:Math.min(index++,5)*scroll.scrollStagger,
+          easing:scrollEasingCss(scroll.scrollAnimationEasing),fill:"backwards",
         });
-      },
-      {
-        root: scrollRoot,
-        threshold: 0.12,
-        rootMargin: "0px 0px -8% 0px",
-      },
-    );
-    cards.forEach((el) => observer.observe(el));
-    const mo = new MutationObserver(() => {
-      const newCards = Array.from(pageEl.querySelectorAll(".sb-card")) as HTMLElement[];
-      newCards.forEach((el, idx) => {
-        if (!el.style.getPropertyValue("--card-index")) el.style.setProperty("--card-index", String(idx));
-        if (!el.classList.contains("is-visible")) observer.observe(el);
-      });
-    });
-    mo.observe(pageEl, { childList: true, subtree: true });
-    // fallback: make visible after short delay if observer doesn't fire (e.g., already in view)
-    const t = window.setTimeout(() => cards.forEach((el) => el.classList.add("is-visible")), 900);
-    return () => {
-      observer.disconnect();
-      mo.disconnect();
-      window.clearTimeout(t);
+        animations.add(animation);
+        void animation.finished.finally(()=>animations.delete(animation)).catch(()=>undefined);
+      }
+    },{root,threshold:0,rootMargin:"0px 0px -16px 0px"});
+    const register=()=>{
+      for(const element of page.querySelectorAll(".sb-card")){
+        if(observed.has(element)||element.closest('[role="dialog"],.content-modal-backdrop'))continue;
+        observed.add(element);observer.observe(element);
+      }
+      for(const element of observed)if(!element.isConnected){observer.unobserve(element);observed.delete(element);visible.delete(element);}
     };
-  }, [location.pathname, scroll.revealOnScroll, scroll.scrollAnimation, scroll.scrollAnimationDuration, scroll.scrollAnimationEasing, scroll.scrollStagger, layout.topbarPosition]);
+    register();
+    const mutations=new MutationObserver(register);
+    mutations.observe(page,{childList:true,subtree:true});
+    return()=>{observer.disconnect();mutations.disconnect();animations.forEach(a=>a.cancel());};
+  }, [location.pathname, motionEnabled, scroll.revealOnScroll, scroll.scrollAnimation, scroll.scrollAnimationDuration, scroll.scrollAnimationEasing, scroll.scrollStagger, scroll.parallaxIntensity, layout.topbarPosition]);
 
   async function signIn() {
     const url = authStartUrl();

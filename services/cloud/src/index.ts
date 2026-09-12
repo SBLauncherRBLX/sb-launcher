@@ -1,4 +1,6 @@
+export { CommunityHub } from "./community";
 export type Env = {
+  COMMUNITY: DurableObjectNamespace;
   PLAYERS: KVNamespace;
   META: KVNamespace;
   UPDATE_ADMIN_TOKEN?: string;
@@ -150,6 +152,20 @@ export default {
     try {
       const url = new URL(request.url);
       const path = url.pathname.replace(/\/+$/, "") || "/";
+      if (request.method === "POST" && path === "/v1/community") {
+        const raw = await request.text();
+        if (raw.length > 1_600_000) return cors(request, json({error:"Request too large."},413));
+        const auth = request.headers.get("Authorization") ?? "";
+        const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+        const identity = token ? await resolveRobloxIdentity(token) : null;
+        if (!identity) return cors(request, json({error:"Sign in with Roblox to use Community."},401));
+        let body: {action?:unknown;input?:unknown};
+        try { body=JSON.parse(raw); } catch { return cors(request,json({error:"Invalid JSON."},400)); }
+        if (!body || typeof body.action!=="string" || !body.input || typeof body.input!=="object" || Array.isArray(body.input)) return cors(request,json({error:"Invalid request."},400));
+        if (!env.COMMUNITY) return cors(request,json({error:"Community service is not configured."},503));
+        const hub=env.COMMUNITY.get(env.COMMUNITY.idFromName("sb-community-v1"));
+        return cors(request,await hub.fetch("https://community/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:body.action,input:body.input,identity:{id:identity.id,name:identity.displayName||identity.username||identity.id}})}));
+      }
 
       if (request.method === "GET" && path === "/health") {
         return cors(request, json({ ok: true, service: "sb-launcher-cloud" }));

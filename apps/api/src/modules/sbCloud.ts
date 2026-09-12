@@ -26,7 +26,7 @@ export type ProfileCosmetics = {
   };
   banner: {
     mode: "off" | "image" | "gif" | "video" | "color";
-    mediaUrl?: string;
+    mediaUrl?: string | null;
     color?: string;
     fit: "cover" | "contain" | "fill";
     position: "center" | "top" | "bottom" | "left" | "right";
@@ -422,5 +422,4 @@ export async function fetchLauncherPresenceBatch(
     return {};
   }
 }
-
 

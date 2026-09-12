@@ -1,5 +1,4 @@
 import { useEffect, useMemo } from "react";
-import { AnimatePresence, motion } from "motion/react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { themeToCssVars } from "@sb/ui";
 import { normalizeTheme } from "@sb/contracts";
@@ -16,21 +15,19 @@ import { VisualsPage } from "./pages/VisualsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { AboutPage } from "./pages/AboutPage";
 import { UserProfilePage } from "./pages/UserProfilePage";
-import { pageTransition, useMotionEnabled } from "./lib/motion";
+import { ActivityPage } from "./pages/ActivityPage";
+import { JournalPage } from "./pages/JournalPage";
+import { RoomsPage } from "./pages/RoomsPage";
+import { SessionTracker } from "./lib/content";
+import { CaptureTracker } from "./components/JournalCaptures";
+import { PageErrorBoundary } from "./components/PageErrorBoundary";
 
 function AnimatedRoutes() {
   const location = useLocation();
-  const theme = useAppStore((s) => s.theme);
-  const motionEnabled = useMotionEnabled(theme);
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        className="page-motion"
-        {...pageTransition(motionEnabled)}
-      >
-        <Routes location={location}>
+    <div className="page-motion">
+        <PageErrorBoundary key={location.pathname}><Routes location={location}>
           <Route path="/" element={<HomePage />} />
           <Route path="/discover" element={<DiscoverPage />} />
           <Route path="/game/:universeId" element={<GameDetailsPage />} />
@@ -39,10 +36,12 @@ function AnimatedRoutes() {
           <Route path="/visuals" element={<VisualsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/activity" element={<ActivityPage />} />
+          <Route path="/journal" element={<JournalPage />} />
+          <Route path="/rooms" element={<RoomsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </motion.div>
-    </AnimatePresence>
+        </Routes></PageErrorBoundary>
+    </div>
   );
 }
 
@@ -127,6 +126,8 @@ export default function App() {
       className={`app-root density-${normalizedTheme.density} motion-${normalizedTheme.motionIntensity ?? "medium"} button-style-${normalizedTheme.buttonStyle ?? "gradient"} card-style-${normalizedTheme.cardStyle ?? "glass"} nav-pill-${normalizedTheme.layout?.navPillStyle ?? "glass"}`}
     >
       <BackgroundScene theme={normalizedTheme} />
+      <SessionTracker />
+      <CaptureTracker />
       <Shell>
         <AnimatedRoutes key={activeUserId} />
       </Shell>

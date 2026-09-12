@@ -80,20 +80,7 @@ export async function resolveSession(token?: string | null): Promise<AuthContext
     scopes = grant.scope.split(/\s+/).filter(Boolean);
     if (grant.expiresAt.getTime() < Date.now() + 60_000 && grant.refreshTokenEncrypted) {
       try {
-        const refreshed = await refreshRobloxToken(decrypt(grant.refreshTokenEncrypted));
-        accessToken = refreshed.access_token;
-        scopes = (refreshed.scope ?? grant.scope).split(/\s+/).filter(Boolean);
-        await prisma.oAuthGrant.update({
-          where: { id: grant.id },
-          data: {
-            accessTokenEncrypted: encrypt(refreshed.access_token),
-            refreshTokenEncrypted: refreshed.refresh_token
-              ? encrypt(refreshed.refresh_token)
-              : grant.refreshTokenEncrypted,
-            scope: refreshed.scope ?? grant.scope,
-            expiresAt: new Date(Date.now() + refreshed.expires_in * 1000),
-          },
-        });
+        accessToken = await renewAccessToken(session.user.id, accessToken);
       } catch {
         // keep existing token; caller may get 401 from Roblox
       }
@@ -113,6 +100,29 @@ export async function resolveSession(token?: string | null): Promise<AuthContext
       profileUrl: session.user.profileUrl,
     },
   };
+}
+
+// Multiple page requests can arrive together. A refresh token must rotate only once.
+const renewals = new Map<string, Promise<string>>();
+export function renewAccessToken(userId: string, rejectedToken: string): Promise<string> {
+  const pending=renewals.get(userId); if(pending)return pending;
+  const work=(async()=>{
+    const grant=await prisma.oAuthGrant.findUnique({where:{userId}});
+    if(!grant)throw new Error("Sign in with Roblox again.");
+    const current=decrypt(grant.accessTokenEncrypted);
+    if(current!==rejectedToken && grant.expiresAt.getTime()>Date.now()+60_000)return current;
+    if(!grant.refreshTokenEncrypted)throw new Error("Sign in with Roblox again.");
+    const fresh=await refreshRobloxToken(decrypt(grant.refreshTokenEncrypted));
+    await prisma.oAuthGrant.update({where:{id:grant.id},data:{
+      accessTokenEncrypted:encrypt(fresh.access_token),
+      refreshTokenEncrypted:fresh.refresh_token?encrypt(fresh.refresh_token):grant.refreshTokenEncrypted,
+      scope:fresh.scope??grant.scope,expiresAt:new Date(Date.now()+fresh.expires_in*1000),
+    }});
+    return fresh.access_token;
+  })();
+  renewals.set(userId,work);
+  void work.finally(()=>renewals.delete(userId)).catch(()=>undefined);
+  return work;
 }
 
 export async function authHook(request: FastifyRequest): Promise<void> {

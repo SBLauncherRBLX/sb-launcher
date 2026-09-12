@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import aboutBanner from "../assets/about-glass-banner.png";
 import { MAJOR_RELEASE, PATCH_NOTES } from "../lib/patchNotes";
 import { APP_VERSION } from "../lib/version";
 import { useAppStore } from "../store";
-import { BrandModelViewer } from "../components/BrandModel";
 
 const TRIPLE_CLICK_MS = 520;
 const SLOGAN_MS = 5000;
+function formatPatchDate(date: string) {
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T00:00:00Z`));
+}
 
 export function AboutPage() {
   const updateStatus = useAppStore((s) => s.updateStatus);
@@ -48,31 +51,55 @@ export function AboutPage() {
 
   return (
     <div className="about-page">
-      <section aria-label="About SB Launcher" style={{ width: "100%", display: "grid", placeItems: "center", gap: "1rem", padding: "1.25rem 0 0.5rem" }}>
-        <div style={{ width: "100%", maxWidth: 520 }} onClick={onBannerClick} role="button" tabIndex={0} aria-label="SB Launcher logo" onKeyDown={(e) => e.key === "Enter" && onBannerClick()}>
-          <BrandModelViewer />
-        </div>
-        <div style={{ textAlign: "center" }}>
-          <h1 style={{ margin: 0, fontSize: "1.7rem", fontWeight: 800, letterSpacing: "-0.03em" }}>SB Launcher</h1>
-          <p className="sb-muted" style={{ margin: "0.2rem 0 0", fontWeight: 600 }}>{APP_VERSION}</p>
-          {sloganActive ? <p style={{ margin: "0.35rem 0 0", fontSize: "0.95rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "lowercase" }}>always better</p> : null}
-        </div>
-        <div className="about-version-status" style={{ position: "static", padding: 0, background: "transparent" }}>
-          {updateStatus === "idle" || updateStatus === "checking" ? (
-            <span className="about-version-status-text">Checking version...</span>
-          ) : null}
-          {updateStatus === "upToDate" ? (
-            <span className="about-version-status-text">Version up to date</span>
-          ) : null}
-          {updateStatus === "offline" ? (
-            <span className="about-version-status-text">Version check offline</span>
-          ) : null}
-          {updateStatus === "available" && updateAvailable ? (
-            <button type="button" className="about-version-status-btn" onClick={() => setUpdateNotesOpen(true)}>
-              Version update available
-              {updateAvailable.version ? ` · ${updateAvailable.version}` : ""}
-            </button>
-          ) : null}
+      <section className="about-os-window" aria-label="About SB Launcher">
+        <div className="about-os-frame">
+          <button
+            type="button"
+            className={`about-banner${sloganActive ? " about-banner--slogan" : ""}`}
+            onClick={onBannerClick}
+            aria-label="SB Launcher banner"
+          >
+            <img
+              className="about-banner-art"
+              src={aboutBanner}
+              alt=""
+              draggable={false}
+              aria-hidden
+            />
+            <span className="about-banner-scrim" aria-hidden />
+            <div className={`about-banner-copy${sloganActive ? " is-hidden" : ""}`}>
+              <h1 className="about-banner-title">SB Launcher</h1>
+              <p className="about-banner-version">{APP_VERSION}</p>
+            </div>
+            <div
+              className={`about-banner-slogan${sloganActive ? " is-visible" : ""}`}
+              aria-hidden={!sloganActive}
+            >
+              <p>always better</p>
+            </div>
+          </button>
+
+          <div className="about-version-status">
+            {updateStatus === "idle" || updateStatus === "checking" ? (
+              <span className="about-version-status-text">Checking version...</span>
+            ) : null}
+            {updateStatus === "upToDate" ? (
+              <span className="about-version-status-text">Version up to date</span>
+            ) : null}
+            {updateStatus === "offline" ? (
+              <span className="about-version-status-text">Version check offline</span>
+            ) : null}
+            {updateStatus === "available" && updateAvailable ? (
+              <button
+                type="button"
+                className="about-version-status-btn"
+                onClick={() => setUpdateNotesOpen(true)}
+              >
+                Version update available
+                {updateAvailable.version ? ` · ${updateAvailable.version}` : ""}
+              </button>
+            ) : null}
+          </div>
         </div>
       </section>
 
@@ -88,6 +115,7 @@ export function AboutPage() {
             <h3>
               {MAJOR_RELEASE.version} — {MAJOR_RELEASE.title}
             </h3>
+            <time className="sb-muted patch-date" dateTime={MAJOR_RELEASE.date}>{formatPatchDate(MAJOR_RELEASE.date)}</time>
           </div>
           <ul>
             {MAJOR_RELEASE.items.map((item) => (
@@ -105,6 +133,7 @@ export function AboutPage() {
                   {patch.version}
                 </span>
                 <h4>{patch.title}</h4>
+                <time className="sb-muted patch-date" dateTime={patch.date}>{patch.dateLabel ? `${patch.dateLabel} · ` : ""}{formatPatchDate(patch.date)}</time>
               </div>
               <ul>
                 {patch.items.map((item) => (

@@ -850,31 +850,6 @@ export function VisualsPage() {
               </select>
             </label>
             <label>
-              Scroll animation
-              <select className="sb-input" value={theme.scroll?.scrollAnimation ?? "fade"} onChange={(e) => patchScroll({ scrollAnimation: e.target.value as NonNullable<VisualTheme["scroll"]>["scrollAnimation"] })}>
-                <option value="fade">Fade</option>
-                <option value="slide">Slide + scale</option>
-                <option value="scale">Scale</option>
-                <option value="parallax">Parallax</option>
-                <option value="none">None</option>
-              </select>
-            </label>
-            <label>
-              Duration ({theme.scroll?.scrollAnimationDuration ?? 360}ms)
-              <input type="range" min={120} max={900} step={10} value={theme.scroll?.scrollAnimationDuration ?? 360} onChange={(e) => patchScroll({ scrollAnimationDuration: Number(e.target.value) })} />
-            </label>
-            <label>
-              Easing
-              <select className="sb-input" value={theme.scroll?.scrollAnimationEasing ?? "easeOut"} onChange={(e) => patchScroll({ scrollAnimationEasing: e.target.value as NonNullable<VisualTheme["scroll"]>["scrollAnimationEasing"] })}>
-                <option value="linear">Linear</option>
-                <option value="ease">Ease</option>
-                <option value="easeIn">EaseIn</option>
-                <option value="easeOut">EaseOut</option>
-                <option value="easeInOut">EaseInOut</option>
-                <option value="spring">Spring</option>
-              </select>
-            </label>
-            <label>
               Stagger ({theme.scroll?.scrollStagger ?? 40}ms)
               <input type="range" min={0} max={120} step={5} value={theme.scroll?.scrollStagger ?? 40} onChange={(e) => patchScroll({ scrollStagger: Number(e.target.value) })} />
             </label>
@@ -898,6 +873,10 @@ export function VisualsPage() {
         </VisualsSection>
 
         <VisualsSection icon={<Colors3D />} title="Colors & typography" subtitle="Palette, font and density">
+          <div className="form-grid">
+            <label>Icon colors<select className="sb-input" value={theme.iconColorMode ?? "multicolor"} onChange={e => patch({ iconColorMode: e.target.value as "multicolor" | "custom" })}><option value="multicolor">Multicolor — original colors</option><option value="custom">Custom color</option></select></label>
+            <label>Icon tint<input type="color" value={theme.iconColor ?? "#a78bfa"} disabled={theme.iconColorMode !== "custom"} onChange={e => patch({ iconColor: e.target.value })}/></label>
+          </div>
           <div className="form-grid" style={{ marginTop: "0.5rem" }}>
             <label>
               Accent

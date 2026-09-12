@@ -48,13 +48,46 @@ export function fadeUp(index = 0, enabled = true) {
   };
 }
 
-export function pageTransition(enabled = true) {
-  if (!enabled) return {};
+export function pageTransition(
+  enabled = true,
+  kind: NonNullable<VisualTheme["scroll"]>["scrollAnimation"] = "slide",
+  duration = 360,
+  easing: NonNullable<VisualTheme["scroll"]>["scrollAnimationEasing"] = "easeOut",
+) {
+  if (!enabled || kind === "none") return {};
+  const easeMap: Record<string, [number, number, number, number]> = {
+    linear: [0, 0, 1, 1],
+    ease: [0.25, 0.1, 0.25, 1],
+    easeIn: [0.42, 0, 1, 1],
+    easeOut: [0, 0, 0.58, 1],
+    easeInOut: [0.42, 0, 0.58, 1],
+    spring: [0.34, 1.56, 0.64, 1],
+  };
+  const transition = { duration: duration / 1000, ease: easeMap[easing] ?? easeMap.easeOut };
+  if (kind === "fade") {
+    return { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition };
+  }
+  if (kind === "scale") {
+    return {
+      initial: { opacity: 0, scale: 0.92 },
+      animate: { opacity: 1, scale: 1 },
+      exit: { opacity: 0, scale: 1.04 },
+      transition,
+    };
+  }
+  if (kind === "parallax") {
+    return {
+      initial: { opacity: 0, y: 22 },
+      animate: { opacity: 1, y: 0 },
+      exit: { opacity: 0, y: -22 },
+      transition,
+    };
+  }
   return {
-    initial: { opacity: 0, x: 24, scale: 0.97 },
+    initial: { opacity: 0, x: 28, scale: 0.98 },
     animate: { opacity: 1, x: 0, scale: 1 },
-    exit: { opacity: 0, x: -16, scale: 0.985 },
-    transition: springSoft,
+    exit: { opacity: 0, x: -20, scale: 0.985 },
+    transition,
   };
 }
 

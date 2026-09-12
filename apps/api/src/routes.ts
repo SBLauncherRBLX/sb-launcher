@@ -1,4 +1,6 @@
 import type { FastifyInstance } from "fastify";
+import { registerContentRoutes } from "./modules/content.js";
+import { registerCaptureRoutes } from "./modules/captures.js";
 import {
   DEFAULT_THEME,
   SafeGraphicsSettingsSchema,
@@ -75,6 +77,8 @@ import {
 
 export async function registerRoutes(app: FastifyInstance): Promise<void> {
   app.addHook("preHandler", authHook);
+  await registerContentRoutes(app);
+  await registerCaptureRoutes(app);
 
   app.get("/health", async () => ({
     ok: true,

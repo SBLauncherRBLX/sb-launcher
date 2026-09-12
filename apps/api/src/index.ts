@@ -6,10 +6,14 @@ import { env } from "./config.js";
 import { registerRoutes } from "./routes.js";
 import { ensureBuildFreshness } from "./lib/buildFreshness.js";
 import { ensurePrivateServerTable } from "./modules/privateServers.js";
+import { ensureContentTables } from "./modules/content.js";
+import { ensureCaptureTables } from "./modules/captures.js";
 
 async function main() {
   await ensureBuildFreshness();
   await ensurePrivateServerTable();
+  await ensureContentTables();
+  await ensureCaptureTables();
 
   const app = Fastify({
     logger: true,

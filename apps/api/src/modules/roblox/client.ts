@@ -797,14 +797,14 @@ export async function getUserProfileDetails(
     !lastLocation
   ) {
     if (!universeId && resolvedPlaceId) {
-      const places = await batchPlaceDetails([resolvedPlaceId]).catch(() => ({}));
-      const meta = places[resolvedPlaceId];
+      const places = await batchPlaceDetails([resolvedPlaceId]).catch(() => undefined);
+      const meta = places?.[resolvedPlaceId];
       if (meta?.universeId) universeId = meta.universeId;
       if (meta?.name) lastLocation = normalizeLocationName(meta.name);
     }
     if (universeId && !lastLocation) {
-      const games = await batchGameDetails([universeId]).catch(() => ({}));
-      const game = games[universeId];
+      const games = await batchGameDetails([universeId]).catch(() => undefined);
+      const game = games?.[universeId];
       if (game?.name) lastLocation = normalizeLocationName(game.name);
       if (!resolvedPlaceId && game?.placeId) resolvedPlaceId = game.placeId;
     }
@@ -837,6 +837,7 @@ export async function getUserProfileDetails(
     launcherAvatarMode: "roblox",
     launcherAvatarUrl: null,
     launcherBanner: null,
+    favoriteGames: [],
     games,
   };
 

@@ -1,12 +1,15 @@
 /** Changelog shown on the About page. Keep newest patches first. */
 
 export type PatchNoteEntry = {
+  date: string;
+  dateLabel?: string;
   version: string;
   title: string;
   items: string[];
 };
 
 export const MAJOR_RELEASE: PatchNoteEntry = {
+  date: "2026-09-04",
   version: "3.0",
   title: "SB Launcher 3 — Liquid Glass",
   items: [
@@ -20,6 +23,7 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
     version: "3.1.0",
+    date: "2026-09-10",
     title: "Frosted buttons & tidy settings",
     items: [
       "All buttons unified to dark-gray frosted glass like the account pill.",
@@ -31,6 +35,7 @@ export const PATCH_NOTES: PatchNoteEntry[] = [
   },
   {
     version: "3.0.0",
+    date: "2026-09-04",
     title: "Liquid Glass & 3D icons",
     items: [
       "Liquid Glass pill in left hotbar — more transparent, flows with spring physics, no gaps.",
@@ -41,6 +46,7 @@ export const PATCH_NOTES: PatchNoteEntry[] = [
   },
   {
     version: "2.5.0",
+    date: "2026-07-30",
     title: "Private servers, splash & polish",
     items: [
       "Private servers: join by invite link/code, save, rename, copy link, and remove from the game page.",
@@ -52,6 +58,8 @@ export const PATCH_NOTES: PatchNoteEntry[] = [
   },
   {
     version: "2.4.10",
+    date: "2026-07-29",
+    dateLabel: "Local build",
     title: "Themed splash wallpapers",
     items: [
       "Native and web startup screens use your Visuals wallpaper when set (color fallback otherwise).",
