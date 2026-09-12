@@ -22,6 +22,17 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "3.2.0",
+    date: "2026-09-12",
+    title: "Rooms, journal & visual polish",
+    items: [
+      "Room members can launch the selected Roblox experience together on one server with enough free slots when everyone is ready.",
+      "Screenshots and recordings created in Roblox are imported into the Journal automatically.",
+      "Navigation, section alignment and custom icon colors were stabilized across old and new sections.",
+      "The classic multicolor palette icon is restored while custom color mode keeps its readable monochrome treatment.",
+    ],
+  },
+  {
     version: "3.1.0",
     date: "2026-09-10",
     title: "Frosted buttons & tidy settings",

@@ -1,7 +1,6 @@
-﻿SB Launcher 3.1 — Frosted buttons & tidy settings
+SB Launcher 3.2 — Rooms, journal & visual polish
 
-- All buttons unified to dark-gray frosted glass like the account pill
-- Sidebar bubble can switch back to classic Material You in Visuals
-- Visuals & Settings regrouped — no duplicate controls, bigger section icons
-- Custom wallpapers back (100% working), static About logo, no cursor parallax
-- Installer no longer fails on locked files — closes the app before updating
+- Room members can launch the selected Roblox experience together on one server with enough free slots when everyone is ready
+- Screenshots and recordings created in Roblox are imported into the Journal automatically
+- Navigation, section alignment and custom icon colors stabilized across old and new sections
+- Classic multicolor palette icon restored while custom color mode keeps readable monochrome treatment

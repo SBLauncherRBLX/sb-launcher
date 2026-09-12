@@ -1,5 +1,5 @@
 /** App release version - keep in sync with package.json / native / installer. */
-export const APP_VERSION = "3.1.0";
+export const APP_VERSION = "3.2.0";
 export const APP_YEAR = 2026;
 
 /** Compare dotted semver-like versions. Returns positive if a > b. */

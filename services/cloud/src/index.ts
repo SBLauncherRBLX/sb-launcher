@@ -97,13 +97,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "3.1.0",
-  buildId: "20260910224820",
+  version: "3.2.0",
+  buildId: "20260912210420",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 3.1 — Frosted buttons & tidy settings\n\n- All buttons unified to dark-gray frosted glass like the account pill\n- Sidebar bubble can switch back to classic Material You in Visuals\n- Visuals & Settings regrouped — no duplicate controls, bigger section icons\n- Custom wallpapers back (100% working), static About logo, no cursor parallax\n- Installer no longer fails on locked files — closes the app before updating",
-  title: "SB Launcher 3.1",
-  publishedAt: "2026-09-10T15:48:20.000Z",
+    "SB Launcher 3.2 — Rooms, journal & visual polish\n\n- Room members can launch the selected Roblox experience together on one server with enough free slots when everyone is ready\n- Screenshots and recordings created in Roblox are imported into the Journal automatically\n- Navigation, section alignment and custom icon colors stabilized across old and new sections\n- Classic multicolor palette icon restored while custom color mode keeps readable monochrome treatment",
+  title: "SB Launcher 3.2",
+  publishedAt: "2026-09-12T14:04:20.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {
