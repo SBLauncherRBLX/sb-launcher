@@ -1599,7 +1599,7 @@ button,
   overflow: auto;
   overscroll-behavior: var(--sb-overscroll, contain);
   overscroll-behavior-y: var(--sb-overscroll, contain);
-  scroll-behavior: var(--sb-scroll-behavior, smooth);
+  scroll-behavior: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--sb-on-surface-variant) 40%, transparent) transparent;
@@ -1750,7 +1750,7 @@ button,
   min-height: 0;
   overscroll-behavior: var(--sb-overscroll, contain);
   overscroll-behavior-y: var(--sb-overscroll, contain);
-  scroll-behavior: var(--sb-scroll-behavior, smooth);
+  scroll-behavior: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--sb-on-surface-variant) 35%, transparent) transparent;
@@ -1930,6 +1930,32 @@ html[data-reveal="false"] .page .sb-card {
 
 .page-motion {
   min-height: 100%;
+}
+
+.page-enter {
+  /* Relative positioning preserves the backdrop seen by glass descendants.
+     Avoid opacity/filter on this ancestor and release the offset after entry. */
+  position: relative;
+  animation: sb-page-enter 320ms cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+
+@keyframes sb-page-enter {
+  from {
+    top: 12px;
+  }
+  to {
+    top: 0;
+  }
+}
+
+.motion-off .page-enter {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter {
+    animation: none;
+  }
 }
 
 .page-header {
@@ -2264,15 +2290,6 @@ html[data-reveal="false"] .page .sb-card {
 
 .update-install-modal {
   width: min(100%, 460px);
-}
-
-.update-keep-presets {
-  margin-top: 1rem;
-}
-
-.update-keep-presets-hint {
-  margin: 0.35rem 0 0;
-  font-size: 0.85rem;
 }
 
 .update-progress-block {
@@ -2774,7 +2791,7 @@ html[data-reveal="false"] .page .sb-card {
   padding: 0.55rem 0.15rem 0.7rem;
   margin: -0.4rem 0 0;
   scroll-snap-type: x proximity;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
   /* Roblox-style: batch via arrows, no thumb slider clutter. */
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -2993,6 +3010,14 @@ html[data-reveal="false"] .page .sb-card {
 .server-row:hover,
 .asset-card:hover {
   transform: translateY(-1px);
+}
+
+/* Friends already enters with the route animation. Keep its live list stable when
+   presence refreshes or filtering changes the rendered rows. */
+.motion-low .friends-page .friend-row,
+.motion-medium .friends-page .friend-row,
+.motion-high .friends-page .friend-row {
+  animation: none;
 }
 
 .inline-nick-badge {

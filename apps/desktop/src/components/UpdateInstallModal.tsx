@@ -24,7 +24,6 @@ type Props = {
 };
 
 export function UpdateInstallModal({ update, onClose }: Props) {
-  const [keepPresets, setKeepPresets] = useState(true);
   const [phase, setPhase] = useState<UpdatePhase>("idle");
   const [percent, setPercent] = useState(0);
   const [message, setMessage] = useState("Ready to install.");
@@ -55,7 +54,7 @@ export function UpdateInstallModal({ update, onClose }: Props) {
       await window.sbDesktop.startUpdate({
         downloadUrl: update.downloadUrl,
         version: update.version,
-        keepPresets,
+        keepPresets: true,
       });
     } catch (error) {
       setPhase("error");
@@ -102,21 +101,6 @@ export function UpdateInstallModal({ update, onClose }: Props) {
           ) : (
             <p className="sb-muted">No patch notes were published with this update.</p>
           )}
-
-          <label className="checkbox-row update-keep-presets">
-            <input
-              type="checkbox"
-              checked={keepPresets}
-              disabled={busy}
-              onChange={(event) => setKeepPresets(event.target.checked)}
-            />
-            Keep my presets (themes, graphics, wallpapers, custom icons)
-          </label>
-          {!keepPresets ? (
-            <p className="sb-muted update-keep-presets-hint">
-              Themes and local customizations will be reset. Your Roblox login stays signed in.
-            </p>
-          ) : null}
 
           {phase !== "idle" ? (
             <div className="update-progress-block" aria-live="polite">

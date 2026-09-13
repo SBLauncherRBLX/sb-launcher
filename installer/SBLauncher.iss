@@ -1,5 +1,5 @@
 #define MyAppName "SB Launcher"
-#define MyAppVersion "3.2.0"
+#define MyAppVersion "3.2.1"
 #define MyAppPublisher "SB Launcher"
 #define MyAppExeName "SB Launcher.exe"
 
@@ -38,12 +38,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
-[CustomMessages]
-UninstallRemoveDataTitle=Remove saved data?
-UninstallRemoveDataPrompt=Also remove saved SB Launcher data (account, themes, launch screen, favorites)?%n%nChoose No to keep your data for the next install.
-YesButton=Yes
-NoButton=No
-
 [Files]
 Source: "..\release\native\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 
@@ -58,9 +52,6 @@ Root: HKCU; Subkey: "Software\Classes\sblauncher\shell\open\command"; ValueType:
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-
-[UninstallDelete]
-Type: filesandordirs; Name: "{localappdata}\SB Launcher"; Check: UninstallRemoveSavedData
 
 [Code]
 { SB Launcher dark theme вЂ” classic purple progress bar. }
@@ -117,74 +108,6 @@ begin
     DwmSetWindowAttribute(hWnd, 36, Value, 4);
   except
   end;
-end;
-
-function ShowDarkConfirm(const Message, Caption: String): Boolean;
-var
-  Form: TSetupForm;
-  Title, Body: TNewStaticText;
-  YesBtn, NoBtn: TNewButton;
-begin
-  Form := CreateCustomForm(ScaleX(500), ScaleY(210), False, True);
-  try
-    Form.Caption := Caption;
-    Form.Color := BgColor;
-    ApplyDarkChrome(Form.Handle);
-
-    Title := TNewStaticText.Create(Form);
-    Title.Parent := Form;
-    Title.Left := ScaleX(20);
-    Title.Top := ScaleY(16);
-    Title.Width := Form.ClientWidth - ScaleX(40);
-    Title.Caption := Caption;
-    Title.Font.Style := [fsBold];
-    Title.Font.Color := TextColor;
-    Title.AutoSize := True;
-
-    Body := TNewStaticText.Create(Form);
-    Body.Parent := Form;
-    Body.Left := ScaleX(20);
-    Body.Top := ScaleY(52);
-    Body.Width := Form.ClientWidth - ScaleX(40);
-    Body.Height := ScaleY(90);
-    Body.Caption := Message;
-    Body.Font.Color := MutedColor;
-    Body.WordWrap := True;
-
-    YesBtn := TNewButton.Create(Form);
-    YesBtn.Parent := Form;
-    YesBtn.Caption := ExpandConstant('{cm:YesButton}');
-    YesBtn.Width := ScaleX(96);
-    YesBtn.Height := ScaleY(28);
-    YesBtn.Left := Form.ClientWidth - ScaleX(220);
-    YesBtn.Top := Form.ClientHeight - ScaleY(48);
-    YesBtn.ModalResult := mrYes;
-    SetWindowTheme(YesBtn.Handle, 'DarkMode_Explorer', '');
-
-    NoBtn := TNewButton.Create(Form);
-    NoBtn.Parent := Form;
-    NoBtn.Caption := ExpandConstant('{cm:NoButton}');
-    NoBtn.Width := ScaleX(96);
-    NoBtn.Height := ScaleY(28);
-    NoBtn.Left := Form.ClientWidth - ScaleX(112);
-    NoBtn.Top := Form.ClientHeight - ScaleY(48);
-    NoBtn.ModalResult := mrNo;
-    NoBtn.Cancel := True;
-    SetWindowTheme(NoBtn.Handle, 'DarkMode_Explorer', '');
-
-    Form.ActiveControl := NoBtn;
-    if WizardForm <> nil then
-      Form.FlipAndCenterIfNeeded(True, WizardForm, False);
-    Result := Form.ShowModal = mrYes;
-  finally
-  end;
-end;
-
-function UninstallRemoveSavedData(): Boolean;
-begin
-  Result := ShowDarkConfirm(
-    ExpandConstant('{cm:UninstallRemoveDataPrompt}'),
-    ExpandConstant('{cm:UninstallRemoveDataTitle}'));
 end;
 
 { The running app holds runtime api native node files locked (DeleteFile code 5). }

@@ -149,6 +149,7 @@ button,
   align-items: center;
   justify-content: center;
   text-align: center;
+  text-decoration: none;
   line-height: 1.2;
   white-space: normal;
   /* Frosted glass exactly like .game-card-remove (× from Last Played) */

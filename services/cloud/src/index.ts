@@ -97,13 +97,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "3.2.0",
-  buildId: "20260912210420",
+  version: "3.2.1",
+  buildId: "20260913173405",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 3.2 — Rooms, journal & visual polish\n\n- Room members can launch the selected Roblox experience together on one server with enough free slots when everyone is ready\n- Screenshots and recordings created in Roblox are imported into the Journal automatically\n- Navigation, section alignment and custom icon colors stabilized across old and new sections\n- Classic multicolor palette icon restored while custom color mode keeps readable monochrome treatment",
-  title: "SB Launcher 3.2",
-  publishedAt: "2026-09-12T14:04:20.000Z",
+    "SB Launcher 3.2.1 — Stability update\n\n- Room readiness and group server search are more reliable\n- Page opening transitions are smooth without flicker or overlapping frames\n- Friends list refreshes no longer replay competing card animations\n- Liquid Glass blur and transparency stay intact during page transitions\n- Installer and updater preserve launcher data silently without extra prompts",
+  title: "SB Launcher 3.2.1",
+  publishedAt: "2026-09-13T10:34:05.889Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

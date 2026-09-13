@@ -92,9 +92,10 @@ export const api = {
     request<{ items: import("@sb/contracts").GameEvent[] }>(
       `/api/games/${universeId}/events`,
     ),
-  servers: (placeId: string, cursor?: string | null) =>
+  servers: (placeId: string, cursor?: string | null, limit = 25, signal?: AbortSignal) =>
     request<{ items: import("@sb/contracts").ServerInfo[]; nextCursor: string | null }>(
-      `/api/games/${placeId}/servers${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
+      `/api/games/${placeId}/servers?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+      { signal },
     ),
   privateServersEnabled: (universeId: string) =>
     request<{ enabled: boolean }>(

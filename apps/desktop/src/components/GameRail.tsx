@@ -77,7 +77,7 @@ export function GameRail({
     if (!el) return;
     // Jump roughly one visible page of cards (Roblox-style batch scroll).
     const amount = Math.max(el.clientWidth * 0.9, 320);
-    el.scrollBy({ left: direction * amount, behavior: "smooth" });
+    el.scrollBy({ left: direction * amount, behavior: "auto" });
   }
 
   if (!games.length) return null;

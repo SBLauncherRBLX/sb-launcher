@@ -1093,9 +1093,9 @@ export async function listServers(
   limit = 25,
 ): Promise<{ items: ServerInfo[]; nextCursor: string | null }> {
   const url = new URL(`https://games.roblox.com/v1/games/${placeId}/servers/0`);
-  url.searchParams.set("sortOrder", "2");
-  url.searchParams.set("excludeFullGames", "false");
-  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("sortOrder", "Asc");
+  url.searchParams.set("excludeFullGames", "true");
+  url.searchParams.set("limit", String(Math.max(10, Math.min(100, limit))));
   if (cursor) url.searchParams.set("cursor", cursor);
 
   try {
@@ -1109,7 +1109,7 @@ export async function listServers(
         playerTokens?: string[];
       }>;
       nextPageCursor?: string | null;
-    }>(url.toString());
+    }>(url.toString(), { signal: AbortSignal.timeout(10_000) }, 1);
 
     const items: ServerInfo[] = (data.data ?? []).map((s) => ({
       id: s.id,

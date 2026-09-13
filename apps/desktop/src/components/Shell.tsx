@@ -8,7 +8,7 @@ import { authStartUrl } from "../lib/api";
 import sbLogo from "../assets/sb-logo.png";
 import { Home3D, Discover3D, Friends3D, Visuals3D, Settings3D, About3D } from "./Nav3DIcons";
 import { BoldDarkIcon } from "./BoldDarkIcon";
-import { fadeUp, springSnappy, useMotionEnabled, scrollEasingCss } from "../lib/motion";
+import { fadeUp, springSnappy, useMotionEnabled } from "../lib/motion";
 import { APP_VERSION } from "../lib/version";
 import {
   getProfileAvatarPreference,
@@ -116,13 +116,7 @@ export function Shell({ children }: PropsWithChildren) {
     () => theme.layout ?? { sidebarPosition: "left", sidebarWidth: 272, topbarPosition: "sticky", topbarHeight: "comfortable", contentAlignment: "stretch", contentMaxWidth: 1280, contentPadding: 22, cardGap: 16, cardColumns: "auto", topbarBlur: 12, pageTransition: "slide" } as NonNullable<typeof theme.layout>,
     [theme.layout],
   );
-  const scroll = useMemo(
-    () => theme.scroll ?? { overscrollBehavior: "contain", scrollBehavior: "smooth", scrollbarStyle: "thin", scrollAnimation: "fade", scrollAnimationDuration: 360, scrollAnimationEasing: "easeOut", scrollStagger: 40, enableScrollProgress: false, hideTopbarOnScroll: false, parallaxIntensity: 0.5, revealOnScroll: true } as NonNullable<typeof theme.scroll>,
-    [theme.scroll],
-  );
-  const [topbarHidden, setTopbarHidden] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const lastScrollY = useRef(0);
+  const scrollbarStyle = theme.scroll?.scrollbarStyle ?? "thin";
 
   useEffect(() => {
     if (location.pathname.startsWith("/discover")) {
@@ -166,49 +160,6 @@ export function Shell({ children }: PropsWithChildren) {
     };
   }, [accountMenuOpen]);
 
-  // Reset hidden state immediately when feature is disabled (bug #3)
-  useEffect(() => {
-    if (!scroll.hideTopbarOnScroll) {
-      setTopbarHidden(false);
-      lastScrollY.current = 0;
-    }
-    if (!scroll.enableScrollProgress) {
-      setScrollProgress(0);
-    }
-  }, [scroll.hideTopbarOnScroll, scroll.enableScrollProgress]);
-
-  useEffect(() => {
-    const isSticky = layout.topbarPosition !== "static";
-    const scrollEl: HTMLElement | null = isSticky
-      ? mainRef.current
-      : (mainRef.current?.querySelector(".page") as HTMLElement | null) ?? mainRef.current;
-    if (!scrollEl) return;
-    if (!scroll.hideTopbarOnScroll && !scroll.enableScrollProgress) return;
-    let raf = 0;
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        const y = scrollEl.scrollTop;
-        const delta = y - lastScrollY.current;
-        if (scroll.hideTopbarOnScroll) {
-          if (y > 80 && delta > 4) setTopbarHidden(true);
-          else if (delta < -6 || y < 20) setTopbarHidden(false);
-        }
-        if (scroll.enableScrollProgress) {
-          const max = scrollEl.scrollHeight - scrollEl.clientHeight;
-          setScrollProgress(max > 0 ? Math.min(1, y / max) : 0);
-        }
-        lastScrollY.current = y;
-      });
-    };
-    scrollEl.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      scrollEl.removeEventListener("scroll", onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [scroll.hideTopbarOnScroll, scroll.enableScrollProgress, layout.topbarPosition]);
-
   useLayoutEffect(() => {
     // instant scroll reset without animation — completely invisible (before paint)
     const isSticky = layout.topbarPosition !== "static";
@@ -223,7 +174,7 @@ export function Shell({ children }: PropsWithChildren) {
       try {
         (el as unknown as { scrollTo: (o: ScrollToOptions) => void }).scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
       } catch {}
-      // restore on next frame to avoid smooth reappearing
+      // Restore the inline value on the next frame; CSS keeps scrolling instant.
       requestAnimationFrame(() => {
         el.style.scrollBehavior = prev;
       });
@@ -232,54 +183,7 @@ export function Shell({ children }: PropsWithChildren) {
     if (!isSticky) instantReset(mainRef.current);
     // also reset window if needed
     try { window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }); } catch { window.scrollTo(0, 0); }
-    setTopbarHidden(false);
-    setScrollProgress(0);
-    lastScrollY.current = 0;
   }, [location.pathname, layout.topbarPosition]);
-
-  // Animate only intersecting content; never hide the entire page or a dialog in CSS.
-  useEffect(() => {
-    if (!motionEnabled || !scroll.revealOnScroll || scroll.scrollAnimation === "none") return;
-    const main=mainRef.current;
-    const page=main?.querySelector(".page");
-    if(!main||!page||typeof IntersectionObserver!=="function")return;
-    const root=layout.topbarPosition==="static"?page:main;
-    const visible=new Set<Element>();
-    const observed=new Set<Element>();
-    const animations=new Set<Animation>();
-    const observer=new IntersectionObserver(entries=>{
-      let index=0;
-      for(const entry of entries){
-        if(!entry.isIntersecting){visible.delete(entry.target);continue;}
-        if(visible.has(entry.target))continue;
-        visible.add(entry.target);
-        const element=entry.target as HTMLElement;
-        const kind=scroll.scrollAnimation;
-        const from:Keyframe={opacity:0};
-        if(kind==="slide"){from.translate="0 24px";from.scale=".97";}
-        if(kind==="scale")from.scale=".92";
-        if(kind==="parallax")from.translate=`0 ${scroll.parallaxIntensity*48}px`;
-        const animation=element.animate([from,{opacity:1,translate:"0 0",scale:1}],{
-          duration:scroll.scrollAnimationDuration,
-          delay:Math.min(index++,5)*scroll.scrollStagger,
-          easing:scrollEasingCss(scroll.scrollAnimationEasing),fill:"backwards",
-        });
-        animations.add(animation);
-        void animation.finished.finally(()=>animations.delete(animation)).catch(()=>undefined);
-      }
-    },{root,threshold:0,rootMargin:"0px 0px -16px 0px"});
-    const register=()=>{
-      for(const element of page.querySelectorAll(".sb-card")){
-        if(observed.has(element)||element.closest('[role="dialog"],.content-modal-backdrop'))continue;
-        observed.add(element);observer.observe(element);
-      }
-      for(const element of observed)if(!element.isConnected){observer.unobserve(element);observed.delete(element);visible.delete(element);}
-    };
-    register();
-    const mutations=new MutationObserver(register);
-    mutations.observe(page,{childList:true,subtree:true});
-    return()=>{observer.disconnect();mutations.disconnect();animations.forEach(a=>a.cancel());};
-  }, [location.pathname, motionEnabled, scroll.revealOnScroll, scroll.scrollAnimation, scroll.scrollAnimationDuration, scroll.scrollAnimationEasing, scroll.scrollStagger, scroll.parallaxIntensity, layout.topbarPosition]);
 
   async function signIn() {
     const url = authStartUrl();
@@ -329,7 +233,7 @@ export function Shell({ children }: PropsWithChildren) {
     [theme.density, layout.sidebarPosition],
   );
 
-  const scrollbarClass = scroll.scrollbarStyle === "hidden" ? "scrollbar-hidden" : scroll.scrollbarStyle === "overlay" ? "scrollbar-overlay" : "";
+  const scrollbarClass = scrollbarStyle === "hidden" ? "scrollbar-hidden" : scrollbarStyle === "overlay" ? "scrollbar-overlay" : "";
 
   const mainClasses = useMemo(
     () => [
@@ -547,10 +451,7 @@ export function Shell({ children }: PropsWithChildren) {
         </div>
       </aside>
       <div className={mainClasses} ref={mainRef}>
-        {scroll.enableScrollProgress ? (
-          <div className="scroll-progress" style={{ transform: `scaleX(${scrollProgress})`, opacity: scrollProgress > 0 ? 1 : 0 }} />
-        ) : null}
-        <header className={`topbar ${topbarHidden ? "is-hidden" : ""}`}>
+        <header className="topbar">
           <form className="search m3-search" onSubmit={onSearch}>
             <svg
               className="m3-search-icon"

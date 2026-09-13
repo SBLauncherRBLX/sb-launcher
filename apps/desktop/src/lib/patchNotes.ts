@@ -22,6 +22,18 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "3.2.1",
+    date: "2026-09-13",
+    title: "Stable rooms, transitions & glass",
+    items: [
+      "Room readiness now updates reliably and group launches stop waiting when a suitable Roblox server cannot be found.",
+      "Page opening transitions are smooth again without flicker, overlapping frames or animated scrolling.",
+      "Friends list refreshes no longer replay competing card animations.",
+      "Liquid Glass blur and transparency stay intact while pages open.",
+      "Installer and updater preserve launcher data silently without extra prompts.",
+    ],
+  },
+  {
     version: "3.2.0",
     date: "2026-09-12",
     title: "Rooms, journal & visual polish",

@@ -15,14 +15,6 @@ export function themeToCssVars(theme: VisualTheme): CSSProperties {
   const glassBlur = effects.glassBlur ?? theme.blur;
   const glassTint = effects.glassTintColor || theme.accent;
   const topbarH = layout.topbarHeight === "compact" ? "56px" : layout.topbarHeight === "spacious" ? "76px" : "64px";
-  const easingMap: Record<string, string> = {
-    linear: "linear",
-    ease: "ease",
-    easeIn: "cubic-bezier(0.42,0,1,1)",
-    easeOut: "cubic-bezier(0,0,0.58,1)",
-    easeInOut: "cubic-bezier(0.42,0,0.58,1)",
-    spring: "cubic-bezier(0.34,1.56,0.64,1)",
-  };
   return {
     ["--sb-font" as string]: resolveFontStack(theme.fontId),
     ["--sb-accent" as string]: theme.accent,
@@ -133,12 +125,12 @@ export function themeToCssVars(theme: VisualTheme): CSSProperties {
     ["--sb-card-gap" as string]: `${layout.cardGap}px`,
     ["--sb-layout-alignment" as string]: layout.contentAlignment,
     // Scroll vars
-    ["--sb-scroll-duration" as string]: `${scroll.scrollAnimationDuration}ms`,
-    ["--sb-scroll-easing" as string]: easingMap[scroll.scrollAnimationEasing] ?? "ease",
-    ["--sb-scroll-stagger" as string]: `${scroll.scrollStagger}ms`,
-    ["--sb-parallax-intensity" as string]: String(scroll.parallaxIntensity),
+    ["--sb-scroll-duration" as string]: "0ms",
+    ["--sb-scroll-easing" as string]: "linear",
+    ["--sb-scroll-stagger" as string]: "0ms",
+    ["--sb-parallax-intensity" as string]: "0",
     ["--sb-overscroll" as string]: scroll.overscrollBehavior,
-    ["--sb-scroll-behavior" as string]: scroll.scrollBehavior,
+    ["--sb-scroll-behavior" as string]: "auto",
   };
 }
 

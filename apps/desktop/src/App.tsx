@@ -26,8 +26,8 @@ function AnimatedRoutes() {
   const location = useLocation();
 
   return (
-    <div className="page-motion">
-        <PageErrorBoundary key={location.pathname}><Routes location={location}>
+    <div className="page-motion page-enter" key={location.pathname}>
+        <PageErrorBoundary><Routes location={location}>
           <Route path="/" element={<HomePage />} />
           <Route path="/discover" element={<DiscoverPage />} />
           <Route path="/game/:universeId" element={<GameDetailsPage />} />
@@ -112,8 +112,8 @@ export default function App() {
       }
     }
     root.dataset.columns = normalizedTheme.layout?.cardColumns ?? "auto";
-    root.dataset.scrollAnimation = normalizedTheme.scroll?.scrollAnimation ?? "fade";
-    root.dataset.reveal = String(normalizedTheme.scroll?.revealOnScroll ?? true);
+    root.dataset.scrollAnimation = "none";
+    root.dataset.reveal = "false";
   }, [cssVars, normalizedTheme]);
 
   if (!ready) {

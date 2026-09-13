@@ -4,8 +4,6 @@ import { useAppStore } from "../store";
 import { launchExperience } from "../lib/launch";
 import { authStartUrl } from "../lib/api";
 import { useNavigate } from "react-router-dom";
-import { motion } from "motion/react";
-import { fadeUp, springSnappy, useMotionEnabled } from "../lib/motion";
 import { LauncherNickBadge } from "../components/LauncherNickBadge";
 
 const PAGE_SIZE = 40;
@@ -15,8 +13,6 @@ export function FriendsPage() {
   const session = useAppStore((s) => s.session);
   const items = useAppStore((s) => s.friends);
   const refreshFriends = useAppStore((s) => s.refreshFriends);
-  const theme = useAppStore((s) => s.theme);
-  const motionEnabled = useMotionEnabled(theme);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -72,7 +68,7 @@ export function FriendsPage() {
   }
 
   return (
-    <div>
+    <div className="friends-page">
       <div className="page-header">
         <div>
           <h2>Friends</h2>
@@ -111,16 +107,10 @@ export function FriendsPage() {
       ) : null}
 
       <div className="friend-list">
-        {visible.map((friend, index) => (
-          <motion.div
+        {visible.map((friend) => (
+          <div
             key={friend.userId}
             className="sb-card friend-row"
-            {...fadeUp(index, motionEnabled)}
-            whileHover={
-              motionEnabled
-                ? { x: 4, transition: springSnappy }
-                : undefined
-            }
           >
             <button
               className="avatar friend-avatar-button"
@@ -217,7 +207,7 @@ export function FriendsPage() {
                 Profile
               </Button>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
 

@@ -822,8 +822,8 @@ export function VisualsPage() {
           </div>
         </VisualsSection>
 
-        <VisualsSection icon={<Scroll3D />} title="Scroll & overscroll" subtitle="Gap fix and scroll animations">
-          <p className="sb-muted" style={{ marginTop: "0.35rem" }}>Removes the gap when scrolling — content slides under search instead of into empty space. Tune scroll animations up/down.</p>
+        <VisualsSection icon={<Scroll3D />} title="Scroll & overscroll" subtitle="Scrolling layout and scrollbar">
+          <p className="sb-muted" style={{ marginTop: "0.35rem" }}>Scroll animations are temporarily disabled. Content scrolls instantly and stays fully visible.</p>
           <div className="notice" style={{ marginTop: "0.75rem", fontSize: "0.88rem" }}>Sticky topbar = page scrolls in a layer below search (like mobile apps). Floating — with shadow above content.</div>
           <div className="form-grid" style={{ marginTop: "1rem" }}>
             <label>
@@ -835,39 +835,12 @@ export function VisualsPage() {
               </select>
             </label>
             <label>
-              Scroll behavior
-              <select className="sb-input" value={theme.scroll?.scrollBehavior ?? "smooth"} onChange={(e) => patchScroll({ scrollBehavior: e.target.value as NonNullable<VisualTheme["scroll"]>["scrollBehavior"] })}>
-                <option value="smooth">Smooth</option>
-                <option value="auto">Auto (instant)</option>
-              </select>
-            </label>
-            <label>
               Scrollbar style
               <select className="sb-input" value={theme.scroll?.scrollbarStyle ?? "thin"} onChange={(e) => patchScroll({ scrollbarStyle: e.target.value as NonNullable<VisualTheme["scroll"]>["scrollbarStyle"] })}>
                 <option value="thin">Thin</option>
                 <option value="overlay">Overlay — accent on hover</option>
                 <option value="hidden">Hidden</option>
               </select>
-            </label>
-            <label>
-              Stagger ({theme.scroll?.scrollStagger ?? 40}ms)
-              <input type="range" min={0} max={120} step={5} value={theme.scroll?.scrollStagger ?? 40} onChange={(e) => patchScroll({ scrollStagger: Number(e.target.value) })} />
-            </label>
-            <label>
-              Parallax intensity ({((theme.scroll?.parallaxIntensity ?? 0.5) * 100).toFixed(0)}%)
-              <input type="range" min={0} max={1} step={0.05} value={theme.scroll?.parallaxIntensity ?? 0.5} onChange={(e) => patchScroll({ parallaxIntensity: Number(e.target.value) })} />
-            </label>
-            <label className="check-row">
-              <input type="checkbox" checked={theme.scroll?.revealOnScroll ?? true} onChange={(e) => patchScroll({ revealOnScroll: e.target.checked })} />
-              <span>Reveal on scroll — cards appear while scrolling</span>
-            </label>
-            <label className="check-row">
-              <input type="checkbox" checked={theme.scroll?.enableScrollProgress ?? false} onChange={(e) => patchScroll({ enableScrollProgress: e.target.checked })} />
-              <span>Show scroll progress bar</span>
-            </label>
-            <label className="check-row">
-              <input type="checkbox" checked={theme.scroll?.hideTopbarOnScroll ?? false} onChange={(e) => patchScroll({ hideTopbarOnScroll: e.target.checked })} />
-              <span>Auto-hide topbar on scroll down</span>
             </label>
           </div>
         </VisualsSection>
