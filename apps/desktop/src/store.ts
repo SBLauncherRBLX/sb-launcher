@@ -65,6 +65,7 @@ function guestSession(accounts: Session["accounts"] = []): Session {
 
 const DEFAULT_DOWNLOAD =
   "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/";
+let friendsRefreshVersion = 0;
 
 export const useAppStore = create<AppState>((set, get) => ({
   ready: false,
@@ -185,10 +186,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         void api.savePreferences({ theme, graphics }).catch(() => undefined);
       }
       if (session?.authenticated && session.capabilities.friends) {
-        void api
-          .friends()
-          .then((result) => set({ friends: result.items }))
-          .catch(() => set({ friends: [] }));
+        void get().refreshFriends().catch(() => undefined);
       }
       // Always check cloud update manifest on every launcher open.
       void get().checkUpdates();
@@ -211,8 +209,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ session });
     // Theme/graphics stay on the shared local prefs — do not reload per-account values.
     if (session.authenticated && session.capabilities.friends) {
-      void get().refreshFriends();
-    } else if (!session.authenticated) {
+      void get().refreshFriends().catch(() => undefined);
+    } else {
+      friendsRefreshVersion += 1;
       set({ friends: [] });
     }
   },
@@ -220,11 +219,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   refreshFriends: async () => {
     const session = get().session;
     if (!session?.authenticated || !session.capabilities.friends) {
+      friendsRefreshVersion += 1;
       set({ friends: [] });
       return;
     }
+    const requestVersion = ++friendsRefreshVersion;
+    const activeUserId = session.activeUserId ?? session.user?.id ?? null;
     const result = await api.friends();
-    set({ friends: result.items });
+    const currentSession = get().session;
+    const currentUserId = currentSession?.activeUserId ?? currentSession?.user?.id ?? null;
+    if (
+      requestVersion === friendsRefreshVersion &&
+      currentSession?.authenticated &&
+      currentUserId === activeUserId
+    ) {
+      set({ friends: result.items });
+    }
   },
 
   setTheme: (theme) => set({ theme: normalizeTheme(theme) }),
@@ -239,6 +249,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   signOut: async () => {
+    friendsRefreshVersion += 1;
     try {
       await api.logout();
     } catch {
@@ -257,10 +268,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     const result = await api.switchAccount(userId);
     setSessionToken(result.sessionToken);
     await window.sbDesktop?.setPrefs({ sessionToken: result.sessionToken });
+    friendsRefreshVersion += 1;
     set({ session: result.session });
     // Keep the same shared theme/graphics across accounts.
     if (result.session.capabilities.friends) {
-      void get().refreshFriends();
+      void get().refreshFriends().catch(() => undefined);
     } else {
       set({ friends: [] });
     }
@@ -285,6 +297,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       setSessionToken(null);
       await window.sbDesktop?.setPrefs({ sessionToken: null });
+      friendsRefreshVersion += 1;
       set({ friends: [], session: guestSession([]) });
       return;
     }

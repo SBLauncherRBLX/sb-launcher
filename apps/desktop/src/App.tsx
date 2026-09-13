@@ -77,7 +77,7 @@ export default function App() {
     void beat();
     const timer = window.setInterval(() => {
       if (!cancelled) void beat();
-    }, 25_000);
+    }, 15_000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);

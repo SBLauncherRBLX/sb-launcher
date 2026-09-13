@@ -21,23 +21,41 @@ export function FriendsPage() {
   useEffect(() => {
     if (!session?.authenticated) return;
     let cancelled = false;
+    let inFlight: Promise<void> | null = null;
     const refresh = async () => {
+      if (cancelled || inFlight) return;
+      const request = (async () => {
+        try {
+          setLoading(true);
+          await refreshFriends();
+          if (cancelled) return;
+          setError(null);
+        } catch (err) {
+          if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load friends");
+        } finally {
+          if (!cancelled) setLoading(false);
+        }
+      })();
+      inFlight = request;
       try {
-        setLoading(true);
-        await refreshFriends();
-        if (cancelled) return;
-        setError(null);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load friends");
+        await request;
       } finally {
-        if (!cancelled) setLoading(false);
+        if (inFlight === request) inFlight = null;
       }
     };
     void refresh();
-    const timer = window.setInterval(() => void refresh(), 60_000);
+    const onFocus = () => void refresh();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    const timer = window.setInterval(() => void refresh(), 15_000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [session?.authenticated, refreshFriends]);
 

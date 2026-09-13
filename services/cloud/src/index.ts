@@ -81,7 +81,7 @@ const MAX_MEDIA_BYTES = 3_500_000;
 const MAX_MEDIA_PER_USER = 20;
 const MAX_MEDIA_UPLOADS_PER_HOUR = 10;
 const MAX_AUTH_CALLS_PER_MINUTE = 60;
-const PRESENCE_TTL_SECONDS = 90;
+const PRESENCE_TTL_SECONDS = 45;
 const PRESENCE_BATCH_MAX = 100;
 
 const ALLOWED_DOWNLOAD_HOSTS = new Set([
@@ -97,13 +97,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "3.2.1",
-  buildId: "20260913173405",
+  version: "3.3.0",
+  buildId: "20260913225231",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 3.2.1 — Stability update\n\n- Room readiness and group server search are more reliable\n- Page opening transitions are smooth without flicker or overlapping frames\n- Friends list refreshes no longer replay competing card animations\n- Liquid Glass blur and transparency stay intact during page transitions\n- Installer and updater preserve launcher data silently without extra prompts",
-  title: "SB Launcher 3.2.1",
-  publishedAt: "2026-09-13T10:34:05.889Z",
+    "SB Launcher 3.3.0 — Rooms & friends reliability\n\n- Room hosts can filter servers by free slots, player count and reported ping\n- Re-entering a room no longer opens Roblox automatically\n- Shared server joining now requires an explicit button press\n- Friends presence refreshes faster and keeps the last valid snapshot during transient failures\n- Stale friend responses can no longer overwrite newer account or presence data\n- Windows packaging keeps SHA-256 verification working in stripped PowerShell environments",
+  title: "SB Launcher 3.3.0",
+  publishedAt: "2026-09-13T15:52:31.9905589Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

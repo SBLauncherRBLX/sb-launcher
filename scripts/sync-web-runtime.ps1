@@ -33,7 +33,20 @@ function Sync-WebTo([string]$target) {
   }
 
   $indexPath = Join-Path $target "index.html"
-  $hash = (Get-FileHash -Algorithm SHA256 -Path $indexPath).Hash.ToLowerInvariant()
+  $hashCommand = Get-Command Get-FileHash -ErrorAction SilentlyContinue
+  if ($hashCommand) {
+    $hash = (Get-FileHash -Algorithm SHA256 -Path $indexPath).Hash.ToLowerInvariant()
+  } else {
+    # Some stripped PowerShell runtimes omit Microsoft.PowerShell.Utility.
+    # Keep packaging deterministic without depending on that optional module.
+    $sha256 = [Security.Cryptography.SHA256]::Create()
+    try {
+      $bytes = [IO.File]::ReadAllBytes($indexPath)
+      $hash = ([BitConverter]::ToString($sha256.ComputeHash($bytes))).Replace("-", "").ToLowerInvariant()
+    } finally {
+      $sha256.Dispose()
+    }
+  }
   Set-Content -Path (Join-Path $target "integrity.sha256") -Value $hash -NoNewline -Encoding ascii
   return $true
 }

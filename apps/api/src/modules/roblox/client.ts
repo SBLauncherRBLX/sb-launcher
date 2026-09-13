@@ -1164,10 +1164,15 @@ export async function privateServersEnabledInUniverse(universeId: string): Promi
   }
 }
 
+const friendsLastKnown = new Map<string, FriendPresence[]>();
+const LAUNCHER_PRESENCE_MAX_AGE_MS = 45_000;
+
 export async function peekCachedFriends(userId: string): Promise<FriendPresence[]> {
-  const cacheKey = `friends-presence:v3:${userId}`;
+  const cacheKey = `friends-presence:v4:${userId}`;
   const cached = await cacheGet<FriendPresence[]>(cacheKey);
-  return cached ? sortFriendsByPresence(cached) : [];
+  if (!cached) return friendsLastKnown.get(userId) ?? [];
+  friendsLastKnown.set(userId, cached);
+  return sortFriendsByPresence(cached);
 }
 
 export async function listFriends(
@@ -1176,10 +1181,11 @@ export async function listFriends(
   capabilities: Capabilities,
 ): Promise<FriendPresence[]> {
   if (!capabilities.friends) return [];
-  const cacheKey = `friends-presence:v3:${userId}`;
+  const cacheKey = `friends-presence:v4:${userId}`;
   const cached = await cacheGet<FriendPresence[]>(cacheKey);
   if (cached) {
     // Cache already stores hydrated rows — re-hydrating on every hit made Friends/Home crawl.
+    friendsLastKnown.set(userId, cached);
     return sortFriendsByPresence(cached);
   }
 
@@ -1204,7 +1210,10 @@ export async function listFriends(
     const friendIds = friendsRaw
       .map((f) => String(f.id ?? ""))
       .filter(Boolean);
-    if (!friendIds.length) return [];
+    if (!friendIds.length) {
+      friendsLastKnown.set(userId, []);
+      return [];
+    }
 
     const [thumbs, profiles, presenceData, launcherPresence] = await Promise.all([
       // Use the same full-body avatar style as the built-in profile page.
@@ -1220,10 +1229,17 @@ export async function listFriends(
           () => ({}) as Awaited<ReturnType<typeof fetchLauncherPresenceBatch>>,
         ),
         new Promise<Awaited<ReturnType<typeof fetchLauncherPresenceBatch>>>((resolve) =>
-          setTimeout(() => resolve({}), 400),
+          setTimeout(() => resolve({}), 900),
         ),
       ]),
     ]);
+
+    // A transient Roblox presence failure must not turn every friend Offline.
+    // Keep the last complete snapshot and try again on the next refresh.
+    if (!presenceData.ok) {
+      const lastKnown = friendsLastKnown.get(userId);
+      if (lastKnown?.length) return sortFriendsByPresence(lastKnown);
+    }
 
     // Badges are lazy — never gate the friends list on cloud cosmetics.
     const launcherPlayersPromise = fetchPlayersBatchRemote(friendIds).catch(
@@ -1252,7 +1268,11 @@ export async function listFriends(
         const profile = profiles[id];
         const presence = presenceByUser.get(id);
         const launcher = launcherPresence[id];
-        const inLauncher = Boolean(launcher?.online);
+        const inLauncher = Boolean(
+          launcher?.online &&
+            launcher.ageMs >= 0 &&
+            launcher.ageMs <= LAUNCHER_PRESENCE_MAX_AGE_MS,
+        );
         let presenceType =
           presence?.userPresenceType === 2
             ? ("InGame" as const)
@@ -1324,7 +1344,8 @@ export async function listFriends(
       new Promise<FriendPresence[]>((resolve) => setTimeout(() => resolve(result), 250)),
     ]);
     sortFriendsByPresence(hydrated);
-    void cacheSet(cacheKey, hydrated, 45_000).catch(() => undefined);
+    friendsLastKnown.set(userId, hydrated);
+    void cacheSet(cacheKey, hydrated, 12_000).catch(() => undefined);
     // Finish hydration + badges in background for the next cache hit.
     void (async () => {
       const [fullPlayers, fullHydrated] = await Promise.all([
@@ -1333,11 +1354,12 @@ export async function listFriends(
       ]);
       applyLauncherBadges(fullHydrated, fullPlayers);
       sortFriendsByPresence(fullHydrated);
-      await cacheSet(cacheKey, fullHydrated, 45_000).catch(() => undefined);
+      friendsLastKnown.set(userId, fullHydrated);
+      await cacheSet(cacheKey, fullHydrated, 12_000).catch(() => undefined);
     })();
     return hydrated;
   } catch {
-    return [];
+    return friendsLastKnown.get(userId) ?? [];
   }
 }
 
@@ -1598,12 +1620,13 @@ type RobloxFriendPresence = {
 async function batchFriendPresence(
   accessToken: string,
   userIds: string[],
-): Promise<{ userPresences: RobloxFriendPresence[] }> {
+): Promise<{ userPresences: RobloxFriendPresence[]; ok: boolean }> {
   const CHUNK = 50;
   const chunks: string[][] = [];
   for (let index = 0; index < userIds.length; index += CHUNK) {
     chunks.push(userIds.slice(index, index + CHUNK));
   }
+  let failed = false;
   const results = await Promise.all(
     chunks.map(async (chunk) => {
       try {
@@ -1620,11 +1643,12 @@ async function batchFriendPresence(
         );
         return response.userPresences ?? [];
       } catch {
+        failed = true;
         return [] as RobloxFriendPresence[];
       }
     }),
   );
-  return { userPresences: results.flat() };
+  return { userPresences: results.flat(), ok: !failed };
 }
 
 async function batchUserProfiles(

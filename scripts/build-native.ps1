@@ -6,6 +6,21 @@ $apiRuntime = Join-Path $runtime "api"
 $webRuntime = Join-Path $runtime "web"
 $release = Join-Path $root "release\native"
 
+function Get-Sha256([string]$Path) {
+  $hashCommand = Get-Command Get-FileHash -ErrorAction SilentlyContinue
+  if ($hashCommand) {
+    return (Get-FileHash -Algorithm SHA256 -Path $Path).Hash.ToLowerInvariant()
+  }
+  # Some stripped PowerShell runtimes omit Microsoft.PowerShell.Utility.
+  $sha256 = [Security.Cryptography.SHA256]::Create()
+  try {
+    $bytes = [IO.File]::ReadAllBytes($Path)
+    return ([BitConverter]::ToString($sha256.ComputeHash($bytes))).Replace("-", "").ToLowerInvariant()
+  } finally {
+    $sha256.Dispose()
+  }
+}
+
 function Get-FolderSizeMB([string]$Path) {
   if (-not (Test-Path $Path)) { return 0 }
   $sum = (Get-ChildItem $Path -Recurse -File -ErrorAction SilentlyContinue |
@@ -52,7 +67,7 @@ function Get-BundledNodeExe {
     $expectedLine = ($sums.Content -split "`n" | Where-Object { $_ -match "node-v$nodeVersion-win-x64\.zip$" } | Select-Object -First 1)
     if (-not $expectedLine) { throw "Could not find Node SHASUM for win-x64 zip." }
     $expectedHash = ($expectedLine -split "\s+")[0].Trim().ToLowerInvariant()
-    $actualHash = (Get-FileHash -Algorithm SHA256 -Path $nodeZip).Hash.ToLowerInvariant()
+    $actualHash = Get-Sha256 $nodeZip
     if ($actualHash -ne $expectedHash) {
       Remove-Item $nodeZip -Force -ErrorAction SilentlyContinue
       throw "Node.js zip SHA-256 mismatch (got $actualHash, expected $expectedHash)."
@@ -78,7 +93,7 @@ Copy-Item (Join-Path $root "apps\desktop\dist\*") $webRuntime -Recurse -Force
 
 $buildId = Get-Date -Format "yyyyMMddHHmmss"
 $buildInfo = @{
-  version = "3.2.1"
+  version = "3.3.0"
   buildId = $buildId
   builtAt = (Get-Date).ToUniversalTime().ToString("o")
 } | ConvertTo-Json -Compress
@@ -86,7 +101,7 @@ $buildInfoPath = Join-Path $runtime "build-info.json"
 [System.IO.File]::WriteAllText($buildInfoPath, $buildInfo, [System.Text.UTF8Encoding]::new($false))
 Copy-Item $buildInfoPath (Join-Path $webRuntime "build-info.json") -Force
 $webIndex = Join-Path $webRuntime "index.html"
-$webHash = (Get-FileHash -Algorithm SHA256 -Path $webIndex).Hash.ToLowerInvariant()
+$webHash = Get-Sha256 $webIndex
 Set-Content -Path (Join-Path $webRuntime "integrity.sha256") -Value $webHash -NoNewline -Encoding ascii
 Write-Host "Build ID: $buildId"
 
@@ -238,7 +253,7 @@ Get-ChildItem $release -Recurse -Include *.pdb,*.xml -File -ErrorAction Silently
   Remove-Item -Force -ErrorAction SilentlyContinue
 
 Write-Host "[8/9] Creating portable package"
-$zip = Join-Path $root "release\SB-Launcher-Native-3.2.1-win-x64.zip"
+$zip = Join-Path $root "release\SB-Launcher-Native-3.3.0-win-x64.zip"
 Remove-Item $zip -Force -ErrorAction SilentlyContinue
 Compress-Archive -Path (Join-Path $release "*") -DestinationPath $zip -CompressionLevel Optimal
 Pop-Location
@@ -294,5 +309,5 @@ $nodeMb = if ($nodeItem) { [math]::Round($nodeItem.Length / 1MB, 2) } else { 0 }
 Write-Host ""
 Write-Host "Native executable: $release\SB Launcher.exe"
 Write-Host "Portable package:  $zip"
-Write-Host "Windows installer:  $root\release\SB-Launcher-Setup-3.2.1.exe"
+Write-Host "Windows installer:  $root\release\SB-Launcher-Setup-3.3.0.exe"
 Write-Host ("Size total={0} MB | exe={1} MB | node={2} MB | api={3} MB | web={4} MB" -f $totalMb, $exeMb, $nodeMb, $apiMb, $webMb)

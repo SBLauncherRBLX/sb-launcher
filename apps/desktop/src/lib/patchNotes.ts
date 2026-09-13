@@ -22,6 +22,18 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "3.3.0",
+    date: "2026-09-13",
+    title: "Rooms & friends reliability",
+    items: [
+      "Room hosts can filter servers by free slots, player count and reported ping, with ping or capacity sorting.",
+      "Re-entering a room no longer opens Roblox automatically; joining the shared server now requires an explicit button press.",
+      "Friends presence refreshes faster and stays stable when Roblox or the launcher cloud has a temporary network failure.",
+      "Stale friend responses can no longer overwrite newer account or presence data.",
+      "The Windows packaging pipeline now works in stripped PowerShell environments while keeping SHA-256 checks intact.",
+    ],
+  },
+  {
     version: "3.2.1",
     date: "2026-09-13",
     title: "Stable rooms, transitions & glass",

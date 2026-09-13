@@ -1,7 +1,8 @@
-SB Launcher 3.2.1 — Stability update
+SB Launcher 3.3.0 — Rooms & friends reliability
 
-- Room readiness and group server search are more reliable
-- Page opening transitions are smooth without flicker or overlapping frames
-- Friends list refreshes no longer replay competing card animations
-- Liquid Glass blur and transparency stay intact during page transitions
-- Installer and updater preserve launcher data silently without extra prompts
+- Room hosts can filter servers by free slots, player count and reported ping
+- Re-entering a room no longer opens Roblox automatically
+- Shared server joining now requires an explicit button press
+- Friends presence refreshes faster and keeps the last valid snapshot during transient failures
+- Stale friend responses can no longer overwrite newer account or presence data
+- Windows packaging keeps SHA-256 verification working in stripped PowerShell environments

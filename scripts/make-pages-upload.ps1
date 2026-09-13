@@ -1,5 +1,18 @@
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
+$hashCommand = Get-Command Get-FileHash -ErrorAction SilentlyContinue
+function Get-Sha256([string]$Path) {
+  if ($hashCommand) {
+    return (Get-FileHash -Algorithm SHA256 -Path $Path).Hash.ToLowerInvariant()
+  }
+  $sha256 = [Security.Cryptography.SHA256]::Create()
+  try {
+    $bytes = [IO.File]::ReadAllBytes($Path)
+    return ([BitConverter]::ToString($sha256.ComputeHash($bytes))).Replace("-", "").ToLowerInvariant()
+  } finally {
+    $sha256.Dispose()
+  }
+}
 $setup = Get-ChildItem (Join-Path $root "release") -Filter "SB-Launcher-Setup-*.exe" |
   Sort-Object LastWriteTime -Descending |
   Select-Object -First 1
@@ -26,12 +39,12 @@ while ($offset -lt $total) {
   $fs.Write($bytes, $offset, $len)
   $fs.Close()
   $partNames.Add($name) | Out-Null
-  $partHashes.Add((Get-FileHash -Algorithm SHA256 -Path $path).Hash.ToLowerInvariant()) | Out-Null
+  $partHashes.Add((Get-Sha256 $path)) | Out-Null
   $offset += $len
   $index++
 }
 
-$sha256 = (Get-FileHash -Algorithm SHA256 -Path $setup.FullName).Hash.ToLowerInvariant()
+$sha256 = Get-Sha256 $setup.FullName
 $version = if ($setup.BaseName -match "(\d+\.\d+\.\d+)$") { $Matches[1] } else { "0.0.0" }
 
 $manifestObj = [ordered]@{
