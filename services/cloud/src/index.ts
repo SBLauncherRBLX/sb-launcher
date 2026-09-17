@@ -98,12 +98,12 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  */
 const SHIPPED_UPDATE: UpdateManifest = {
   version: "3.3.0",
-  buildId: "20260913225231",
+  buildId: "20260917222532",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 3.3.0 — Rooms & friends reliability\n\n- Room hosts can filter servers by free slots, player count and reported ping\n- Re-entering a room no longer opens Roblox automatically\n- Shared server joining now requires an explicit button press\n- Friends presence refreshes faster and keeps the last valid snapshot during transient failures\n- Stale friend responses can no longer overwrite newer account or presence data\n- Windows packaging keeps SHA-256 verification working in stripped PowerShell environments",
+    "SB Launcher 3.3.0 — Liquid nav bubble & rooms\n\n- Left nav bubble now stretches like liquid glass when leaving and arriving (photo ref)\n- Rooms server picker now persists your filters and correctly handles free slots / ping limits\n- Smart server filter on game pages treats 100% occupancy as \"any\" and shows smoother occupancy control",
   title: "SB Launcher 3.3.0",
-  publishedAt: "2026-09-13T15:52:31.9905589Z",
+  publishedAt: "2026-09-17T15:25:32.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

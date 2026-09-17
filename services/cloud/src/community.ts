@@ -1,4 +1,4 @@
-import { LibraryGameSchema, VisualThemeSchema, type FriendRoom, type WorkshopItem } from "../../../packages/contracts/src/index";
+import { LibraryGameSchema, VisualThemeSchema, ROOM_CHAT_LIMIT, ROOM_MESSAGE_LENGTH, type RoomMessage, type FriendRoom, type WorkshopItem } from "../../../packages/contracts/src/index";
 
 type Identity = { id: string; name: string };
 type StoredTheme = Omit<WorkshopItem, "likes" | "liked"> & { likedBy: string[]; parts?: number };
@@ -32,7 +32,7 @@ export class CommunityHub {
   async alarm() {
     const rooms = await this.state.storage.list<FriendRoom>({ prefix: "room:" });
     const expired = [...rooms].filter(([,r]) => Date.now() - r.updatedAt > 7 * 86400000).map(([key]) => key);
-    if (expired.length) await this.state.storage.delete(expired);
+    if (expired.length) await this.state.storage.delete([...expired, ...expired.map(key => key.replace("room:", "chat:"))]);
     if (rooms.size > expired.length) await this.state.storage.setAlarm(Date.now() + 86400000);
   }
   private async action(user: Identity, action: string, input: Record<string, unknown>): Promise<unknown> {
@@ -64,10 +64,38 @@ export class CommunityHub {
       if (action === "rooms.join" && !member) {
         if (room.members.length>=16) fail("This room is full.");
         member = { id:user.id,name:user.name,ready:false }; room.members.push(member);
+        room.launchPlan = null;
       }
       if (!member) return fail("Join this room with its code first.",403);
+      if (action === "rooms.chat" || action === "rooms.message") {
+        const chatKey = `chat:${room.code}`;
+        const items = await storage.get<RoomMessage[]>(chatKey) ?? [];
+        if (action === "rooms.chat") return { items };
+        const body = typeof input.text === "string" ? input.text.trim() : "";
+        const id = typeof input.id === "string" ? input.id : "";
+        if (!/^[a-zA-Z0-9-]{16,80}$/.test(id)) fail("Invalid message identifier.");
+        if (!body || body.length > ROOM_MESSAGE_LENGTH) fail(`Messages must contain 1–${ROOM_MESSAGE_LENGTH} characters.`);
+        // Retrying a request after a timeout must not post it twice.
+        if (items.some(item => item.id === id && item.authorId === user.id)) return { items };
+        if (items.some(item => item.authorId === user.id && now - item.createdAt < 1000)) fail("Please wait a moment before sending another message.", 429);
+        items.push({ id, authorId: user.id, authorName: text(user.name, 60, user.id), text: body, createdAt: now });
+        const recent = items.slice(-ROOM_CHAT_LIMIT);
+        room.updatedAt = now;
+        await storage.put({ [key]: room, [chatKey]: recent });
+        return { items: recent };
+      }
       if (action === "rooms.get") return room;
-      if (action === "rooms.ready") member.ready = input.ready === true;
+      if (action === "rooms.rename") {
+        if (room.ownerId !== user.id) fail("Only the host can rename the room.", 403);
+        const name = text(input.name, 60); if (!name) fail("Give your room a name.");
+        room.name = name;
+      } else if (action === "rooms.reset") {
+        if (room.ownerId !== user.id) fail("Only the host can reset the server.", 403);
+        room.launchPlan = null; room.members.forEach(m => { m.ready = false; });
+      } else if (action === "rooms.ready") {
+        member.ready = input.ready === true;
+        if (!member.ready) room.launchPlan = null;
+      }
       else if (action === "rooms.add") {
         if (room.queue.length>=25) fail("The queue is full.");
         const game = LibraryGameSchema.parse(input.game);
@@ -92,15 +120,15 @@ export class CommunityHub {
       } else if (action === "rooms.remove") {
         const game = room.queue.find(g=>g.id===input.id);
         if (!game || (room.ownerId!==user.id && game.addedBy!==user.id)) fail("Only the host or the person who added it can remove a game.",403);
-        room.queue=room.queue.filter(g=>g.id!==input.id); if(room.selected===input.id) room.selected=null;
+        room.queue=room.queue.filter(g=>g.id!==input.id); if(room.selected===input.id) { room.selected=null; room.launchPlan=null; room.members.forEach(m=>{m.ready=false;}); }
       } else if (action === "rooms.leave") {
         room.members=room.members.filter(m=>m.id!==user.id); room.queue.forEach(g=>{g.votes=g.votes.filter(id=>id!==user.id);});
         room.launchPlan=null;
-        if (!room.members.length) { await storage.delete(key); return { left:true }; }
+        if (!room.members.length) { await storage.delete([key, `chat:${room.code}`]); return { left:true }; }
         if(room.ownerId===user.id) room.ownerId=room.members[0].id;
       } else if (action === "rooms.close") {
         if(room.ownerId!==user.id) fail("Only the host can close a room.",403);
-        await storage.delete(key); return { left:true };
+        await storage.delete([key, `chat:${room.code}`]); return { left:true };
       } else if (action !== "rooms.join") fail("Unknown room action.");
       room.updatedAt=now; await storage.put(key,room); return action==="rooms.leave" ? {left:true} : room;
     }

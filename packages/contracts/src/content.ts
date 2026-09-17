@@ -35,12 +35,16 @@ export type RoomGame = { id: string; universeId: string; placeId: string; name: 
 export type RoomLaunchPlan = { gameInstanceId: string; universeId: string; placeId: string; name: string; iconUrl?: string | null; startedAt: number };
 export type FriendRoom = { code: string; name: string; ownerId: string; createdAt: number; updatedAt: number; members: Array<{ id: string; name: string; ready: boolean }>; queue: RoomGame[]; selected: string | null; launchPlan?: RoomLaunchPlan | null };
 export type WorkshopItem = { code: string; title: string; description: string; authorId: string; authorName: string; createdAt: number; theme: unknown; likes: number; liked: boolean };
+export type RoomMessage = { id: string; authorId: string; authorName: string; text: string; createdAt: number };
+export const ROOM_CHAT_LIMIT = 60;
+export const ROOM_MESSAGE_LENGTH = 400;
 
 /** Missing metrics fail an active threshold rather than being treated as zero. */
 export function matchServers<T extends { id: string; playing: number; maxPlayers: number; ping?: number | null; fps?: number | null }>(servers: T[], filter: Omit<ServerFilter, "id" | "name">): T[] {
+  const maxOcc = filter.maxOccupancy <= 0 || filter.maxOccupancy >= 100 ? 100 : filter.maxOccupancy;
   return [...new Map(servers.map(s => [s.id, s])).values()].filter(s =>
-    s.maxPlayers > 0 && s.maxPlayers - s.playing >= filter.minFree &&
-    s.playing / s.maxPlayers * 100 <= filter.maxOccupancy &&
+    s.maxPlayers > 0 && s.maxPlayers - s.playing >= Math.max(0, filter.minFree) &&
+    s.playing / s.maxPlayers * 100 <= maxOcc &&
     (!filter.maxPing || (s.ping != null && s.ping >= 0 && s.ping <= filter.maxPing)) &&
     (!filter.minFps || (s.fps != null && s.fps >= filter.minFps))
   ).sort((a,b) => filter.sort === "fps" ? (b.fps ?? -1) - (a.fps ?? -1) : filter.sort === "space" ? (b.maxPlayers-b.playing) - (a.maxPlayers-a.playing) : (a.ping ?? Infinity) - (b.ping ?? Infinity));
