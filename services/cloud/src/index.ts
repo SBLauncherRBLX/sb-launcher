@@ -97,13 +97,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "3.3.0",
-  buildId: "20260918153835",
+  version: "3.4.0",
+  buildId: "20260918161053",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 3.3.0 — Liquid nav bubble & rooms\n\n- Left nav bubble now stretches like liquid glass when leaving and arriving (photo ref)\n- Rooms server picker now persists your filters and correctly handles free slots / ping limits\n- Smart server filter on game pages treats 100% occupancy as \"any\" and shows smoother occupancy control\n- Nav bubble now less bright and simpler — no stretch glitch, weaker white highlight",
-  title: "SB Launcher 3.3.0",
-  publishedAt: "2026-09-18T08:38:35.000Z",
+    "SB Launcher 3.4.0 — New SB logo everywhere\n\n- Brand logo updated to new liquid SB blob with frosted SB letters — visible on sidebar, About banner, site and installer\n- App icon, tray and installer artifacts regenerated from the new logo",
+  title: "SB Launcher 3.4.0",
+  publishedAt: "2026-09-18T09:10:53.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

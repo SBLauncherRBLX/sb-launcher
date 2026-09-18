@@ -1,8 +1,4 @@
-SB Launcher 3.3.0 — Rooms & friends reliability
+SB Launcher 3.4.0 — New SB logo everywhere
 
-- Room hosts can filter servers by free slots, player count and reported ping
-- Re-entering a room no longer opens Roblox automatically
-- Shared server joining now requires an explicit button press
-- Friends presence refreshes faster and keeps the last valid snapshot during transient failures
-- Stale friend responses can no longer overwrite newer account or presence data
-- Windows packaging keeps SHA-256 verification working in stripped PowerShell environments
+- Brand logo updated to new liquid SB blob with frosted SB letters — visible on sidebar, About banner, site and installer
+- App icon, tray and installer artifacts regenerated from the new logo

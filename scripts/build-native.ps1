@@ -93,7 +93,7 @@ Copy-Item (Join-Path $root "apps\desktop\dist\*") $webRuntime -Recurse -Force
 
 $buildId = Get-Date -Format "yyyyMMddHHmmss"
 $buildInfo = @{
-  version = "3.3.0"
+  version = "3.4.0"
   buildId = $buildId
   builtAt = (Get-Date).ToUniversalTime().ToString("o")
 } | ConvertTo-Json -Compress

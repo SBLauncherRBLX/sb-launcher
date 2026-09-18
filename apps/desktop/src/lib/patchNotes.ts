@@ -22,6 +22,15 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "3.4.0",
+    date: "2026-09-18",
+    title: "New SB logo everywhere",
+    items: [
+      "Brand logo updated to new liquid SB blob with frosted SB letters — visible on sidebar, About banner, site and installer.",
+      "App icon, tray and installer artifacts regenerated from the new logo.",
+    ],
+  },
+  {
     version: "3.3.0",
     date: "2026-09-13",
     title: "Rooms & friends reliability",
