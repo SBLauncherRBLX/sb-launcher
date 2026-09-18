@@ -1,4 +1,3 @@
-SB Launcher 3.4.0 — New SB logo everywhere
+SB Launcher 3.4.1 — Frosted SB title in About
 
-- Brand logo updated to new liquid SB blob with frosted SB letters — visible on sidebar, About banner, site and installer
-- App icon, tray and installer artifacts regenerated from the new logo
+- About banner title now uses the new frosted SB image instead of text — blends with the liquid glass banner

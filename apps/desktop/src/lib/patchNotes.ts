@@ -22,6 +22,14 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "3.4.1",
+    date: "2026-09-18",
+    title: "Frosted SB title in About",
+    items: [
+      "About banner title now uses the new frosted SB image instead of text — blends with the liquid glass banner.",
+    ],
+  },
+  {
     version: "3.4.0",
     date: "2026-09-18",
     title: "New SB logo everywhere",

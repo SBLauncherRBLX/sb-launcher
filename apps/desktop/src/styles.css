@@ -2150,6 +2150,16 @@ html[data-reveal="false"] .page .sb-card {
   color: #ffffff;
 }
 
+.about-banner-title-img {
+  width: min(260px, 58vw);
+  height: auto;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.52));
+  mix-blend-mode: screen;
+  /* Remove black background from SBsb.png — keep only frosted SB letters */
+}
+
 .about-banner-version {
   margin: 0.4rem 0 0;
   font-size: 0.95rem;

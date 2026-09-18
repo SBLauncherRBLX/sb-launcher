@@ -97,13 +97,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "3.4.0",
-  buildId: "20260918161053",
+  version: "3.4.1",
+  buildId: "20260918184101",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 3.4.0 — New SB logo everywhere\n\n- Brand logo updated to new liquid SB blob with frosted SB letters — visible on sidebar, About banner, site and installer\n- App icon, tray and installer artifacts regenerated from the new logo",
-  title: "SB Launcher 3.4.0",
-  publishedAt: "2026-09-18T09:10:53.000Z",
+    "SB Launcher 3.4.1 — Frosted SB title in About\n\n- About banner title now uses the new frosted SB image instead of text — blends with the liquid glass banner",
+  title: "SB Launcher 3.4.1",
+  publishedAt: "2026-09-18T11:41:01.000Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

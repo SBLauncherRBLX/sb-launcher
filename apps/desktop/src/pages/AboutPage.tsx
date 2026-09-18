@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import aboutBanner from "../assets/about-glass-banner.png";
+import sbTitle from "../assets/sb-title.png";
 import { MAJOR_RELEASE, PATCH_NOTES } from "../lib/patchNotes";
 import { APP_VERSION } from "../lib/version";
 import { useAppStore } from "../store";
@@ -68,7 +69,7 @@ export function AboutPage() {
             />
             <span className="about-banner-scrim" aria-hidden />
             <div className={`about-banner-copy${sloganActive ? " is-hidden" : ""}`}>
-              <h1 className="about-banner-title">SB Launcher</h1>
+              <img src={sbTitle} alt="SB" className="about-banner-title-img" draggable={false} />
               <p className="about-banner-version">{APP_VERSION}</p>
             </div>
             <div
