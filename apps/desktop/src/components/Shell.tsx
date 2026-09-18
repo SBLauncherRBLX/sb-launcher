@@ -112,19 +112,6 @@ export function Shell({ children }: PropsWithChildren) {
   const accounts = session?.accounts ?? [];
   const activeUserId = session?.activeUserId ?? session?.user?.id ?? null;
 
-  const [navMorphing, setNavMorphing] = useState(false);
-  const prevPathRef = useRef(location.pathname);
-  useEffect(() => {
-    if (prevPathRef.current !== location.pathname) {
-      prevPathRef.current = location.pathname;
-      if (motionEnabled && theme.layout?.navPillStyle !== "material") {
-        setNavMorphing(true);
-        const t = window.setTimeout(() => setNavMorphing(false), 520);
-        return () => window.clearTimeout(t);
-      }
-    }
-  }, [location.pathname, motionEnabled, theme.layout?.navPillStyle]);
-
   const layout = useMemo(
     () => theme.layout ?? { sidebarPosition: "left", sidebarWidth: 272, topbarPosition: "sticky", topbarHeight: "comfortable", contentAlignment: "stretch", contentMaxWidth: 1280, contentPadding: 22, cardGap: 16, cardColumns: "auto", topbarBlur: 12, pageTransition: "slide" } as NonNullable<typeof theme.layout>,
     [theme.layout],
@@ -306,7 +293,7 @@ export function Shell({ children }: PropsWithChildren) {
             <p className="sb-muted">Roblox Companion · v{APP_VERSION}</p>
           </div>
         </div>
-        <nav className={`nav${navMorphing ? " nav--liquid-morph" : ""}`}>
+        <nav className="nav">
           {links.map((link) => (
             <NavLink
               key={link.to}
@@ -321,17 +308,19 @@ export function Shell({ children }: PropsWithChildren) {
                       <motion.div
                         layoutId="nav-pill-liquid"
                         className="nav-pill nav-pill-liquid"
-                        initial={{ scaleX: 0.72, scaleY: 1.18, opacity: 0 }}
-                        animate={{ scaleX: 1, scaleY: 1, opacity: 1 }}
-                        exit={{ scaleX: 0.88, scaleY: 1.08, opacity: 0 }}
+                        initial={{ scale: 0.94, opacity: 0.88 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.94, opacity: 0.88 }}
                         transition={{
-                          scaleX: { type: "spring", stiffness: 480, damping: 22, mass: 0.75 },
-                          scaleY: { type: "spring", stiffness: 520, damping: 26, mass: 0.7 },
-                          opacity: { duration: 0.18 },
-                          layout: { type: "spring", stiffness: 420, damping: 28, mass: 0.85 },
+                          type: "spring",
+                          stiffness: 540,
+                          damping: 32,
+                          mass: 0.82,
+                          restDelta: 0.001,
+                          restSpeed: 0.001,
                         }}
                         layout
-                        style={{ willChange: "transform, opacity, border-radius", transformOrigin: "center" } as React.CSSProperties}
+                        style={{ willChange: "transform, opacity" }}
                       />
                     ) : (
                       <span className="nav-pill nav-pill-liquid" />
