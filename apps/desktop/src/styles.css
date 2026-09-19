@@ -1079,16 +1079,10 @@ button,
 .account-add-button {
   flex: 0 0 auto;
   width: 2.35rem;
-  border: 1.5px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
+  border: 1px solid var(--sb-outline-variant);
   border-radius: 999px;
-  /* Frosted like .game-card-remove: highest 82% + blur 8px */
-  --sb-glass-filter: blur(8px);
-  background: color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent);
-  backdrop-filter: var(--sb-glass-filter);
-  -webkit-backdrop-filter: var(--sb-glass-filter);
-  box-shadow:
-    0 calc(1px + 4px * var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0)) calc(4px + 12px * var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0)) color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0) * 30%), transparent),
-    var(--sb-shadow-1);
+  background: var(--sb-surface-container-high);
+  box-shadow: var(--sb-shadow-1);
   color: var(--sb-on-surface);
   font-size: 1.35rem;
   font-weight: 700;
@@ -1099,6 +1093,17 @@ button,
     border-color var(--sb-motion-duration) var(--sb-ease-standard),
     backdrop-filter var(--sb-motion-duration) var(--sb-ease-standard),
     transform var(--sb-motion-duration-hover) var(--sb-ease-emphasized);
+}
+
+.app-root.button-style-glass .account-add-button {
+  border: 1.5px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
+  --sb-glass-filter: blur(8px);
+  background: color-mix(in srgb, var(--sb-surface-container-high) 80%, transparent);
+  backdrop-filter: var(--sb-glass-filter);
+  -webkit-backdrop-filter: var(--sb-glass-filter);
+  box-shadow:
+    0 calc(1px + 4px * var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0)) calc(4px + 12px * var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0)) color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * var(--sb-glass-cards, 0) * 30%), transparent),
+    var(--sb-shadow-1);
 }
 
 .account-add-button:hover:not(:disabled) {
@@ -1498,20 +1503,28 @@ button,
 
 .profile-chip,
 .guest-profile {
-  position: relative;
-  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.55rem 0.65rem;
   border-radius: 999px;
+  background: var(--sb-surface-container-high);
+  border: 1px solid var(--sb-outline-variant);
+  box-shadow: var(--sb-shadow-1);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app-root.button-style-glass .profile-chip,
+.app-root.button-style-glass .guest-profile {
+  position: relative;
+  isolation: isolate;
   --sb-glass-filter: blur(calc(var(--sb-glass-blur, var(--sb-blur)) * var(--sb-glass-cards, 0))) saturate(calc(1 + (var(--sb-glass-saturation, 1.35) - 1) * var(--sb-glass-cards, 0))) brightness(calc(1 + (var(--sb-glass-brightness, 1) - 1) * var(--sb-glass-cards, 0))) contrast(calc(1 + (var(--sb-glass-contrast, 1) - 1) * var(--sb-glass-cards, 0)));
   background: color-mix(
     in srgb,
     color-mix(in srgb, var(--sb-glass-tint, var(--sb-primary)) calc(var(--sb-glass-tint-strength, 0.15) * 100%), color-mix(in srgb, var(--sb-surface-container) calc(var(--sb-glass-opacity, 0.52) * 100%), transparent)) calc(var(--sb-glass-cards, 0) * 100%),
     var(--sb-surface-container-high)
   );
-  /* Visible outline + 3D inflated rim like iOS 26 */
   border: 1.5px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
   backdrop-filter: var(--sb-glass-filter);
   -webkit-backdrop-filter: var(--sb-glass-filter);
@@ -1521,8 +1534,6 @@ button,
     0 6px 18px color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * 36% + 10%), transparent),
     0 1px 4px color-mix(in srgb, #000 14%, transparent),
     0 0 0 1px color-mix(in srgb, var(--sb-outline-variant) 22%, transparent);
-  min-width: 0;
-  overflow: hidden;
   transform: translateZ(0);
 }
 
@@ -1733,8 +1744,46 @@ button,
 .m3-search {
   flex: 1;
   position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
+  border-radius: 999px;
+}
+
+.search-edge-light {
+  position: absolute;
+  inset: -5px;
+  width: calc(100% + 10px);
+  height: calc(100% + 10px);
+  overflow: visible;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s var(--sb-ease-standard);
+  z-index: 0;
+}
+
+.m3-search:focus-within .search-edge-light,
+.m3-search[data-search-active="true"] .search-edge-light {
+  opacity: 0.82;
+}
+
+.search-edge-base,
+.search-edge-glow {
+  fill: none;
+  stroke: url(#search-edge-theme);
+  vector-effect: non-scaling-stroke;
+}
+
+.search-edge-base {
+  stroke-width: 1.5px;
+  opacity: 0.88;
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--sb-primary) 38%, transparent));
+}
+
+.search-edge-glow {
+  stroke-width: 5px;
+  opacity: 0.34;
+  filter: blur(3px);
 }
 
 .m3-search-icon {
@@ -1744,7 +1793,7 @@ button,
   height: 1.15rem;
   color: var(--sb-on-surface-variant);
   pointer-events: none;
-  z-index: 1;
+  z-index: 2;
 }
 
 .m3-search-input.sb-input {
@@ -1752,6 +1801,12 @@ button,
   background: transparent;
   box-shadow: none;
   border-radius: 999px;
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-edge-light animateTransform { display: none; }
 }
 
 .m3-search-input.sb-input:hover,
@@ -2151,7 +2206,7 @@ html[data-reveal="false"] .page .sb-card {
 }
 
 .about-banner-title-img {
-  width: min(260px, 58vw);
+  width: min(240px, 54vw);
   height: auto;
   display: block;
   object-fit: contain;
@@ -3126,6 +3181,8 @@ html[data-reveal="false"] .page .sb-card {
 }
 
 .preset-card {
+  min-width: 0;
+  position: relative;
   padding: 0.9rem;
   border-radius: var(--sb-shape-lg);
   border: none;
@@ -3140,6 +3197,50 @@ html[data-reveal="false"] .page .sb-card {
     background var(--sb-motion-duration) var(--sb-ease-standard);
 }
 
+.preset-card.is-editing {
+  grid-column: 1 / -1;
+  cursor: default;
+  transform: none;
+}
+
+.preset-card.is-editing:hover {
+  transform: none;
+}
+
+.preset-edit-panel {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--sb-outline-variant);
+}
+
+.preset-edit-panel > .sb-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.preset-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.preset-edit-avatar {
+  width: 36px;
+  height: 36px;
+  margin-right: auto;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--sb-outline-variant);
+}
+
 .preset-card:hover {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sb-primary) 45%, var(--sb-outline-variant));
   transform: translateY(-2px);
@@ -3150,6 +3251,10 @@ html[data-reveal="false"] .page .sb-card {
   color: var(--sb-on-secondary-container);
   box-shadow: none;
   transform: translateY(-2px) scale(1.02);
+}
+
+.preset-card.active.is-editing {
+  transform: none;
 }
 
 .preset-swatch {

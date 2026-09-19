@@ -72,16 +72,12 @@ export async function launchExperience(input: {
       creatorName,
       serverType,
     };
+    // Use the provided iconUrl directly — it's already a Roblox CDN URL from the backend.
+    // No extra fetch to thumbnails.roblox.com (which is blocked in WebView and causes missing icons).
+    const iconUrl = input.iconUrl?.trim() || undefined;
     void window.sbDesktop?.setDiscordActivity?.({
       ...baseActivity,
-      iconUrl: input.iconUrl?.trim() || undefined,
-    });
-    void resolveGameIconUrl(input.placeId, input.iconUrl).then((iconUrl) => {
-      if (!iconUrl) return;
-      void window.sbDesktop?.setDiscordActivity?.({
-        ...baseActivity,
-        iconUrl,
-      });
+      iconUrl,
     });
   } else {
     window.open(result.webUrl, "_blank");

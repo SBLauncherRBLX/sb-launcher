@@ -74,6 +74,11 @@ Copy-Item (Join-Path $partsDir "manifest.json") (Join-Path $uploadDir "manifest.
 Copy-Item (Join-Path $root "docs\site\download.js") (Join-Path $uploadDir "download.js") -Force
 Copy-Item (Join-Path $root "docs\site\index.html") (Join-Path $uploadDir "index.html") -Force
 Copy-Item (Join-Path $root "docs\site\styles.css") (Join-Path $uploadDir "styles.css") -Force
+if (Test-Path (Join-Path $root "docs\site\assets")) {
+  $uploadAssets = Join-Path $uploadDir "assets"
+  if (Test-Path $uploadAssets) { Remove-Item $uploadAssets -Recurse -Force }
+  Copy-Item (Join-Path $root "docs\site\assets") $uploadAssets -Recurse -Force
+}
 if (Test-Path (Join-Path $root "docs\site\logo.png")) {
   Copy-Item (Join-Path $root "docs\site\logo.png") (Join-Path $uploadDir "logo.png") -Force
 }

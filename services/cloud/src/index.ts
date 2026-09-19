@@ -97,12 +97,12 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "3.4.1",
+  version: "3.4.2",
   buildId: "20260918184101",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 3.4.1 — Frosted SB title in About\n\n- About banner title now uses the new frosted SB image instead of text — blends with the liquid glass banner",
-  title: "SB Launcher 3.4.1",
+    "SB Launcher 3.4.2 — Visual polish & reliability\n\n- Soft circulating theme-color edge light around search\n- Stable preset editing and clearer textured glass controls\n- More resilient launch, discovery, private server, and local API behavior\n- Redesigned public website with customization previews",
+  title: "SB Launcher 3.4.2",
   publishedAt: "2026-09-18T11:41:01.000Z",
 };
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { GameSummary, HomePayload } from "@sb/contracts";
 import { Button, EmptyState, LoadingState } from "@sb/ui";
@@ -13,18 +13,21 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  const loadVersion = useRef(0);
   async function loadHome() {
+    const version = ++loadVersion.current;
     setLoading(true);
     setError(null);
     try {
-      // Instant rails from local DB first — matches old-fast first paint.
       const light = await api.home(true);
+      if (version !== loadVersion.current) return;
       setHome(light);
       setLoading(false);
-
       const full = await api.home(false);
+      if (version !== loadVersion.current) return;
       setHome(full);
     } catch (err) {
+      if (version !== loadVersion.current) return;
       setError(err instanceof Error ? err.message : "Failed to load home");
       setLoading(false);
     }
@@ -32,6 +35,7 @@ export function HomePage() {
 
   useEffect(() => {
     void loadHome();
+    return () => { loadVersion.current++; };
   }, [session?.authenticated]);
 
   async function refreshSurprise() {

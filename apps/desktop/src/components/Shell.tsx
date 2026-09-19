@@ -117,6 +117,9 @@ export function Shell({ children }: PropsWithChildren) {
     [theme.layout],
   );
   const scrollbarStyle = theme.scroll?.scrollbarStyle ?? "thin";
+  const [topbarHidden, setTopbarHidden] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
     if (location.pathname.startsWith("/discover")) {
@@ -161,28 +164,16 @@ export function Shell({ children }: PropsWithChildren) {
   }, [accountMenuOpen]);
 
   useLayoutEffect(() => {
-    // instant scroll reset without animation — completely invisible (before paint)
+    // Fast, non-blocking scroll reset — no rAF, no smooth, no window scroll
     const isSticky = layout.topbarPosition !== "static";
     const scrollEl: HTMLElement | null = isSticky
       ? mainRef.current
-      : (mainRef.current?.querySelector(".page") as HTMLElement | null) ?? null;
-    const instantReset = (el: HTMLElement | null) => {
-      if (!el) return;
-      const prev = el.style.scrollBehavior;
-      el.style.scrollBehavior = "auto";
-      el.scrollTop = 0;
-      try {
-        (el as unknown as { scrollTo: (o: ScrollToOptions) => void }).scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-      } catch {}
-      // Restore the inline value on the next frame; CSS keeps scrolling instant.
-      requestAnimationFrame(() => {
-        el.style.scrollBehavior = prev;
-      });
-    };
-    instantReset(scrollEl);
-    if (!isSticky) instantReset(mainRef.current);
-    // also reset window if needed
-    try { window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }); } catch { window.scrollTo(0, 0); }
+      : (mainRef.current?.querySelector(".page") as HTMLElement | null) ?? mainRef.current;
+    if (scrollEl) scrollEl.scrollTop = 0;
+    if (!isSticky && mainRef.current) mainRef.current.scrollTop = 0;
+    setTopbarHidden(false);
+    setScrollProgress(0);
+    lastScrollY.current = 0;
   }, [location.pathname, layout.topbarPosition]);
 
   async function signIn() {
@@ -303,29 +294,7 @@ export function Shell({ children }: PropsWithChildren) {
             >
               {({ isActive }) => (
                 <>
-                  {isActive ? (
-                    motionEnabled ? (
-                      <motion.div
-                        layoutId="nav-pill-liquid"
-                        className="nav-pill nav-pill-liquid"
-                        initial={{ scale: 0.94, opacity: 0.88 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.94, opacity: 0.88 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 540,
-                          damping: 32,
-                          mass: 0.82,
-                          restDelta: 0.001,
-                          restSpeed: 0.001,
-                        }}
-                        layout
-                        style={{ willChange: "transform, opacity" }}
-                      />
-                    ) : (
-                      <span className="nav-pill nav-pill-liquid" />
-                    )
-                  ) : null}
+                  {isActive ? <span className="nav-pill nav-pill-liquid" /> : null}
                   {link.icon}
                   <span className="nav-label">{link.label}</span>
                 </>
@@ -452,7 +421,28 @@ export function Shell({ children }: PropsWithChildren) {
       </aside>
       <div className={mainClasses} ref={mainRef}>
         <header className="topbar">
-          <form className="search m3-search" onSubmit={onSearch}>
+          <form className="search m3-search" data-search-active={query.trim() ? "true" : undefined} onSubmit={onSearch}>
+            <svg className="search-edge-light" viewBox="0 0 1000 64" preserveAspectRatio="none" aria-hidden>
+              <defs>
+                <linearGradient id="search-edge-theme" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1000" y2="64">
+                  <stop offset="0" stopColor="var(--sb-primary)" />
+                  <stop offset="0.24" stopColor="var(--sb-accent-secondary)" />
+                  <stop offset="0.5" stopColor="var(--sb-secondary)" />
+                  <stop offset="0.76" stopColor="var(--sb-accent-secondary)" />
+                  <stop offset="1" stopColor="var(--sb-primary)" />
+                  <animateTransform
+                    attributeName="gradientTransform"
+                    type="rotate"
+                    from="0 500 32"
+                    to="360 500 32"
+                    dur="5.5s"
+                    repeatCount="indefinite"
+                  />
+                </linearGradient>
+              </defs>
+              <rect className="search-edge-glow" x="3" y="3" width="994" height="58" rx="29" pathLength="100" />
+              <rect className="search-edge-base" x="3" y="3" width="994" height="58" rx="29" pathLength="100" />
+            </svg>
             <svg
               className="m3-search-icon"
               viewBox="0 0 24 24"

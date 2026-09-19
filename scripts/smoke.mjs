@@ -13,6 +13,29 @@ async function main() {
   const loc = start.headers.get("location");
   console.log("start", start.status, loc);
 
+  if (!loc) throw new Error("OAuth start did not return a redirect");
+  const authorizationUrl = new URL(loc);
+  if (authorizationUrl.hostname === "apis.roblox.com") {
+    if (authorizationUrl.pathname !== "/oauth/v1/authorize") {
+      throw new Error(`Unexpected Roblox authorization path: ${authorizationUrl.pathname}`);
+    }
+    if (authorizationUrl.searchParams.get("response_type") !== "code") {
+      throw new Error("OAuth authorization code flow is not configured");
+    }
+    if (authorizationUrl.searchParams.get("code_challenge_method") !== "S256") {
+      throw new Error("OAuth PKCE S256 challenge is missing");
+    }
+    const scopes = new Set((authorizationUrl.searchParams.get("scope") ?? "").split(/\s+/).filter(Boolean));
+    if (!scopes.has("openid") || !scopes.has("profile")) {
+      throw new Error("OAuth identity scopes are missing");
+    }
+    const servers = await (await fetch(`${base}/api/games/2753915549/servers`)).json();
+    console.log("servers", servers.items.length, servers.items[0]?.region);
+    console.log("live oauth", "authorization code + PKCE OK");
+    console.log("OK");
+    return;
+  }
+
   const demo = await fetch(loc, { redirect: "manual" });
   const html = await demo.text();
   const match = html.match(/sblauncher:\/\/auth\?token=([^"'&\s]+)/);

@@ -141,6 +141,7 @@ button,
   position: relative;
   isolation: isolate;
   appearance: none;
+  border: none;
   border-radius: 999px;
   padding: 0.82rem 1.5rem;
   min-height: 2.75rem;
@@ -149,27 +150,10 @@ button,
   align-items: center;
   justify-content: center;
   text-align: center;
-  text-decoration: none;
   line-height: 1.2;
   white-space: normal;
-  /* Frosted glass pill (same shape as account pill, but opaque frost — not see-through) */
-  --sb-glass-filter: blur(calc(var(--sb-glass-blur, var(--sb-blur)) * var(--sb-glass-cards, 0) + 10px * var(--sb-glass-cards, 0))) saturate(calc(1 + (var(--sb-glass-saturation, 1.35) - 1) * var(--sb-glass-cards, 0) + 0.25 * var(--sb-glass-cards, 0))) brightness(calc(1 + (var(--sb-glass-brightness, 1) - 1) * var(--sb-glass-cards, 0))) contrast(calc(1 + (var(--sb-glass-contrast, 1) - 1) * var(--sb-glass-cards, 0)));
-  background: color-mix(
-    in srgb,
-    color-mix(in srgb, var(--sb-glass-tint, var(--sb-primary)) calc(var(--sb-glass-tint-strength, 0.15) * 60%), color-mix(in srgb, var(--sb-surface-container-high) 82%, transparent)) calc(var(--sb-glass-cards, 0) * 100%),
-    color-mix(in srgb, var(--sb-surface-container-high) 94%, var(--sb-surface-container))
-  );
-  border: 1.5px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
-  backdrop-filter: var(--sb-glass-filter);
-  -webkit-backdrop-filter: var(--sb-glass-filter);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 52%), transparent),
-    inset 0 -1px 0 color-mix(in srgb, #000 8%, transparent),
-    0 6px 18px color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * 36% + 10%), transparent),
-    0 1px 4px color-mix(in srgb, #000 14%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--sb-outline-variant) 22%, transparent);
-  transform: translateZ(0);
-  color: var(--sb-on-surface);
+  background: var(--sb-primary-container);
+  color: var(--sb-on-primary-container);
   font-weight: 700;
   letter-spacing: 0.01em;
   cursor: pointer;
@@ -178,8 +162,6 @@ button,
     transform var(--sb-motion-duration-hover) var(--sb-ease-emphasized),
     background var(--sb-motion-duration) var(--sb-ease-standard),
     box-shadow var(--sb-motion-duration) var(--sb-ease-standard),
-    border-color var(--sb-motion-duration) var(--sb-ease-standard),
-    backdrop-filter var(--sb-motion-duration) var(--sb-ease-standard),
     color var(--sb-motion-duration) var(--sb-ease-standard),
     opacity var(--sb-motion-duration-short) var(--sb-ease-standard);
 }
@@ -374,25 +356,16 @@ button,
   box-shadow: none;
 }
 
-.sb-button.secondary,
-.sb-button.ghost {
-  /* Same frosted glass as primary — dark pill like account */
-  --sb-glass-filter: blur(calc(var(--sb-glass-blur, var(--sb-blur)) * var(--sb-glass-cards, 0) + 10px * var(--sb-glass-cards, 0))) saturate(calc(1 + (var(--sb-glass-saturation, 1.35) - 1) * var(--sb-glass-cards, 0) + 0.25 * var(--sb-glass-cards, 0))) brightness(calc(1 + (var(--sb-glass-brightness, 1) - 1) * var(--sb-glass-cards, 0))) contrast(calc(1 + (var(--sb-glass-contrast, 1) - 1) * var(--sb-glass-cards, 0)));
-  background: color-mix(
-    in srgb,
-    color-mix(in srgb, var(--sb-glass-tint, var(--sb-primary)) calc(var(--sb-glass-tint-strength, 0.15) * 60%), color-mix(in srgb, var(--sb-surface-container-high) 82%, transparent)) calc(var(--sb-glass-cards, 0) * 100%),
-    color-mix(in srgb, var(--sb-surface-container-high) 94%, var(--sb-surface-container))
-  );
-  border: 1.5px solid color-mix(in srgb, var(--sb-outline) calc((0.42 + var(--sb-glass-border, 0.42) * 0.58) * 100%), transparent);
-  backdrop-filter: var(--sb-glass-filter);
-  -webkit-backdrop-filter: var(--sb-glass-filter);
+.sb-button.secondary {
+  background: var(--sb-surface-container-high);
   color: var(--sb-on-surface);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #fff calc(var(--sb-glass-specular, 0.28) * 52%), transparent),
-    inset 0 -1px 0 color-mix(in srgb, #000 8%, transparent),
-    0 6px 18px color-mix(in srgb, #000 calc(var(--sb-glass-shadow, 0.4) * 36% + 10%), transparent),
-    0 1px 4px color-mix(in srgb, #000 14%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--sb-outline-variant) 22%, transparent);
+  box-shadow: var(--sb-shadow-1);
+}
+
+.sb-button.ghost {
+  background: transparent;
+  color: var(--sb-primary);
+  box-shadow: inset 0 0 0 1px var(--sb-outline);
 }
 
 .sb-button.ghost:hover:not(:disabled) {

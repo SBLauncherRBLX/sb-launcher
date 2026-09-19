@@ -22,6 +22,17 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "3.4.2",
+    date: "2026-09-19",
+    title: "Visual polish & reliability",
+    items: [
+      "Search now uses a soft circulating theme-color edge light with no pillars or protruding shapes.",
+      "Visual preset editing stays inside its card, while textured glass controls are grouped into one clearer section.",
+      "Home loading, Roblox launch handling, discovery, private servers, and local API boundaries are more resilient.",
+      "The public website has been redesigned with richer customization previews and clearer product information.",
+    ],
+  },
+  {
     version: "3.4.1",
     date: "2026-09-18",
     title: "Frosted SB title in About",

@@ -642,7 +642,7 @@ export const DEFAULT_LAYOUT: LayoutSettings = {
   cardGap: 16,
   cardColumns: "auto",
   topbarBlur: 12,
-  navPillStyle: "glass",
+  navPillStyle: "material",
 };
 
 export const DEFAULT_SCROLL: ScrollSettings = {

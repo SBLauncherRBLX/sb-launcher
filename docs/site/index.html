@@ -3,27 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SB Launcher - Roblox desktop companion</title>
-    <meta
-      name="description"
-      content="Download SB Launcher 3.4.1 - a customizable Windows companion for Roblox."
-    />
-    <meta property="og:title" content="SB Launcher" />
-    <meta
-      property="og:description"
-      content="Windows Roblox companion. Discover, connect, and make the launcher yours."
-    />
+    <title>SB Launcher — Your Roblox, exactly how you want it</title>
+    <meta name="description" content="SB Launcher 3.4.2 — a Windows companion for Roblox. Discover, play together, and make every pixel yours — from wallpapers to glass." />
+    <meta property="og:title" content="SB Launcher — Your Roblox, exactly how you want it" />
+    <meta property="og:description" content="Discover experiences, launch with friends, and shape the interface. Themes, glass, wallpapers, and motion — yours." />
     <meta property="og:type" content="website" />
     <link rel="icon" type="image/png" href="./logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <div class="bg-wavy" aria-hidden="true"></div>
     <div class="atmosphere" aria-hidden="true">
       <div class="orb orb-a"></div>
       <div class="orb orb-b"></div>
@@ -36,49 +28,132 @@
         <span>SB Launcher</span>
       </a>
       <nav class="top-nav">
-        <a href="#features">Features</a>
+        <a href="#customize">Customize</a>
+        <a href="#overview">Overview</a>
         <a href="#download">Download</a>
         <a href="https://github.com/SBLauncherRBLX/sb-launcher" target="_blank" rel="noopener">Source</a>
-        <a href="./privacy.html">Privacy</a>
-        <a href="./terms.html">Terms</a>
       </nav>
     </header>
 
     <main>
       <section class="hero">
-        <img
-          class="hero-mark"
-          src="./logo.png"
-          alt="SB Launcher"
-          width="128"
-          height="128"
-        />
-        <h1 class="hero-brand">SB Launcher</h1>
+        <img class="hero-mark" src="./logo.png" alt="SB Launcher" width="148" height="148" />
+        <h1 class="hero-brand">Your Roblox,<br />exactly how you want it.</h1>
         <p class="hero-lead">
-          A Windows companion for Roblox - discover experiences, stay with friends,
-          and shape every pixel of the interface.
+          SB Launcher is a Windows companion for Roblox — a fast Discover, real Friends presence,
+          one-click launch, and a Visuals studio that lets you paint every surface. Wallpapers, glass, motion — make it yours.
         </p>
         <div class="hero-actions">
-          <a
-            class="btn btn-primary"
-            id="download-btn"
-            href="#download"
-            data-download-setup
-          >
-            Download for Windows
-          </a>
-          <a class="btn btn-ghost" href="#features">See what's inside</a>
+          <a class="btn btn-primary" id="download-btn" href="#download" data-download-setup>Download for Windows</a>
+          <a class="btn btn-ghost" href="#customize">See customization</a>
         </div>
-        <p class="hero-meta">Version 3.4.1 &middot; Windows 10/11 &middot; ~102 MB installer</p>
-        <p class="hero-hint" id="download-status">
-          Click Download - the site builds the installer from small parts (SHA-256 verified).
-        </p>
+        <p class="hero-meta">Version 3.4.2 · Windows 10/11 · ~102 MB installer</p>
+        <p class="hero-hint" id="download-status">Click Download — the site builds the installer from small parts (SHA-256 verified).</p>
+      </section>
+
+      <section class="section" id="latest">
+        <header class="section-head">
+          <p class="eyebrow">Latest updates</p>
+          <h2>Always getting better</h2>
+          <p>New visuals, smoother motion, and fixes that matter — see what's fresh and what's next.</p>
+        </header>
+        <div class="updates-grid">
+          <article class="update-card">
+            <span class="update-badge">3.4.2 — Latest</span>
+            <h3>Visual polish & reliability</h3>
+            <p>Soft theme-color search lighting, stable preset editing, clearer glass controls, and stronger launch and discovery reliability.</p>
+            <span class="update-date">19 September 2026</span>
+          </article>
+          <article class="update-card">
+            <span class="update-badge">3.4.0</span>
+            <h3>New SB logo everywhere</h3>
+            <p>Brand logo updated to new liquid SB blob with frosted SB letters — visible on sidebar, About banner, site and installer.</p>
+            <span class="update-date">18 September 2026</span>
+          </article>
+          <article class="update-card">
+            <span class="update-badge">3.3.0</span>
+            <h3>Liquid nav bubble & rooms</h3>
+            <p>Left nav bubble stretches like liquid glass, rooms server picker persists filters, smart filter treats 100% as “any”.</p>
+            <span class="update-date">17 September 2026</span>
+          </article>
+        </div>
+        <p class="section-cta"><a class="btn btn-ghost" href="https://github.com/SBLauncherRBLX/sb-launcher/releases" target="_blank" rel="noopener">See all releases</a></p>
+      </section>
+
+      <section class="section" id="customize">
+        <header class="section-head">
+          <p class="eyebrow">Visuals studio</p>
+          <h2>Make it yours — scroll the looks</h2>
+          <p>Four of many. Every preset is a real theme you can save: wallpapers, glass, motion, fonts, density. Swipe and find the one that feels like you.</p>
+        </header>
+        <div class="custom-carousel" role="region" aria-label="Customization variations">
+          <article class="custom-card" data-theme="midnight">
+            <div class="custom-preview"><img src="./assets/custom-01.png" alt="Midnight Purple — Discover" loading="lazy" /></div>
+            <h3>Midnight Purple</h3>
+            <p>SB Midnight · Nebula wallpaper · Liquid glass pill</p>
+          </article>
+          <article class="custom-card" data-theme="ocean">
+            <div class="custom-preview"><img src="./assets/custom-02.png" alt="Ocean Teal — Discover" loading="lazy" /></div>
+            <h3>Ocean Teal</h3>
+            <p>Arctic Glass · Arctic Bloom · spacious + parallax</p>
+          </article>
+          <article class="custom-card" data-theme="mono">
+            <div class="custom-preview"><img src="./assets/custom-03.png" alt="Mono Ink — Discover" loading="lazy" /></div>
+            <h3>Mono Ink</h3>
+            <p>Minimal · outline cards · no glass · compact</p>
+          </article>
+          <article class="custom-card" data-theme="custom">
+            <div class="custom-preview"><img src="./assets/custom-04.png" alt="Custom theme — Discover" loading="lazy" /></div>
+            <h3>Custom Theme</h3>
+            <p>Your palette · your wallpaper · your glass — saved as preset</p>
+          </article>
+        </div>
+        <p class="carousel-hint">← swipe → · Visuals → Background / Textured visual effects / Layout & navigation · Save as preset</p>
+      </section>
+
+      <section class="section" id="overview">
+        <header class="section-head">
+          <p class="eyebrow">Why SB Launcher</p>
+          <h2>Everything you need — nothing you don't</h2>
+        </header>
+        <div class="overview-grid">
+          <article class="overview-card">
+            <div class="overview-icon">◍</div>
+            <h3>Discover that understands you</h3>
+            <p>Top Trending, Up-and-Coming, Friends Playing, For You — plus Surprise Me for hidden gems. Search experiences and people, open details, and jump in.</p>
+          </article>
+          <article class="overview-card">
+            <div class="overview-icon">◎</div>
+            <h3>Friends, actually there</h3>
+            <p>Presence that matters: who's online, what they're playing, which server they're on — when OAuth scopes allow. Join friends in one click.</p>
+          </article>
+          <article class="overview-card">
+            <div class="overview-icon">⬢</div>
+            <h3>Rooms — one server, whole squad</h3>
+            <p>Create a lobby, pick games together, vote, and launch the whole group into the same public server with enough free slots. Ready checks included.</p>
+          </article>
+          <article class="overview-card">
+            <div class="overview-icon">▦</div>
+            <h3>Visuals studio</h3>
+            <p>Presets, wallpapers (bundled + your own 100% working), Layout & navigation, Colors & typography, Textured visual effects, Scroll & motion — every knob is live.</p>
+          </article>
+          <article class="overview-card">
+            <div class="overview-icon">⬣</div>
+            <h3>Safe & local</h3>
+            <p>Runs on your PC with a private local API. No .ROBLOSECURITY, no client patching. Your Roblox install stays stock.</p>
+          </article>
+          <article class="overview-card">
+            <div class="overview-icon">✦</div>
+            <h3>Free & open source</h3>
+            <p>MIT. React + Fastify + .NET 8. Read the code, report issues, contribute — everything is public on GitHub.</p>
+          </article>
+        </div>
       </section>
 
       <section class="section" id="features">
         <header class="section-head">
           <h2>Built for the way you play</h2>
-          <p>One focused companion - not another cluttered overlay.</p>
+          <p>One focused companion — not another cluttered overlay.</p>
         </header>
         <div class="feature-list">
           <article>
@@ -91,10 +166,10 @@
           </article>
           <article>
             <h3>Visuals</h3>
-            <p>Themes, fonts, wallpapers, motion, and deep glass controls - yours.</p>
+            <p>Themes, fonts, wallpapers, motion, and deep glass controls — yours.</p>
           </article>
           <article>
-            <h3>Local &amp; private</h3>
+            <h3>Local & private</h3>
             <p>Runs on your PC with a private local API. No Roblox password storage.</p>
           </article>
         </div>
@@ -102,25 +177,15 @@
 
       <section class="section download-band" id="download">
         <header class="section-head">
-          <h2>Get SB Launcher 3.4.1</h2>
-          <p>
-            The installer is split into small parts on this site, then assembled in
-            your browser with integrity checks.
-          </p>
+          <h2>Get SB Launcher 3.4.2</h2>
+          <p>The installer is split into small parts on this site, then assembled in your browser with integrity checks.</p>
         </header>
         <div class="download-row">
-          <a
-            class="btn btn-primary btn-lg"
-            id="download-btn-2"
-            href="#download"
-            data-download-setup
-          >
-            Download Setup 3.4.1
-          </a>
+          <a class="btn btn-primary btn-lg" id="download-btn-2" href="#download" data-download-setup>Download Setup 3.4.2</a>
           <ul class="download-notes">
             <li>Windows 10 or 11 (x64)</li>
             <li>WebView2 is used automatically when available</li>
-            <li>Sign in with Roblox OAuth - no <code>.ROBLOSECURITY</code></li>
+            <li>Sign in with Roblox OAuth — no <code>.ROBLOSECURITY</code></li>
             <li>SHA-256 verified download</li>
           </ul>
         </div>
@@ -128,23 +193,13 @@
 
       <section class="section" id="opensource">
         <header class="section-head">
-          <h2>Free &amp; open source</h2>
-          <p>
-            SB Launcher is fully open source under the MIT license. Read the code,
-            report issues, or contribute - everything is public.
-          </p>
+          <h2>Free & open source</h2>
+          <p>SB Launcher is fully open source under the MIT license. Read the code, report issues, or contribute — everything is public.</p>
         </header>
         <div class="download-row">
-          <a
-            class="btn btn-ghost btn-lg"
-            href="https://github.com/SBLauncherRBLX/sb-launcher"
-            target="_blank"
-            rel="noopener"
-          >
-            View source on GitHub
-          </a>
+          <a class="btn btn-ghost btn-lg" href="https://github.com/SBLauncherRBLX/sb-launcher" target="_blank" rel="noopener">View source on GitHub</a>
           <ul class="download-notes">
-            <li>MIT license - free forever</li>
+            <li>MIT license — free forever</li>
             <li>React UI, Fastify API, .NET 8 native host</li>
             <li>Issues and pull requests welcome</li>
           </ul>
@@ -152,10 +207,7 @@
       </section>
 
       <section class="section disclaimer">
-        <p>
-          SB Launcher is not affiliated with, endorsed by, or sponsored by Roblox
-          Corporation. Use it in line with the Roblox Terms of Use.
-        </p>
+        <p>SB Launcher is not affiliated with, endorsed by, or sponsored by Roblox Corporation. Use it in line with the Roblox Terms of Use.</p>
       </section>
     </main>
 

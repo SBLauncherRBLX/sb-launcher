@@ -1,3 +1,6 @@
-SB Launcher 3.4.1 — Frosted SB title in About
+SB Launcher 3.4.2 — Visual polish & reliability
 
-- About banner title now uses the new frosted SB image instead of text — blends with the liquid glass banner
+- Search now uses a soft circulating theme-color edge light with no pillars or protruding shapes.
+- Visual preset editing stays inside its card, while textured glass controls are grouped into one clearer section.
+- Home loading, Roblox launch handling, discovery, private servers, and local API boundaries are more resilient.
+- The public website has been redesigned with richer customization previews and clearer product information.
