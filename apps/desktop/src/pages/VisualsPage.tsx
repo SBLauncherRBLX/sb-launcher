@@ -9,39 +9,50 @@ import {
   type VisualTheme,
 } from "@sb/contracts";
 import { THEME_PRESETS, Button, FONT_OPTIONS } from "@sb/ui";
+import { GlassSettings } from "../components/GlassSettings";
+import { useLiquid } from "../lib/liquid";
 import { useAppStore } from "../store";
 import { api } from "../lib/api";
 import { BUNDLED_WALLPAPERS } from "../assets/wallpapers";
 import { Presets3D, Background3D, Effects3D, Layout3D, Scroll3D, Colors3D, Motion3D, Visuals3D } from "../components/Section3DIcons";
+import { MaterialSymbol } from "../components/MaterialSymbol";
 
 function VisualsSection({
   icon,
   title,
   subtitle,
   defaultOpen = false,
+  searchQuery = "",
+  keywords = "",
   children,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
   defaultOpen?: boolean;
+  searchQuery?: string;
+  keywords?: string;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+  const matches = !normalizedQuery || `${title} ${subtitle} ${keywords}`.toLocaleLowerCase().includes(normalizedQuery);
+  const expanded = normalizedQuery ? true : open;
+  if (!matches) return null;
   return (
     <section className="sb-card section-collapsible">
-      <button type="button" className="section-header" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button type="button" className="section-header" aria-expanded={expanded} onClick={() => setOpen(!expanded)}>
         <span className="section-icon">{icon}</span>
         <div className="section-titles">
           <h3>{title}</h3>
           <p className="sb-muted">{subtitle}</p>
         </div>
-        <motion.span className="section-chevron" animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
+        <motion.span className="section-chevron" animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
           ▾
         </motion.span>
       </button>
       <AnimatePresence initial={false}>
-        {open ? (
+        {expanded ? (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.26, ease: [0.2, 0, 0, 1] as const }} style={{ overflow: "hidden" }}>
             <div className="section-body">{children}</div>
           </motion.div>
@@ -60,6 +71,7 @@ export function VisualsPage() {
   const [presetAvatar, setPresetAvatar] = useState<string | null>(null);
   const [importText, setImportText] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [settingsQuery, setSettingsQuery] = useState("");
   const [savedPresets, setSavedPresets] = useState<Array<{ id: string; name: string; theme: VisualTheme; avatarUrl?: string | null; sortOrder: number }>>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -337,6 +349,7 @@ export function VisualsPage() {
   }
 
   function applyPreset(preset: VisualTheme) {
+    if (preset.id === "material-you") useLiquid.getState().patch({ enabled: false });
     setTheme(normalizeTheme({ ...preset, fontId: theme.fontId }));
     schedulePersist();
     setMessage(`Applied “${preset.name}”.`);
@@ -355,8 +368,9 @@ export function VisualsPage() {
 
   function reset() {
     setTheme(DEFAULT_THEME);
+    useLiquid.getState().patch({ enabled: false });
     schedulePersist();
-    setMessage("Reset to SB Midnight.");
+    setMessage("Reset to Material You.");
   }
 
   const wallpapers = BUNDLED_WALLPAPERS;
@@ -385,8 +399,15 @@ export function VisualsPage() {
 
       {message ? <div className="notice">{message}</div> : null}
 
+      <label className="settings-filter">
+        <MaterialSymbol name="search" size={22} />
+        <input className="sb-input" type="search" value={settingsQuery} onChange={(e) => setSettingsQuery(e.target.value)} placeholder="Search visual settings…" aria-label="Search visual settings" />
+        {settingsQuery ? <button type="button" className="settings-filter-clear" onClick={() => setSettingsQuery("")} aria-label="Clear visual settings search">×</button> : null}
+      </label>
+      {settingsQuery ? <p className="sb-muted settings-filter-status">Matching sections are expanded automatically.</p> : null}
+
       <div style={{ display: "grid", gap: "0.85rem" }}>
-        <VisualsSection icon={<Presets3D />} title="Presets" subtitle="Choose a base style — your presets live right here">
+        <VisualsSection searchQuery={settingsQuery} keywords="theme preset save import export json avatar material midnight arctic" icon={<Presets3D />} title="Presets" subtitle="Choose a base style — your presets live right here">
           <div className="preset-grid" style={{ marginTop: "0.5rem" }}>
             {THEME_PRESETS.map((preset) => (
               <button
@@ -495,7 +516,7 @@ export function VisualsPage() {
           <Button variant="secondary" style={{ marginTop: "0.75rem" }} onClick={importTheme}>Import JSON</Button>
         </VisualsSection>
 
-        <VisualsSection icon={<Background3D />} title="Background" subtitle="Wallpapers, opacity and blur">
+        <VisualsSection searchQuery={settingsQuery} keywords="wallpaper image gradient solid layered custom dim opacity blur mode" icon={<Background3D />} title="Background" subtitle="Wallpapers, opacity and blur">
           <div className="form-grid" style={{ marginTop: "0.5rem" }}>
             <label>
               Background mode
@@ -593,7 +614,7 @@ export function VisualsPage() {
           </div>
         </VisualsSection>
 
-        <VisualsSection icon={<Effects3D />} title="Effects" subtitle="Glass, grain, glow and particles">
+        <VisualsSection searchQuery={settingsQuery} keywords="grain noise vignette glow particles parallax speed density size opacity" icon={<Effects3D />} title="Effects" subtitle="Grain, glow and particles">
           <div className="form-grid" style={{ marginTop: "0.5rem" }}>
             {(
               [
@@ -641,134 +662,11 @@ export function VisualsPage() {
           </div>
         </VisualsSection>
 
-        <VisualsSection icon={<Effects3D />} title="Textured visual effects" subtitle="Glass for buttons and interface — frosted, tint and depth">
-          <p className="sb-muted" style={{ marginTop: "0.35rem" }}>
-            One place for every glass surface. Disabling restores Material You.
-          </p>
-          <div className="form-grid" style={{ marginTop: "0.75rem" }}>
-            <label className="check-row">
-              <input type="checkbox" checked={theme.effects?.glass ?? false} onChange={(e) => patchEffects({ glass: e.target.checked })} />
-              <span>Enable textured glass</span>
-            </label>
-            {theme.effects?.glass ? (
-              <>
-                <label className="check-row">
-                  <input type="checkbox" checked={theme.effects.glassCards ?? true} onChange={(e) => patchEffects({ glassCards: e.target.checked })} />
-                  <span>Cards</span>
-                </label>
-                <label className="check-row">
-                  <input type="checkbox" checked={theme.effects.glassSidebar ?? true} onChange={(e) => patchEffects({ glassSidebar: e.target.checked })} />
-                  <span>Sidebar</span>
-                </label>
-                <label className="check-row">
-                  <input type="checkbox" checked={theme.effects.glassTopbar ?? true} onChange={(e) => patchEffects({ glassTopbar: e.target.checked })} />
-                  <span>Top bar & buttons</span>
-                </label>
-                <label>
-                  Glass blur ({theme.effects.glassBlur ?? theme.blur}px)
-                  <input type="range" min={0} max={100} value={theme.effects.glassBlur ?? theme.blur} onChange={(e) => patchEffects({ glassBlur: Number(e.target.value) })} />
-                </label>
-                <label>
-                  Fill opacity ({(theme.effects.glassOpacity ?? 0.52).toFixed(2)})
-                  <input type="range" min={0} max={1} step={0.01} value={theme.effects.glassOpacity ?? 0.52} onChange={(e) => patchEffects({ glassOpacity: Number(e.target.value) })} />
-                </label>
-                <label>
-                  Saturation ({(theme.effects.glassSaturation ?? 1.35).toFixed(2)}×)
-                  <input type="range" min={0} max={3} step={0.05} value={theme.effects.glassSaturation ?? 1.35} onChange={(e) => patchEffects({ glassSaturation: Number(e.target.value) })} />
-                </label>
-                <label>
-                  Brightness ({(theme.effects.glassBrightness ?? 1).toFixed(2)}×)
-                  <input type="range" min={0.4} max={1.8} step={0.02} value={theme.effects.glassBrightness ?? 1} onChange={(e) => patchEffects({ glassBrightness: Number(e.target.value) })} />
-                </label>
-                <label>
-                  Contrast ({(theme.effects.glassContrast ?? 1).toFixed(2)}×)
-                  <input type="range" min={0.5} max={1.8} step={0.02} value={theme.effects.glassContrast ?? 1} onChange={(e) => patchEffects({ glassContrast: Number(e.target.value) })} />
-                </label>
-                <label>
-                  Border ({(theme.effects.glassBorder ?? 0.42).toFixed(2)})
-                  <input type="range" min={0} max={1} step={0.01} value={theme.effects.glassBorder ?? 0.42} onChange={(e) => patchEffects({ glassBorder: Number(e.target.value) })} />
-                </label>
-                <label>
-                  Specular ({(theme.effects.glassSpecular ?? 0.28).toFixed(2)})
-                  <input type="range" min={0} max={1} step={0.01} value={theme.effects.glassSpecular ?? 0.28} onChange={(e) => patchEffects({ glassSpecular: Number(e.target.value) })} />
-                </label>
-                <label>
-                  Shadow ({(theme.effects.glassShadow ?? 0.4).toFixed(2)})
-                  <input type="range" min={0} max={1} step={0.01} value={theme.effects.glassShadow ?? 0.4} onChange={(e) => patchEffects({ glassShadow: Number(e.target.value) })} />
-                </label>
-                <label>
-                  Tint strength ({(theme.effects.glassTintStrength ?? 0.15).toFixed(2)})
-                  <input type="range" min={0} max={1} step={0.01} value={theme.effects.glassTintStrength ?? 0.15} onChange={(e) => patchEffects({ glassTintStrength: Number(e.target.value) })} />
-                </label>
-                <label>
-                  Tint color
-                  <input type="color" value={theme.effects.glassTintColor ?? theme.accent} onChange={(e) => patchEffects({ glassTintColor: e.target.value })} />
-                </label>
-                <label>
-                  Button style
-                  <select className="sb-input" value={theme.buttonStyle ?? "glass"} onChange={(e) => patch({ buttonStyle: e.target.value as VisualTheme["buttonStyle"] })}>
-                    <option value="glass">Glass — frosted</option>
-                    <option value="gradient">Gradient (M3)</option>
-                    <option value="solid">Solid (M3)</option>
-                    <option value="tonal">Tonal (M3)</option>
-                  </select>
-                </label>
-                <label>
-                  Card style
-                  <select className="sb-input" value={theme.cardStyle ?? "glass"} onChange={(e) => patch({ cardStyle: e.target.value as VisualTheme["cardStyle"] })}>
-                    <option value="glass">Glass</option>
-                    <option value="solid">Solid</option>
-                    <option value="outline">Outline</option>
-                  </select>
-                </label>
-                <label>
-                  Sidebar style
-                  <select className="sb-input" value={theme.sidebarStyle} onChange={(e) => patch({ sidebarStyle: e.target.value as VisualTheme["sidebarStyle"] })}>
-                    <option value="glass">Glass</option>
-                    <option value="solid">Solid</option>
-                    <option value="minimal">Minimal</option>
-                  </select>
-                </label>
-                <label>
-                  Blur ({theme.blur}px)
-                  <input type="range" min={0} max={100} value={theme.blur} onChange={(e) => patch({ blur: Number(e.target.value) })} />
-                </label>
-                <label>
-                  Panel opacity ({theme.opacity.toFixed(2)})
-                  <input type="range" min={0.05} max={1} step={0.01} value={theme.opacity} onChange={(e) => patch({ opacity: Number(e.target.value) })} />
-                </label>
-                <label>
-                  Window corner radius ({theme.cornerRadius}px)
-                  <input type="range" min={0} max={48} value={theme.cornerRadius} onChange={(e) => patch({ cornerRadius: Number(e.target.value) })} />
-                </label>
-                <label>
-                  Active nav bubble
-                  <select className="sb-input" value={theme.layout?.navPillStyle ?? "material"} onChange={(e) => patchLayout({ navPillStyle: e.target.value as NonNullable<VisualTheme["layout"]>["navPillStyle"] })}>
-                    <option value="glass">Glass — Liquid Glass</option>
-                    <option value="material">Material You (classic)</option>
-                  </select>
-                </label>
-              </>
-            ) : null}
-            <h3 style={{ marginTop: "1.25rem" }}>Live preview</h3>
-            <div
-              style={{
-                marginTop: "0.85rem",
-                padding: "1.25rem",
-                borderRadius: `${theme.cornerRadius}px`,
-                background: theme.backgroundMode === "solid" ? theme.surface : `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo}), ${theme.surface}`,
-                border: `1px solid ${theme.border}`,
-                color: theme.text,
-              }}
-            >
-              <strong style={{ color: theme.accent }}>{theme.name || "Custom Visual"}</strong>
-              <p style={{ color: theme.textMuted }}>Cards, buttons, and sidebar update instantly as you tweak values.</p>
-              <button className="sb-button">Sample action</button>
-            </div>
-          </div>
+        <VisualsSection searchQuery={settingsQuery} keywords="frosted liquid glass refraction saturation tint rim shadow controls buttons switches sliders preview" icon={<Effects3D />} title="Textured visual effects" subtitle="Glass — one switch, two materials and a shared live preview">
+          <GlassSettings />
         </VisualsSection>
 
-        <VisualsSection icon={<Layout3D />} title="Layout & navigation" subtitle="Sidebar, topbar and content">
+        <VisualsSection searchQuery={settingsQuery} keywords="sidebar topbar content alignment width padding cards gap columns navigation bubble" icon={<Layout3D />} title="Layout & navigation" subtitle="Sidebar, topbar and content">
           <div
             className="layout-preview"
             style={{
@@ -888,7 +786,7 @@ export function VisualsPage() {
           </div>
         </VisualsSection>
 
-        <VisualsSection icon={<Scroll3D />} title="Scroll & overscroll" subtitle="Scrolling layout and scrollbar">
+        <VisualsSection searchQuery={settingsQuery} keywords="scroll overscroll scrollbar smooth behavior animation duration easing stagger progress reveal" icon={<Scroll3D />} title="Scroll & overscroll" subtitle="Scrolling layout and scrollbar">
           <p className="sb-muted" style={{ marginTop: "0.35rem" }}>Scroll animations are temporarily disabled. Content scrolls instantly and stays fully visible.</p>
           <div className="notice" style={{ marginTop: "0.75rem", fontSize: "0.88rem" }}>Sticky topbar = page scrolls in a layer below search (like mobile apps). Floating — with shadow above content.</div>
           <div className="form-grid" style={{ marginTop: "1rem" }}>
@@ -911,7 +809,7 @@ export function VisualsPage() {
           </div>
         </VisualsSection>
 
-        <VisualsSection icon={<Colors3D />} title="Colors & typography" subtitle="Palette, font and density">
+        <VisualsSection searchQuery={settingsQuery} keywords="color accent palette font typography density icon multicolor custom radius" icon={<Colors3D />} title="Colors & typography" subtitle="Palette, font and density">
           <div className="form-grid">
             <label>Icon colors<select className="sb-input" value={theme.iconColorMode ?? "multicolor"} onChange={e => patch({ iconColorMode: e.target.value as "multicolor" | "custom" })}><option value="multicolor">Multicolor — original colors</option><option value="custom">Custom color</option></select></label>
             <label>Icon tint<input type="color" value={theme.iconColor ?? "#a78bfa"} disabled={theme.iconColorMode !== "custom"} onChange={e => patch({ iconColor: e.target.value })}/></label>
@@ -958,7 +856,7 @@ export function VisualsPage() {
           </div>
         </VisualsSection>
 
-        <VisualsSection icon={<Motion3D />} title="Motion" subtitle="Animations and playback">
+        <VisualsSection searchQuery={settingsQuery} keywords="motion animations playback reduced intensity transition elastic" icon={<Motion3D />} title="Motion" subtitle="Animations and playback">
           <p className="sb-muted" style={{ marginTop: "0.35rem" }}>Material You 3 motion — enter uses decelerate, exit uses accelerate, and on-screen changes use emphasized easing with short/medium/long duration tokens.</p>
           <div className="form-grid" style={{ marginTop: "1rem" }}>
             <label className="check-row">

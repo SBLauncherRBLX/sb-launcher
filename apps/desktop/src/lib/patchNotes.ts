@@ -22,6 +22,20 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "3.5.0",
+    date: "2026-09-20",
+    title: "Material You & unified glass",
+    items: [
+      "Material You is the default design, with locally bundled Material Symbols and animated navigation in both glass and solid modes.",
+      "Frosted and Liquid Glass share one settings section and a draggable live preview.",
+      "Frosted uses Material You controls by default, with a saved option for Liquid Glass buttons, switches and sliders.",
+      "Liquid Glass reuses refraction maps and skips backdrop processing for offscreen surfaces.",
+      "Arctic Glass and Pulse Midnight presets now use theme-colored icons.",
+      "Visuals and game settings now include section search with automatic expansion of matching controls.",
+      "Search lighting keeps its thickness and rounded shape at every window width, and Material You switch checkmarks are centered.",
+    ],
+  },
+  {
     version: "3.4.2",
     date: "2026-09-19",
     title: "Visual polish & reliability",

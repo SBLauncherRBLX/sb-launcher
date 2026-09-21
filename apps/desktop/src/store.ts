@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { PRIVATE_DEMO } from "./lib/version";
 import {
   DEFAULT_CAPABILITIES,
   DEFAULT_THEME,
@@ -83,6 +84,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   dismissUpdate: () => set({ updateAvailable: null, updateNotesOpen: false }),
 
   checkUpdates: async () => {
+    if (PRIVATE_DEMO) { set({ updateStatus: "upToDate", updateAvailable: null }); return; }
     set({ updateStatus: "checking" });
 
     try {
@@ -154,13 +156,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (prefs.graphics) {
         graphics = SafeGraphicsSettingsSchema.parse(prefs.graphics);
       }
-      // Roll old default themes forward to SB Midnight.
-      if (theme.id === "pulse-midnight" || theme.id === "pixel-os") {
+      // Pulse Midnight remains a selectable preset; only retire the obsolete default.
+      if (theme.id === "pixel-os") {
         theme = DEFAULT_THEME;
       }
       // One-time migration: unify all buttons to the account-pill glass look.
       // Afterwards the user can still pick Gradient/Solid/Tonal (M3) in Visuals.
-      if (!prefs.sbButtonUnifiedV1 && theme.buttonStyle !== "glass") {
+      if (!prefs.sbButtonUnifiedV1 && theme.effects?.glass && theme.buttonStyle !== "glass") {
         theme = { ...theme, buttonStyle: "glass" };
         void window.sbDesktop?.setPrefs({ theme, sbButtonUnifiedV1: true }).catch(() => undefined);
         try {

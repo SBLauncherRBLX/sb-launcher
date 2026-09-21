@@ -75,9 +75,12 @@ export function GameRail({
   function scrollBatch(direction: -1 | 1) {
     const el = scrollerRef.current;
     if (!el) return;
-    // Jump roughly one visible page of cards (Roblox-style batch scroll).
+    // Move roughly one visible page while preserving a responsive, visible glide.
     const amount = Math.max(el.clientWidth * 0.9, 320);
-    el.scrollBy({ left: direction * amount, behavior: "auto" });
+    el.scrollBy({
+      left: direction * amount,
+      behavior: motionEnabled ? "smooth" : "auto",
+    });
   }
 
   if (!games.length) return null;

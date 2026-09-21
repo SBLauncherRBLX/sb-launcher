@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import aboutBanner from "../assets/about-glass-banner.png";
 import sbTitle from "../assets/sb-title.png";
 import { MAJOR_RELEASE, PATCH_NOTES } from "../lib/patchNotes";
-import { APP_VERSION } from "../lib/version";
+import { APP_VERSION, PRIVATE_DEMO } from "../lib/version";
 import { useAppStore } from "../store";
 
 const TRIPLE_CLICK_MS = 520;
@@ -85,7 +85,7 @@ export function AboutPage() {
               <span className="about-version-status-text">Checking version...</span>
             ) : null}
             {updateStatus === "upToDate" ? (
-              <span className="about-version-status-text">Version up to date</span>
+              <span className="about-version-status-text">{PRIVATE_DEMO ? "Private demo · updates disabled" : "Version up to date"}</span>
             ) : null}
             {updateStatus === "offline" ? (
               <span className="about-version-status-text">Version check offline</span>
@@ -127,7 +127,7 @@ export function AboutPage() {
 
         <div className="about-patch-minors">
           <h3 className="about-patch-minors-title">Minor patches & updates</h3>
-          {PATCH_NOTES.map((patch) => (
+          {PATCH_NOTES.slice(0, 3).map((patch) => (
             <article key={patch.version} className="about-patch-block">
               <div className="about-patch-heading">
                 <span className="about-patch-badge about-patch-badge--minor">

@@ -21,6 +21,8 @@ import { RoomsPage } from "./pages/RoomsPage";
 import { SessionTracker } from "./lib/content";
 import { CaptureTracker } from "./components/JournalCaptures";
 import { PageErrorBoundary } from "./components/PageErrorBoundary";
+import { LiquidGlassDemo } from "./components/LiquidGlassDemo";
+import { MaterialAppearance } from "./components/MaterialAppearance";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -126,6 +128,8 @@ export default function App() {
       className={`app-root density-${normalizedTheme.density} motion-${normalizedTheme.motionIntensity ?? "medium"} button-style-${normalizedTheme.buttonStyle ?? "gradient"} card-style-${normalizedTheme.cardStyle ?? "glass"} nav-pill-${normalizedTheme.layout?.navPillStyle ?? "material"}`}
     >
       <BackgroundScene theme={normalizedTheme} />
+      <LiquidGlassDemo />
+      <MaterialAppearance />
       <SessionTracker />
       <CaptureTracker />
       <Shell>

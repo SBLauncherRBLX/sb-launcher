@@ -228,7 +228,7 @@ button,
   position: relative;
   isolation: isolate;
   color: var(--sb-on-surface);
-  --sb-glass-filter: blur(calc(var(--sb-glass-blur, 20) * 1px + 10px)) saturate(calc(var(--sb-glass-saturation, 1.35) + 0.25)) brightness(calc(var(--sb-glass-brightness, 1))) contrast(calc(var(--sb-glass-contrast, 1)));
+  --sb-glass-filter: blur(calc(var(--sb-glass-blur, 20px) + 10px)) saturate(calc(var(--sb-glass-saturate, 1.35) + 0.25)) brightness(calc(var(--sb-glass-brightness, 1))) contrast(calc(var(--sb-glass-contrast, 1)));
   background: color-mix(
     in srgb,
     color-mix(in srgb, var(--sb-glass-tint, var(--sb-primary)) calc(var(--sb-glass-tint-strength, 0.15) * 60%), color-mix(in srgb, var(--sb-surface-container-high) 82%, transparent)) calc(var(--sb-glass-cards, 0) * 100%),
@@ -268,7 +268,7 @@ button,
 .app-root.button-style-glass .sb-button.ghost {
   position: relative;
   isolation: isolate;
-  --sb-glass-filter: blur(calc(var(--sb-glass-blur, 20) * 0.85 * 1px + 10px)) saturate(calc(var(--sb-glass-saturation, 1.35) + 0.25)) brightness(calc(var(--sb-glass-brightness, 1))) contrast(calc(var(--sb-glass-contrast, 1)));
+  --sb-glass-filter: blur(calc(var(--sb-glass-blur, 20px) * 0.85 + 10px)) saturate(calc(var(--sb-glass-saturate, 1.35) + 0.25)) brightness(calc(var(--sb-glass-brightness, 1))) contrast(calc(var(--sb-glass-contrast, 1)));
   background: color-mix(
     in srgb,
     color-mix(in srgb, var(--sb-glass-tint, var(--sb-primary)) calc(var(--sb-glass-tint-strength, 0.15) * 60%), color-mix(in srgb, var(--sb-surface-container-high) 82%, transparent)) calc(var(--sb-glass-cards, 0) * 100%),

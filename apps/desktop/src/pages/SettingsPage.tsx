@@ -15,6 +15,7 @@ import {
   type RobloxAppIconPreference,
 } from "../lib/robloxAppIcon";
 import sbLogo from "../assets/sb-logo.png";
+import { MaterialSymbol } from "../components/MaterialSymbol";
 
 const ROBLOX_APP_ICON_OPTIONS: Array<{
   mode: RobloxAppIconMode;
@@ -31,29 +32,37 @@ function SettingsSection({
   title,
   subtitle,
   defaultOpen = false,
+  searchQuery = "",
+  keywords = "",
   children,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
   defaultOpen?: boolean;
+  searchQuery?: string;
+  keywords?: string;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+  const matches = !normalizedQuery || `${title} ${subtitle} ${keywords}`.toLocaleLowerCase().includes(normalizedQuery);
+  const expanded = normalizedQuery ? true : open;
+  if (!matches) return null;
   return (
     <section className="sb-card section-collapsible">
-      <button type="button" className="section-header" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button type="button" className="section-header" aria-expanded={expanded} onClick={() => setOpen(!expanded)}>
         <span className="section-icon">{icon}</span>
         <div className="section-titles">
           <h3>{title}</h3>
           <p className="sb-muted">{subtitle}</p>
         </div>
-        <motion.span className="section-chevron" animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
+        <motion.span className="section-chevron" animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
           ▾
         </motion.span>
       </button>
       <AnimatePresence initial={false}>
-        {open ? (
+        {expanded ? (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.26, ease: [0.2, 0, 0, 1] as const }} style={{ overflow: "hidden" }}>
             <div className="section-body">{children}</div>
           </motion.div>
@@ -73,6 +82,7 @@ export function SettingsPage() {
   const robloxInstalled = useAppStore((s) => s.robloxInstalled);
   const motionEnabled = useMotionEnabled(theme);
   const [message, setMessage] = useState<string | null>(null);
+  const [settingsQuery, setSettingsQuery] = useState("");
   const [detectPath, setDetectPath] = useState<string | null>(null);
   const [oauthClientId, setOauthClientId] = useState("");
   const [oauthConfigured, setOauthConfigured] = useState(false);
@@ -373,8 +383,15 @@ export function SettingsPage() {
 
       {message ? <div className="notice">{message}</div> : null}
 
+      <label className="settings-filter">
+        <MaterialSymbol name="search" size={22} />
+        <input className="sb-input" type="search" value={settingsQuery} onChange={(e) => setSettingsQuery(e.target.value)} placeholder="Search game settings…" aria-label="Search game settings" />
+        {settingsQuery ? <button type="button" className="settings-filter-clear" onClick={() => setSettingsQuery("")} aria-label="Clear game settings search">×</button> : null}
+      </label>
+      {settingsQuery ? <p className="sb-muted settings-filter-status">Matching sections are expanded automatically.</p> : null}
+
       <div style={{ display: "grid", gap: "0.85rem" }}>
-        <SettingsSection icon={<Account3D />} title="Account & sign-in" subtitle="Switch accounts, manage and OAuth">
+        <SettingsSection searchQuery={settingsQuery} keywords="account sign in login logout oauth client id redirect uri profile manage remove" icon={<Account3D />} title="Account & sign-in" subtitle="Switch accounts, manage and OAuth">
           <div style={{ marginTop: "0.75rem" }} className="sb-muted">
             {session?.authenticated ? (
               <>
@@ -487,7 +504,7 @@ export function SettingsPage() {
           </div>
         </SettingsSection>
 
-        <SettingsSection icon={<Player3D />} title="Roblox client" subtitle="Player install, shortcut icon and client font">
+        <SettingsSection searchQuery={settingsQuery} keywords="roblox player client install path shortcut icon font custom default launcher" icon={<Player3D />} title="Roblox client" subtitle="Player install, shortcut icon and client font">
           <h4 className="subsection-title">Player install</h4>
           <p className="sb-muted">
             Status:{" "}
@@ -576,7 +593,7 @@ export function SettingsPage() {
           </div>
         </SettingsSection>
 
-        <SettingsSection icon={<Optimization3D />} title="Graphics & performance" subtitle="Safe graphics, FPS and allowlisted FastFlags">
+        <SettingsSection searchQuery={settingsQuery} keywords="graphics performance optimization fps fastflags quality texture renderer lighting shadows preset apply" icon={<Optimization3D />} title="Graphics & performance" subtitle="Safe graphics, FPS and allowlisted FastFlags">
           <div className="rail-title">
             <div>
               <p className="sb-muted rail-subtitle">
@@ -844,7 +861,7 @@ export function SettingsPage() {
           </div>
         </SettingsSection>
 
-        <SettingsSection icon={<Overlay3D />} title="Launch overlay" subtitle="Window shown when joining">
+        <SettingsSection searchQuery={settingsQuery} keywords="launch overlay joining window background image video opacity media status" icon={<Overlay3D />} title="Launch overlay" subtitle="Window shown when joining">
           <p className="sb-muted" style={{ margin: "0.35rem 0 1rem" }}>
             A small window shown for a few seconds when you join an experience from SB Launcher — not
             Roblox’s own splash files.
@@ -927,7 +944,7 @@ export function SettingsPage() {
           </div>
         </SettingsSection>
 
-        <SettingsSection icon={<Discord3D />} title="Discord" subtitle="Rich Presence — show your game on Discord">
+        <SettingsSection searchQuery={settingsQuery} keywords="discord rich presence rpc application game browsing thumbnail elapsed join button page" icon={<Discord3D />} title="Discord" subtitle="Rich Presence — show your game on Discord">
           <p className="sb-muted" style={{ marginTop: "0.75rem" }}>
             Show what you&apos;re doing in Roblox on Discord — game name, playtime, thumbnail, Join
             server, and game page. Discord desktop must be running on this PC.

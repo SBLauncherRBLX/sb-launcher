@@ -1,5 +1,7 @@
 import { useId, type CSSProperties } from "react";
 import { useAppStore } from "../store";
+import { useLiquid } from "../lib/liquid";
+import { MaterialSymbol } from "./MaterialSymbol";
 
 export type IconProps = { size?: number; className?: string; style?: CSSProperties };
 export type IconName = "home" | "discover" | "friends" | "visuals" | "settings" | "about" | "presets" | "background" | "effects" | "layout" | "scroll" | "colors" | "motion" | "discord" | "account" | "player" | "optimization" | "appicon" | "appearance" | "overlay";
@@ -10,6 +12,13 @@ const accents: Record<IconName, string> = {
   effects: "#c884ff", layout: "#39b6ff", scroll: "#ff9e2b", colors: "#ff6489",
   motion: "#40d9ef", discord: "#929aff", account: "#28bbff", player: "#34d865",
   optimization: "#ffad21", appicon: "#ebedff", appearance: "#ec83ec", overlay: "#5dc8ff",
+};
+
+const materialNames: Record<IconName,string> = {
+  home:"home",discover:"explore",friends:"groups",visuals:"palette",settings:"settings",about:"info",
+  presets:"view_carousel",background:"image",effects:"auto_awesome",layout:"dashboard",scroll:"swap_vert",
+  colors:"palette",motion:"speed",discord:"chat",account:"account_circle",player:"sports_esports",
+  optimization:"tune",appicon:"widgets",appearance:"auto_stories",overlay:"smart_display",
 };
 
 function Symbol({ name }: { name: IconName }) {
@@ -38,6 +47,13 @@ function Symbol({ name }: { name: IconName }) {
 
 function MonoSymbol({name}:{name:IconName}) {
   const paths:Partial<Record<IconName,string>> = {
+    home:"M6 15 16 6l10 9M9 13v13h5v-8h4v8h5V13",
+    friends:"M19 25v-3a6 6 0 0 0-12 0v3M17 10a4 4 0 1 1-8 0 4 4 0 1 1 8 0ZM23 7a4 4 0 0 1 0 8m0 3a5 5 0 0 1 5 5v2",
+    account:"M26 16a10 10 0 1 1-20 0 10 10 0 1 1 20 0ZM20 13a4 4 0 1 1-8 0 4 4 0 1 1 8 0ZM9 24c0-8 14-8 14 0",
+    layout:"M5 6h22v20H5ZM12 6v20m0-13h15",
+    scroll:"M16 5v22m-5-17 5-5 5 5m-10 12 5 5 5-5",
+    motion:"M4 17h5l4-10 6 18 4-8h5",
+    appicon:"M11 5h10q6 0 6 6v10q0 6-6 6H11q-6 0-6-6V11q0-6 6-6ZM12 12h8v8h-8Z",
     about:"M26 16a10 10 0 1 1-20 0 10 10 0 1 1 20 0ZM16 11h.01M16 16v6",
     discover:"M26 16a10 10 0 1 1-20 0 10 10 0 1 1 20 0ZM21 11l-3 7-7 3 3-7Z",
     settings:"M16 7v3m0 12v3M7 16h3m12 0h3M9 9l3 3m8 8 3 3M9 23l3-3m8-8 3-3M23 16a7 7 0 1 1-14 0 7 7 0 1 1 14 0ZM18 16a2 2 0 1 1-4 0 2 2 0 1 1 4 0Z",
@@ -61,6 +77,9 @@ export function BoldDarkIcon({ name, size = 28, className, style }: IconProps & 
   const id = `bold-${useId().replace(/:/g, "")}`;
   const mode = useAppStore(s => s.theme.iconColorMode);
   const tint = useAppStore(s => s.theme.iconColor) ?? "#a78bfa";
+  const textured = useAppStore(s => Boolean(s.theme.effects?.glass));
+  const liquid = useLiquid(s => s.settings.enabled);
+  if (!textured && !liquid) return <MaterialSymbol name={materialNames[name]} size={size} className={className} style={style}/>;
   const [red = .65, green = .65, blue = .65] = [1, 3, 5].map(i => Number.parseInt(tint.slice(i, i + 2), 16) / 255).map(value => Number.isFinite(value) ? value : .65);
   const luminance=red*.2126 + green*.7152 + blue*.0722;
   const lightTile = mode === "custom" && luminance < .24;

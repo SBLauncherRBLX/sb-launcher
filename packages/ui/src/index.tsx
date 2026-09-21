@@ -1,10 +1,21 @@
 import type { CSSProperties, ButtonHTMLAttributes, PropsWithChildren } from "react";
 import type { VisualTheme } from "@sb/contracts";
-import { DEFAULT_THEME_EFFECTS, DEFAULT_LAYOUT, DEFAULT_SCROLL } from "@sb/contracts";
+import { DEFAULT_THEME, DEFAULT_THEME_EFFECTS, DEFAULT_LAYOUT, DEFAULT_SCROLL } from "@sb/contracts";
 import { resolveFontStack } from "./fonts";
 
 export { FONT_OPTIONS, DEFAULT_FONT_ID, resolveFontStack } from "./fonts";
 export type { FontOption } from "./fonts";
+
+/** Choose the higher-contrast text colour for filled controls, including light themes. */
+export function contrastText(hex: string): string {
+  const rgb = hex.replace("#", "").slice(0, 6);
+  const channels = [0, 2, 4].map(i => Number.parseInt(rgb.slice(i, i + 2), 16) / 255);
+  const linear = channels.map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
+  const luminance = (linear[0] ?? 0) * .2126 + (linear[1] ?? 0) * .7152 + (linear[2] ?? 0) * .0722;
+  // Compare against the actual near-black ink, rather than assuming pure black.
+  const darkInkLuminance = .0115;
+  return (luminance + .05) / (darkInkLuminance + .05) > 1.05 / (luminance + .05) ? "#1d1b20" : "#ffffff";
+}
 
 export function themeToCssVars(theme: VisualTheme): CSSProperties {
   const effects = { ...DEFAULT_THEME_EFFECTS, ...(theme.effects ?? {}) };
@@ -93,16 +104,16 @@ export function themeToCssVars(theme: VisualTheme): CSSProperties {
     ["--sb-effect-parallax" as string]: effects.parallax ? "1" : "0",
     // Material You 3 color roles (derived from the existing theme seed).
     ["--sb-primary" as string]: theme.accent,
-    ["--sb-on-primary" as string]: theme.background,
+    ["--sb-on-primary" as string]: contrastText(theme.accent),
     ["--sb-primary-container" as string]: `color-mix(in srgb, ${theme.accent} 28%, ${theme.surfaceElevated})`,
-    ["--sb-on-primary-container" as string]: `color-mix(in srgb, ${theme.accent} 72%, ${theme.text})`,
+    ["--sb-on-primary-container" as string]: `color-mix(in srgb, ${theme.text} 85%, ${theme.accent})`,
     ["--sb-secondary" as string]: theme.accentSecondary,
-    ["--sb-on-secondary" as string]: theme.background,
+    ["--sb-on-secondary" as string]: contrastText(theme.accentSecondary),
     ["--sb-secondary-container" as string]: `color-mix(in srgb, ${theme.accentSecondary} 22%, ${theme.surfaceElevated})`,
-    ["--sb-on-secondary-container" as string]: `color-mix(in srgb, ${theme.accentSecondary} 70%, ${theme.text})`,
+    ["--sb-on-secondary-container" as string]: `color-mix(in srgb, ${theme.text} 85%, ${theme.accentSecondary})`,
     ["--sb-surface-dim" as string]: theme.background,
     ["--sb-surface-bright" as string]: theme.surfaceElevated,
-    ["--sb-surface-container-lowest" as string]: `color-mix(in srgb, ${theme.background} 88%, #000)`,
+    ["--sb-surface-container-lowest" as string]: `color-mix(in srgb, ${theme.background} 88%, ${contrastText(theme.background) === "#ffffff" ? "#000" : "#fff"})`,
     ["--sb-surface-container-low" as string]: theme.surface,
     ["--sb-surface-container" as string]: `color-mix(in srgb, ${theme.surfaceElevated} 55%, ${theme.surface})`,
     ["--sb-surface-container-high" as string]: theme.surfaceElevated,
@@ -216,6 +227,7 @@ export function LoadingState({ label = "Loading…" }: { label?: string }) {
 }
 
 export const THEME_PRESETS: VisualTheme[] = [
+  { ...DEFAULT_THEME },
   {
     id: "sb-midnight",
     name: "SB Midnight",
@@ -258,6 +270,8 @@ export const THEME_PRESETS: VisualTheme[] = [
   {
     id: "pulse-midnight",
     name: "Pulse Midnight",
+    iconColorMode: "custom",
+    iconColor: "#7c5cff",
     accent: "#7c5cff",
     accentSecondary: "#00d4ff",
     background: "#0b0d14",
@@ -351,6 +365,8 @@ export const THEME_PRESETS: VisualTheme[] = [
   {
     id: "arctic-glass",
     name: "Arctic Glass",
+    iconColorMode: "custom",
+    iconColor: "#4cc9f0",
     accent: "#4cc9f0",
     accentSecondary: "#80ffdb",
     background: "#081018",

@@ -72,7 +72,7 @@ public partial class MainWindow : Window
         UserDataPaths.MigrateLegacyData(AppContext.BaseDirectory, Log);
         UserDataPaths.HandleInstallUpgrade(AppContext.BaseDirectory, Log);
         Log($"MainWindow created. Base={AppContext.BaseDirectory}; Data={_dataDirectory}");
-        _singleInstance = new Mutex(true, @"Local\SBLauncher.Native.Singleton", out var createdNew);
+        _singleInstance = new Mutex(true, UserDataPaths.IsPrivateDemo ? @"Local\SBLauncher.Native.Demo.Singleton" : @"Local\SBLauncher.Native.Singleton", out var createdNew);
         _isSecondary = !createdNew;
         Log($"Single instance owner={createdNew}");
         CaptureProtocolToken(Environment.GetCommandLineArgs());
@@ -163,6 +163,8 @@ public partial class MainWindow : Window
         // Kill only SB Launcher node.exe leftovers; never touch unrelated software.
         if (await IsAnyApiRespondingAsync() && !await IsOurApiReadyAsync())
         {
+            if (UserDataPaths.IsPrivateDemo)
+                throw new InvalidOperationException("Close the regular SB Launcher before starting the private demo (port 8787 is busy).");
             if (TryKillStaleLauncherApiProcesses())
             {
                 for (var i = 0; i < 30 && await IsAnyApiRespondingAsync(); i++)
@@ -203,7 +205,7 @@ public partial class MainWindow : Window
         start.Environment["APP_URL"] = ApiOrigin;
         start.Environment["CORS_ORIGIN"] = AppOrigin;
         start.Environment["DATABASE_URL"] = $"file:{databasePath.Replace('\\', '/')}";
-        start.Environment["DESKTOP_PROTOCOL"] = "sblauncher";
+        start.Environment["DESKTOP_PROTOCOL"] = UserDataPaths.DesktopProtocol;
         start.Environment["SESSION_SECRET"] = hostConfig["sessionSecret"]!.GetValue<string>();
         start.Environment["TOKEN_ENCRYPTION_KEY"] = hostConfig["encryptionKey"]!.GetValue<string>();
         start.Environment["ROBLOX_CLIENT_ID"] = hostConfig["oauthClientId"]?.GetValue<string>() ?? "";
@@ -532,6 +534,7 @@ public partial class MainWindow : Window
                 _discordPresence?.SetBrowsing();
                 return JsonValue.Create(true);
             case "update:start":
+                if (UserDataPaths.IsPrivateDemo) throw new InvalidOperationException("Updates are disabled in the private demo.");
             {
                 if (_updater is null)
                     throw new InvalidOperationException("Updater is not ready yet.");
@@ -1481,7 +1484,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            using var key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\sblauncher");
+            using var key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\" + UserDataPaths.DesktopProtocol);
             key.SetValue("", "URL:SB Launcher Protocol");
             key.SetValue("URL Protocol", "");
             using var command = key.CreateSubKey(@"shell\open\command");
@@ -1496,7 +1499,7 @@ public partial class MainWindow : Window
     private void CaptureProtocolToken(IEnumerable<string> args)
     {
         var deepLink = args.FirstOrDefault(arg =>
-            arg.StartsWith("sblauncher://", StringComparison.OrdinalIgnoreCase));
+            arg.StartsWith(UserDataPaths.DesktopProtocol + "://", StringComparison.OrdinalIgnoreCase));
         if (deepLink is null || !Uri.TryCreate(deepLink, UriKind.Absolute, out var uri)) return;
         // Tokens are no longer accepted from the deep link (prevents session injection).
         // OAuth writes pending-auth.txt next to the DB; we only wake the primary window.

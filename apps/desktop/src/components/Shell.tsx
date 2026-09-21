@@ -8,8 +8,10 @@ import { authStartUrl } from "../lib/api";
 import sbLogo from "../assets/sb-logo.png";
 import { Home3D, Discover3D, Friends3D, Visuals3D, Settings3D, About3D } from "./Nav3DIcons";
 import { BoldDarkIcon } from "./BoldDarkIcon";
+import { MaterialSymbol } from "./MaterialSymbol";
 import { fadeUp, springSnappy, useMotionEnabled } from "../lib/motion";
 import { APP_VERSION } from "../lib/version";
+import { useLiquid } from "../lib/liquid";
 import {
   getProfileAvatarPreference,
   PROFILE_AVATAR_EVENT,
@@ -104,10 +106,30 @@ export function Shell({ children }: PropsWithChildren) {
   const [accountBusy, setAccountBusy] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
+  const searchLightRef = useRef<SVGSVGElement>(null);
+  useLayoutEffect(() => {
+    const svg = searchLightRef.current;
+    if (!svg) return;
+    // Use the actual height for circular end caps, never scale a fixed viewBox.
+    const updateRadius = (height: number) => {
+      const radius = String(Math.max(0, (height - 6) / 2));
+      svg.querySelectorAll("rect").forEach((rect) => {
+        rect.setAttribute("rx", radius);
+        rect.setAttribute("ry", radius);
+      });
+    };
+    updateRadius(svg.getBoundingClientRect().height);
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) updateRadius(entry.contentRect.height);
+    });
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, []);
   const [avatarPreference, setAvatarPreference] = useState<ProfileAvatarPreference>(
     getProfileAvatarPreference,
   );
   const motionEnabled = useMotionEnabled(theme);
+  const liquid = useLiquid(s => s.settings);
   const profileAvatar = resolveProfileAvatar(session?.user?.avatarUrl, avatarPreference);
   const accounts = session?.accounts ?? [];
   const activeUserId = session?.activeUserId ?? session?.user?.id ?? null;
@@ -294,7 +316,25 @@ export function Shell({ children }: PropsWithChildren) {
             >
               {({ isActive }) => (
                 <>
-                  {isActive ? <span className="nav-pill nav-pill-liquid" /> : null}
+                  {isActive ? (
+                    motionEnabled && (!liquid.enabled || liquid.animate) ? (
+                      <motion.span
+                        layoutId="nav-pill-liquid"
+                        layout
+                        initial={false}
+                        className="nav-pill nav-pill-liquid"
+                        transition={{
+                          type: "spring",
+                          stiffness: 500 * (320 / liquid.duration) ** 2,
+                          damping: 38 * (320 / liquid.duration),
+                          mass: 0.8,
+                        }}
+                        style={{ willChange: "transform" }}
+                      />
+                    ) : (
+                      <span className="nav-pill nav-pill-liquid" />
+                    )
+                  ) : null}
                   {link.icon}
                   <span className="nav-label">{link.label}</span>
                 </>
@@ -422,9 +462,9 @@ export function Shell({ children }: PropsWithChildren) {
       <div className={mainClasses} ref={mainRef}>
         <header className="topbar">
           <form className="search m3-search" data-search-active={query.trim() ? "true" : undefined} onSubmit={onSearch}>
-            <svg className="search-edge-light" viewBox="0 0 1000 64" preserveAspectRatio="none" aria-hidden>
+            <svg ref={searchLightRef} className="search-edge-light" aria-hidden>
               <defs>
-                <linearGradient id="search-edge-theme" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1000" y2="64">
+                <linearGradient id="search-edge-theme" x1="0" y1="0" x2="1" y2="1">
                   <stop offset="0" stopColor="var(--sb-primary)" />
                   <stop offset="0.24" stopColor="var(--sb-accent-secondary)" />
                   <stop offset="0.5" stopColor="var(--sb-secondary)" />
@@ -433,29 +473,17 @@ export function Shell({ children }: PropsWithChildren) {
                   <animateTransform
                     attributeName="gradientTransform"
                     type="rotate"
-                    from="0 500 32"
-                    to="360 500 32"
+                    from="0 .5 .5"
+                    to="360 .5 .5"
                     dur="5.5s"
                     repeatCount="indefinite"
                   />
                 </linearGradient>
               </defs>
-              <rect className="search-edge-glow" x="3" y="3" width="994" height="58" rx="29" pathLength="100" />
-              <rect className="search-edge-base" x="3" y="3" width="994" height="58" rx="29" pathLength="100" />
+              <rect className="search-edge-glow" x="3" y="3" width="calc(100% - 6px)" height="calc(100% - 6px)" rx="29" ry="29" pathLength="100" />
+              <rect className="search-edge-base" x="3" y="3" width="calc(100% - 6px)" height="calc(100% - 6px)" rx="29" ry="29" pathLength="100" />
             </svg>
-            <svg
-              className="m3-search-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-3.5-3.5" />
-            </svg>
+            <MaterialSymbol name="search" size={22} className="m3-search-icon" />
             <input
               className="sb-input m3-search-input"
               placeholder="Search experiences and people…"

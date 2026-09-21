@@ -97,13 +97,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "3.4.2",
-  buildId: "20260918184101",
+  version: "3.5.0",
+  buildId: "20260921170153",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 3.4.2 — Visual polish & reliability\n\n- Soft circulating theme-color edge light around search\n- Stable preset editing and clearer textured glass controls\n- More resilient launch, discovery, private server, and local API behavior\n- Redesigned public website with customization previews",
-  title: "SB Launcher 3.4.2",
-  publishedAt: "2026-09-18T11:41:01.000Z",
+    "SB Launcher 3.5.0 — Material You & unified glass\n\n- Material You is now the default design with official locally bundled Material Symbols\n- Frosted and Liquid Glass share one settings section and draggable preview\n- Frosted supports Material You or Liquid Glass controls\n- Liquid Glass reuses refraction maps and skips offscreen backdrop work\n- Arctic Glass and Pulse Midnight use theme-colored icons",
+  title: "SB Launcher 3.5.0",
+  publishedAt: "09/21/2026 10:01:53",
 };
 
 function parseSemver(v: string): [number, number, number] | null {

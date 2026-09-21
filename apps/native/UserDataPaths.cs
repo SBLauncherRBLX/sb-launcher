@@ -7,9 +7,11 @@ namespace SBLauncher.Native;
 public static class UserDataPaths
 {
     public const string AppFolderName = "SB Launcher";
+    public static bool IsPrivateDemo => File.Exists(Path.Combine(AppContext.BaseDirectory, "private-demo.flag"));
+    public static string DesktopProtocol => IsPrivateDemo ? "sblauncher-demo" : "sblauncher";
 
     public static string Root =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppFolderName);
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), IsPrivateDemo ? "SB Launcher 3.4.3 Demo" : AppFolderName);
 
     public static string DatabasePath => Path.Combine(Root, "sb-launcher.db");
     public static string LocalPrefsPath => Path.Combine(Root, "local-prefs.json");
@@ -233,6 +235,7 @@ public static class UserDataPaths
     {
         var migrated = new List<string>();
         EnsureDirectories();
+        if (IsPrivateDemo) return migrated;
 
         var legacyFiles = new (string Source, string Target)[]
         {

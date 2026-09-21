@@ -1,6 +1,10 @@
-SB Launcher 3.4.2 — Visual polish & reliability
+SB Launcher 3.5.0 — Material You & unified glass
 
-- Search now uses a soft circulating theme-color edge light with no pillars or protruding shapes.
-- Visual preset editing stays inside its card, while textured glass controls are grouped into one clearer section.
-- Home loading, Roblox launch handling, discovery, private servers, and local API boundaries are more resilient.
-- The public website has been redesigned with richer customization previews and clearer product information.
+- Material You is now the default design with official locally bundled Material Symbols.
+- Frosted and Liquid Glass share one settings section and draggable live preview.
+- Frosted supports Material You or Liquid Glass buttons, switches, and sliders.
+- Liquid Glass reuses refraction maps and skips backdrop processing for offscreen surfaces.
+- Arctic Glass and Pulse Midnight now use theme-colored icons.
+- Search Visuals and game settings with automatically expanded matching sections.
+- Corrected responsive search lighting, centered switch checkmarks, and symmetric input corners.
+- About shows the major release and exactly three latest updates.

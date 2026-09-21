@@ -1,5 +1,8 @@
 #define MyAppName "SB Launcher"
-#define MyAppVersion "3.4.2"
+#define MyAppVersion "3.5.0"
+#ifndef MyAppSource
+  #define MyAppSource "..\release\native"
+#endif
 #define MyAppPublisher "SB Launcher"
 #define MyAppExeName "SB Launcher.exe"
 
@@ -39,7 +42,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
-Source: "..\release\native\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
+Source: "{#MyAppSource}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"

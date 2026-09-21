@@ -8,7 +8,7 @@ import {
 
 describe("contracts", () => {
   it("validates default theme", () => {
-    expect(VisualThemeSchema.parse(DEFAULT_THEME).id).toBe("sb-midnight");
+    expect(VisualThemeSchema.parse(DEFAULT_THEME).id).toBe("material-you");
   });
 
   it("builds roblox deep links", () => {
