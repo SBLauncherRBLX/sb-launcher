@@ -103,7 +103,7 @@ const SHIPPED_UPDATE: UpdateManifest = {
   notes:
     "SB Launcher 3.5.0 — Material You & unified glass\n\n- Material You is now the default design with official locally bundled Material Symbols\n- Frosted and Liquid Glass share one settings section and draggable preview\n- Frosted supports Material You or Liquid Glass controls\n- Liquid Glass reuses refraction maps and skips offscreen backdrop work\n- Arctic Glass and Pulse Midnight use theme-colored icons",
   title: "SB Launcher 3.5.0",
-  publishedAt: "09/21/2026 10:01:53",
+  publishedAt: "2026-09-21T10:01:53.3834661Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {
