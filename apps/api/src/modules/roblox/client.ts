@@ -11,7 +11,7 @@ import type {
   UserSearchResult,
   Avatar3DModel,
 } from "@sb/contracts";
-import { DEFAULT_CAPABILITIES } from "@sb/contracts";
+import { DEFAULT_CAPABILITIES, FavoritesIslandSchema } from "@sb/contracts";
 import { cacheGet, cacheSet } from "../../lib/cache.js";
 import { fetchJson, RobloxApiError, sleep } from "../../lib/http.js";
 import { fetchLauncherPresenceBatch, fetchPlayersBatchRemote } from "../sbCloud.js";
@@ -837,6 +837,7 @@ export async function getUserProfileDetails(
     launcherAvatarMode: "roblox",
     launcherAvatarUrl: null,
     launcherBanner: null,
+    favoritesIsland: FavoritesIslandSchema.parse({}),
     favoriteGames: [],
     games,
   };

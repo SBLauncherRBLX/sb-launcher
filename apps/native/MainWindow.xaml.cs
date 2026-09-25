@@ -128,6 +128,7 @@ public partial class MainWindow : Window
 
     private void StartSplashMarkSnake()
     {
+        if (!SystemParameters.ClientAreaAnimation) return;
         _splashMarkSnake ??= (Storyboard)FindResource("SplashMarkSnakeStoryboard");
         _splashMarkSnake.Begin(this, true);
     }
@@ -390,8 +391,6 @@ public partial class MainWindow : Window
                 StartupProgress.Visibility = Visibility.Collapsed;
                 return;
             }
-            Browser.Visibility = Visibility.Visible;
-            HideSplash();
             SendPendingAuthToken();
         };
 
@@ -474,6 +473,9 @@ public partial class MainWindow : Window
     {
         switch (method)
         {
+            case "startup:ready":
+                await (_startupRevealTask ??= HideSplashAsync());
+                return null;
             case "prefs:get":
                 return LoadJsonObject(UserDataPaths.LocalPrefsPath);
             case "prefs:set":
@@ -1705,6 +1707,13 @@ public partial class MainWindow : Window
             var textBrush = (SolidColorBrush)new BrushConverter().ConvertFromString(textHex)!;
             var accent = (Color)ColorConverter.ConvertFromString(accentHex);
             TitleBar.Background = backgroundBrush;
+            Background = backgroundBrush;
+            // WebView2 paints this surface before its first composited HTML frame.
+            // Set it before initialization too, so revealing the controller never
+            // exposes the default white background between splash and content.
+            var browserBackground = backgroundBrush.Color;
+            Browser.DefaultBackgroundColor = System.Drawing.Color.FromArgb(
+                255, browserBackground.R, browserBackground.G, browserBackground.B);
             TitleBarText.Foreground = textBrush;
             MinimizeButton.Foreground = textBrush;
             MaximizeButton.Foreground = textBrush;
@@ -1827,29 +1836,9 @@ public partial class MainWindow : Window
             if (Splash is not null)
                 Splash.Background = new SolidColorBrush(background);
 
-            ApplySplashWallpaper(
-                wallpaperId,
-                background,
-                wallpaperOpacity ?? 0.55,
-                wallpaperDim ?? 0.45,
-                wallpaperBlur ?? 0);
-
-            if (SplashGlow is not null)
-            {
-                SplashGlow.Background = new RadialGradientBrush
-                {
-                    Center = new Point(0.5, 0.32),
-                    GradientOrigin = new Point(0.5, 0.28),
-                    RadiusX = 0.72,
-                    RadiusY = 0.55,
-                    GradientStops =
-                    [
-                        new GradientStop(Color.FromArgb(0x66, accent.R, accent.G, accent.B), 0),
-                        new GradientStop(Color.FromArgb(0x28, secondary.R, secondary.G, secondary.B), 0.45),
-                        new GradientStop(Color.FromArgb(0, 0, 0, 0), 1),
-                    ],
-                };
-            }
+            SplashWallpaper.Visibility = Visibility.Collapsed;
+            SplashDim.Visibility = Visibility.Collapsed;
+            SplashGlow.Visibility = Visibility.Collapsed;
 
             if (LogoTrack is not null)
             {
@@ -2061,6 +2050,7 @@ public partial class MainWindow : Window
     set('--sb-secondary', '{{secondary}}');
     set('--sb-accent-secondary', '{{secondary}}');
     set('--sb-bg', '{{background}}');
+    r.style.backgroundColor = 'var(--sb-bg, {{background}})';
     set('--sb-surface', '{{surface}}');
     set('--sb-surface-dim', '{{background}}');
     set('--sb-text', '{{text}}');
@@ -2165,21 +2155,33 @@ public partial class MainWindow : Window
         return (0.299 * r + 0.587 * g + 0.114 * b) < 140;
     }
 
-    private void HideSplash()
+    private Task? _startupRevealTask;
+
+    private async Task HideSplashAsync()
     {
-        StopSplashMarkSnake();
         if (!SystemParameters.ClientAreaAnimation)
         {
+            StopSplashMarkSnake();
+            Browser.Visibility = Visibility.Visible;
             Splash.Visibility = Visibility.Collapsed;
             return;
         }
 
-        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(320))
+        // Fade the native indicator in place. The desktop web overlay contains
+        // only the same solid background, so WebView2 cannot briefly lay out a
+        // second copy of the mark in the corner while becoming visible.
+        var completion = new TaskCompletionSource<bool>();
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(420))
         {
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
         };
-        fade.Completed += (_, _) => Splash.Visibility = Visibility.Collapsed;
-        Splash.BeginAnimation(OpacityProperty, fade);
+        fade.Completed += (_, _) => completion.TrySetResult(true);
+        StartupContent.BeginAnimation(OpacityProperty, fade);
+        await completion.Task;
+        StopSplashMarkSnake();
+        Browser.Visibility = Visibility.Visible;
+        Splash.Visibility = Visibility.Collapsed;
+        await Task.Delay(34);
     }
 
     private object? PickCustomWallpaper()
@@ -2387,6 +2389,7 @@ public partial class MainWindow : Window
   });
 
   window.sbDesktop = {
+    finishStartup: () => call('startup:ready'),
     getPrefs: () => call('prefs:get'),
     setPrefs: patch => call('prefs:set', patch),
     openExternal: url => call('shell:openExternal', url),

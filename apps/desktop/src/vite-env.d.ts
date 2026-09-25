@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 type SbDesktopApi = {
+  finishStartup?: () => Promise<unknown>;
   getPrefs: () => Promise<Record<string, unknown>>;
   setPrefs: (patch: Record<string, unknown>) => Promise<Record<string, unknown>>;
   openExternal: (url: string) => Promise<boolean>;

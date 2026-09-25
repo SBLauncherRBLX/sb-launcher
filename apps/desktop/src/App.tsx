@@ -4,7 +4,7 @@ import { themeToCssVars } from "@sb/ui";
 import { normalizeTheme } from "@sb/contracts";
 import { Shell } from "./components/Shell";
 import { BackgroundScene } from "./components/BackgroundScene";
-import { BootSplash } from "./components/BootSplash";
+import { StartupExperience } from "./components/StartupExperience";
 import { useAppStore } from "./store";
 import { api } from "./lib/api";
 import { HomePage } from "./pages/HomePage";
@@ -118,11 +118,8 @@ export default function App() {
     root.dataset.reveal = "false";
   }, [cssVars, normalizedTheme]);
 
-  if (!ready) {
-    return <BootSplash theme={normalizedTheme} label="Starting SB Launcher…" />;
-  }
-
   return (
+    <StartupExperience>{ready &&
     <div
       style={cssVars}
       className={`app-root density-${normalizedTheme.density} motion-${normalizedTheme.motionIntensity ?? "medium"} button-style-${normalizedTheme.buttonStyle ?? "gradient"} card-style-${normalizedTheme.cardStyle ?? "glass"} nav-pill-${normalizedTheme.layout?.navPillStyle ?? "material"}`}
@@ -135,6 +132,7 @@ export default function App() {
       <Shell>
         <AnimatedRoutes key={activeUserId} />
       </Shell>
-    </div>
+    </div>}
+    </StartupExperience>
   );
 }

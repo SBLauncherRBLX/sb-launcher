@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { VisualTheme } from "@sb/contracts";
 import { getWallpaperUrl } from "../assets/wallpapers";
 import { ParticleField } from "./ParticleField";
+import { SymbolField } from "./SymbolField";
 
 type CustomWallpaperEntry = { id: string; url: string };
 
@@ -80,6 +81,7 @@ export function BackgroundScene({ theme }: { theme: VisualTheme }) {
       {theme.effects?.noise ? <div className="background-noise" /> : null}
       {theme.effects?.vignette ? <div className="background-vignette" /> : null}
       {theme.effects?.particles ? <ParticleField theme={theme} /> : null}
+      {theme.effects?.symbolField ? <SymbolField theme={theme} /> : null}
     </div>
   );
 }

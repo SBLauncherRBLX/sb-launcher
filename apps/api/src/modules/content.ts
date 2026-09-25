@@ -91,7 +91,7 @@ export async function registerContentRoutes(app: FastifyInstance) {
         catch { return reply.code(401).send({error:"Your Roblox connection expired. Reconnect Roblox to use Rooms.",code:"ROBLOX_RECONNECT"}); }
       }
       if(result.status===401)return reply.code(401).send({error:"Roblox could not verify your connection. Reconnect Roblox to use Rooms.",code:"ROBLOX_RECONNECT"});
-      if (result.status === 404) return reply.code(503).send({ error: "Community service is not deployed yet. Your local library is available." });
+      if (result.status === 404 && !body.data.action.startsWith("profiles.")) return reply.code(503).send({ error: "Community service is not deployed yet. Your local library is available." });
       const payload = await result.json();
       return reply.code(result.status).send(payload);
     } catch { return reply.code(503).send({ error: "Community service is unavailable. Please try again." }); }

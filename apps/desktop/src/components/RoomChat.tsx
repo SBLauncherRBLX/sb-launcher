@@ -10,6 +10,8 @@ export function RoomChat({ code, userId }: { code: string; userId: string }) {
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [open, setOpen] = useState(true);
+  const [role, setRole] = useState<"admin" | "moderator" | "member">("member");
   const [unread, setUnread] = useState(false);
   const list = useRef<HTMLDivElement>(null);
   const nearBottom = useRef(true);
@@ -19,10 +21,14 @@ export function RoomChat({ code, userId }: { code: string; userId: string }) {
   const pending = useRef<{ id: string; text: string } | null>(null);
 
   useEffect(() => {
+    void community<{ role: "admin" | "moderator" | "member" }>("roles.me", {}).then(result => setRole(result.role)).catch(() => setRole("member"));
+  }, [userId]);
+
+  useEffect(() => {
     alive.current = true;
     let live = true, polling = false;
     async function poll() {
-      if (!live || polling || busy.current || document.visibilityState === "hidden") return;
+      if (!live || !open || polling || busy.current || document.visibilityState === "hidden") return;
       polling = true;
       const current = version.current;
       try {
@@ -44,7 +50,7 @@ export function RoomChat({ code, userId }: { code: string; userId: string }) {
       window.removeEventListener("focus", wake);
       document.removeEventListener("visibilitychange", wake);
     };
-  }, [code]);
+  }, [code, open]);
 
   const lastId = items.at(-1)?.id;
   useEffect(() => {
@@ -68,7 +74,8 @@ export function RoomChat({ code, userId }: { code: string; userId: string }) {
   }
 
   return <section className="sb-card content-panel room-chat" aria-label="Room chat">
-    <div className="content-heading"><h3>Room chat</h3><span className="room-pill">Members only</span></div>
+    <div className="content-heading"><h3>Room chat</h3><div className="row-actions"><span className="room-pill">Members only</span><Button variant="ghost" type="button" aria-expanded={open} aria-controls="room-chat-content" onClick={() => setOpen(value => !value)}>{open ? "Close chat" : "Open chat"}</Button></div></div>
+    {open && <div id="room-chat-content">
     <p className="sb-muted room-caption">Plan your next game together. Last {ROOM_CHAT_LIMIT} messages are kept.</p>
     <div ref={list} className="room-chat-messages" role="log" aria-label="Messages" aria-live="polite" aria-relevant="additions" onScroll={() => {
       const el = list.current; if (!el) return;
@@ -77,7 +84,7 @@ export function RoomChat({ code, userId }: { code: string; userId: string }) {
     }}>
       {!items.length && <div className="room-chat-empty"><strong>{loaded ? "Start the conversation" : "Connecting to chat…"}</strong><p>{loaded ? "Say hello or suggest what to play." : "Messages refresh automatically."}</p></div>}
       {items.map(item => <article key={`${item.authorId}:${item.id}`} className={`room-message${item.authorId === userId ? " is-mine" : ""}`}>
-        <header><strong>{item.authorId === userId ? "You" : item.authorName}</strong><time dateTime={new Date(item.createdAt).toISOString()} title={new Date(item.createdAt).toLocaleString()}>{new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time></header>
+        <header><strong>{item.authorId === userId ? "You" : item.authorName}</strong><time dateTime={new Date(item.createdAt).toISOString()} title={new Date(item.createdAt).toLocaleString()}>{new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>{role !== "member" && <button type="button" className="room-message-remove" aria-label={`Remove message from ${item.authorName}`} onClick={() => void community<{ items: RoomMessage[] }>("rooms.message.delete", { code, id: item.id }).then(result => setItems(result.items)).catch(e => setError(message(e)))}>Remove</button>}</header>
         <p>{item.text}</p>
       </article>)}
     </div>
@@ -89,5 +96,6 @@ export function RoomChat({ code, userId }: { code: string; userId: string }) {
       }}/>
       <div className="content-heading"><small className="sb-muted">{draft.length}/{ROOM_MESSAGE_LENGTH} · Shift+Enter for a new line</small><Button disabled={sending || !draft.trim()}>{sending ? "Sending…" : "Send"}</Button></div>
     </form>
+    </div>}
   </section>;
 }

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { useParams } from "react-router-dom";
-import type { UserProfileDetails } from "@sb/contracts";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { Link, useParams } from "react-router-dom";
+import { FavoritesIslandSchema, type FavoritesIsland, type UserProfileDetails } from "@sb/contracts";
 import { Badge, Button, EmptyState, LoadingState } from "@sb/ui";
 import { api } from "../lib/api";
 import { GameCard, formatCount } from "../components/GameCard";
@@ -32,6 +32,25 @@ import {
 type BannerState = ProfileBannerPreference;
 
 const defaultBanner = defaultProfileBanner;
+
+function savedFavoriteIconSize(userId: string): number | null {
+  try {
+    const size = Number(localStorage.getItem(`sb-favorite-icon-size-v1:${userId}`));
+    return Number.isFinite(size) && size >= 24 && size <= 128 ? size : null;
+  } catch {
+    return null;
+  }
+}
+
+function savedFavoriteLayout(userId: string): Partial<FavoritesIsland> | null {
+  try {
+    const value = JSON.parse(localStorage.getItem(`sb-favorite-layout-v1:${userId}`) || "null");
+    if (!value || typeof value !== "object") return null;
+    const parsed = FavoritesIslandSchema.parse(value);
+    return { layout: parsed.layout, columns: parsed.columns, freeWidth: parsed.freeWidth,
+      freeHeight: parsed.freeHeight, iconPositions: parsed.iconPositions };
+  } catch { return null; }
+}
 
 function bannerFromLauncher(
   b: UserProfileDetails["launcherBanner"] | null | undefined,
@@ -129,6 +148,8 @@ export function UserProfilePage() {
   const [badge, setBadge] = useState<NickBadgePreference>({ mode: "launcher", customUrl: "" });
   const [avatar, setAvatar] = useState<ProfileAvatarPreference>({ mode: "roblox", customUrl: "" });
   const [banner, setBanner] = useState<BannerState>(defaultBanner);
+  const [favoritesIsland, setFavoritesIsland] = useState<FavoritesIsland>(() => FavoritesIslandSchema.parse({}));
+  const draggingFavorite = useRef<{ id: string; pointerId: number } | null>(null);
   const [textTone, setTextTone] = useState<ProfileTextTone>("light");
   const [avatarFallbackIndex, setAvatarFallbackIndex] = useState(0);
 
@@ -147,7 +168,17 @@ export function UserProfilePage() {
       .userProfile(userId)
       .then((data) => {
         if (cancelled) return;
-        setProfile(data);
+        const ownId = useAppStore.getState().session?.user?.id ?? "";
+        const own = String(ownId) === String(data.id);
+        const cloudIsland = FavoritesIslandSchema.parse(data.favoritesIsland ?? {});
+        const localIconSize = own ? savedFavoriteIconSize(data.id) : null;
+        const localLayout = own ? savedFavoriteLayout(data.id) : null;
+        const islandWithLayout = localLayout && cloudIsland.layout === "row" && localLayout.layout !== "row"
+          ? { ...cloudIsland, ...localLayout } : cloudIsland;
+        const island = localIconSize && localIconSize > 64 && islandWithLayout.iconSize <= 64
+          ? { ...islandWithLayout, iconSize: localIconSize }
+          : islandWithLayout;
+        setProfile({ ...data, favoritesIsland: island });
         setAvatarFallbackIndex(0);
         setBadge({
           mode: data.launcherBadgeMode ?? "launcher",
@@ -158,8 +189,6 @@ export function UserProfilePage() {
           customUrl: data.launcherAvatarUrl ?? "",
         });
         const fromCloud = bannerFromLauncher(data.launcherBanner);
-        const ownId = useAppStore.getState().session?.user?.id ?? "";
-        const own = String(ownId) === String(data.id);
         if (own) {
           saveProfileAvatarPreference({
             mode: data.launcherAvatarMode === "custom" ? "custom" : "roblox",
@@ -176,6 +205,7 @@ export function UserProfilePage() {
           });
         }
         setBanner(own ? resolveOwnBanner(data.id, fromCloud) : fromCloud);
+        setFavoritesIsland(island);
         setError(null);
       })
       .catch((reason) => {
@@ -211,6 +241,7 @@ export function UserProfilePage() {
             launcherAvatarMode: "roblox",
             launcherAvatarUrl: null,
             launcherBanner: null,
+            favoritesIsland: FavoritesIslandSchema.parse({}),
             favoriteGames: [],
             games: [],
           });
@@ -310,10 +341,30 @@ export function UserProfilePage() {
   // Using raw profile.launcherBanner for guests caused height/fit mismatches → "half banner".
   const bannerView = banner.mode === "off" ? null : bannerToLauncher(banner);
   const bannerHeight = Math.min(480, Math.max(160, bannerView?.height ?? 280));
+  const showFavoritesIsland = favoritesIsland.visible && (isOwnProfile || Boolean(profile.favoriteGames?.length));
+  const favoriteCount = Math.min(profile.favoriteGames?.length ?? 0, 8);
+  const columnHeight = favoriteCount * favoritesIsland.iconSize
+    + Math.max(0, favoriteCount - 1) * favoritesIsland.gap
+    + (favoritesIsland.showHeading ? 42 : 24) + favoritesIsland.offsetY * 2;
+  const columnFitsBanner = favoritesIsland.layout === "column" && columnHeight <= 640 && favoritesIsland.iconSize < 88;
+  const renderedBannerHeight = columnFitsBanner ? Math.max(bannerHeight, columnHeight) : bannerHeight;
+  const favoritesBelow = favoritesIsland.iconSize >= 88 || favoritesIsland.layout === "free"
+    || (favoritesIsland.layout === "column" && !columnFitsBanner);
+
+  function moveFavorite(event: ReactPointerEvent<HTMLAnchorElement>, id: string) {
+    if (draggingFavorite.current?.id !== id || draggingFavorite.current.pointerId !== event.pointerId) return;
+    const area = event.currentTarget.parentElement?.getBoundingClientRect();
+    if (!area) return;
+    const usableWidth = Math.max(1, area.width - favoritesIsland.iconSize);
+    const usableHeight = Math.max(1, area.height - favoritesIsland.iconSize);
+    const x = Math.max(0, Math.min(1, (event.clientX - area.left - favoritesIsland.iconSize / 2) / usableWidth));
+    const y = Math.max(0, Math.min(1, (event.clientY - area.top - favoritesIsland.iconSize / 2) / usableHeight));
+    setFavoritesIsland(current => ({ ...current, iconPositions: { ...current.iconPositions, [id]: { x, y } } }));
+  }
   const heroStyle =
     bannerView
       ? ({
-          ["--profile-banner-height" as string]: `${bannerHeight}px`,
+          ["--profile-banner-height" as string]: `${renderedBannerHeight}px`,
           ["--profile-banner-blur" as string]: `${bannerView.blur ?? 0}px`,
         } as CSSProperties)
       : undefined;
@@ -342,6 +393,11 @@ export function UserProfilePage() {
     const badgeSnapshot = { ...badge };
     const avatarSnapshot = { ...avatar };
     const bannerSnapshot = { ...banner };
+    const islandSnapshot = { ...favoritesIsland };
+    if (isOwnProfile) {
+      try { localStorage.setItem(`sb-favorite-icon-size-v1:${userId}`, String(islandSnapshot.iconSize)); } catch { /* Cloud save still works. */ }
+      try { localStorage.setItem(`sb-favorite-layout-v1:${userId}`, JSON.stringify(islandSnapshot)); } catch { /* Cloud save still works. */ }
+    }
 
     if (
       avatarSnapshot.mode === "custom" &&
@@ -383,6 +439,7 @@ export function UserProfilePage() {
                 ? avatarSnapshot.customUrl.trim() || null
                 : null,
             launcherBanner: nextBanner,
+            favoritesIsland: islandSnapshot,
           }
         : prev,
     );
@@ -416,13 +473,16 @@ export function UserProfilePage() {
           muted: nextBanner.muted,
           loop: nextBanner.loop,
         },
+        favoritesIsland: islandSnapshot,
       };
       await api.saveProfileCosmetics(cosmetics);
-      // Keep local banner as source of truth — do not echo possibly-stale cloud payload.
       setMessage("Profile look saved for everyone in SB Launcher.");
       setEditorOpen(false);
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Could not save profile look.");
+    } catch {
+      // Cloud is only for sharing with others — local optimistic save already succeeded.
+      // Any cloud failure (quota, network, 503) should not look like an error.
+      setMessage("Saved locally — will sync to cloud when it is available.");
+      setEditorOpen(false);
     } finally {
       setSaving(false);
     }
@@ -452,7 +512,7 @@ export function UserProfilePage() {
       {message ? <div className="notice">{message}</div> : null}
 
       <section
-        className={`sb-card profile-hero${bannerView && bannerView.mode !== "off" ? ` profile-hero--tone-${textTone}` : ""}`}
+        className={`sb-card profile-hero${bannerView && bannerView.mode !== "off" ? ` profile-hero--tone-${textTone}` : ""}${showFavoritesIsland ? " has-favorites" : ""}${showFavoritesIsland && favoritesBelow ? " favorites-below" : ""}`}
         style={heroStyle}
         data-text-tone={bannerView && bannerView.mode !== "off" ? textTone : undefined}
       >
@@ -500,9 +560,11 @@ export function UserProfilePage() {
           </div>
         ) : null}
 
-        <div className="profile-avatar-large">
+        <div className={`profile-avatar-large${profile.launcherAvatarMode === "custom" && profile.fullBodyAvatarUrl ? " has-skin-hover" : ""}`}>
+          {profile.launcherAvatarMode === "custom" && profile.fullBodyAvatarUrl ? <img className="profile-hover-skin" src={profile.fullBodyAvatarUrl} alt="" aria-hidden="true" /> : null}
           {displayAvatar ? (
             <img
+              className="profile-avatar-photo"
               key={displayAvatar}
               src={displayAvatar}
               alt={profile.displayName}
@@ -516,6 +578,43 @@ export function UserProfilePage() {
             <span>{profile.displayName.slice(0, 1).toUpperCase()}</span>
           )}
         </div>
+        {showFavoritesIsland ? <div
+          className={`profile-hero-favorites is-${favoritesIsland.surface} at-${favoritesIsland.position} layout-${favoritesIsland.layout}${favoritesIsland.border ? " has-border" : ""}${isOwnProfile && editorOpen && favoritesIsland.layout === "free" ? " is-editing" : ""}`}
+          aria-label="Favorite games"
+          style={{
+            ["--favorites-color" as string]: favoritesIsland.color,
+            ["--favorites-opacity" as string]: `${favoritesIsland.opacity * 100}%`,
+            ["--favorites-blur" as string]: `${favoritesIsland.blur}px`,
+            ["--favorites-radius" as string]: `${favoritesIsland.radius}px`,
+            ["--favorites-icon" as string]: `${favoritesIsland.iconSize}px`,
+            ["--favorites-gap" as string]: `${favoritesIsland.gap}px`,
+            ["--favorites-columns" as string]: favoritesIsland.columns,
+            ["--favorites-free-width" as string]: `${favoritesIsland.freeWidth}px`,
+            ["--favorites-free-height" as string]: `${favoritesIsland.freeHeight}px`,
+            ["--favorites-offset-x" as string]: `${favoritesIsland.offsetX}px`,
+            ["--favorites-offset-y" as string]: `${favoritesIsland.offsetY}px`,
+          } as CSSProperties}
+        >
+          {favoritesIsland.showHeading && <div className="profile-favorites-heading"><strong>Favorite games</strong></div>}
+          <div className="profile-favorites-icons">{profile.favoriteGames?.slice(0, 8).map((game, index) => {
+            const point = favoritesIsland.iconPositions[game.universeId] ?? {
+              x: (index % 4) / 3, y: Math.floor(index / 4),
+            };
+            const canDrag = isOwnProfile && editorOpen && favoritesIsland.layout === "free";
+            return <Link key={game.universeId} to={`/game/${game.universeId}`} title={game.name} aria-label={game.name}
+              style={favoritesIsland.layout === "free" ? {
+                left: `calc(${point.x * 100}% - ${point.x * favoritesIsland.iconSize}px)`,
+                top: `calc(${point.y * 100}% - ${point.y * favoritesIsland.iconSize}px)`,
+              } : undefined}
+              onClick={event => { if (canDrag) event.preventDefault(); }}
+              onPointerDown={event => { if (!canDrag) return; event.preventDefault(); draggingFavorite.current = { id: game.universeId, pointerId: event.pointerId }; event.currentTarget.setPointerCapture(event.pointerId); }}
+              onPointerMove={event => { if (canDrag) moveFavorite(event, game.universeId); }}
+              onPointerUp={event => { if (draggingFavorite.current?.pointerId === event.pointerId) draggingFavorite.current = null; }}
+              onPointerCancel={() => { draggingFavorite.current = null; }}>
+              {game.iconUrl ? <img src={game.iconUrl} alt="" loading="lazy" /> : <span aria-hidden="true">★</span>}
+            </Link>;
+          })}</div>
+        </div> : null}
         <div className="profile-hero-content">
           <div className="profile-name-row">
             <h2 className="profile-display-name">
@@ -930,6 +1029,31 @@ export function UserProfilePage() {
             ) : null}
           </div>
 
+          <div className="profile-island-editor">
+            <div><h4>Favorite games island</h4><p className="sb-muted">Preview changes on the banner above. Game names appear only on hover.</p></div>
+            <Button variant="secondary" disabled={saving} onClick={() => void syncFavoritesToProfile()}>Sync favorite games</Button>
+            <div className="form-grid">
+              <label className="checkbox-row"><input type="checkbox" checked={favoritesIsland.visible} onChange={e => setFavoritesIsland(v => ({ ...v, visible: e.target.checked }))} /> Show island</label>
+              <label className="checkbox-row"><input type="checkbox" checked={favoritesIsland.showHeading} onChange={e => setFavoritesIsland(v => ({ ...v, showHeading: e.target.checked }))} /> Show heading</label>
+              <label className="checkbox-row"><input type="checkbox" checked={favoritesIsland.border} onChange={e => setFavoritesIsland(v => ({ ...v, border: e.target.checked }))} /> Show border</label>
+              <label>Position<select className="sb-input" value={favoritesIsland.position} onChange={e => setFavoritesIsland(v => ({ ...v, position: e.target.value as FavoritesIsland["position"] }))}><option value="top-right">Top right</option><option value="top-left">Top left</option><option value="bottom-right">Bottom right</option><option value="bottom-left">Bottom left</option></select></label>
+              <label>Surface<select className="sb-input" value={favoritesIsland.surface} onChange={e => setFavoritesIsland(v => ({ ...v, surface: e.target.value as FavoritesIsland["surface"] }))}><option value="glass">Glass</option><option value="solid">Solid</option><option value="transparent">Transparent</option></select></label>
+              <label>Surface color<input className="sb-input" type="color" value={favoritesIsland.color} onChange={e => setFavoritesIsland(v => ({ ...v, color: e.target.value }))} /></label>
+              <label>Opacity ({Math.round(favoritesIsland.opacity * 100)}%)<input className="sb-input" type="range" min="0" max="100" value={Math.round(favoritesIsland.opacity * 100)} onChange={e => setFavoritesIsland(v => ({ ...v, opacity: Number(e.target.value) / 100 }))} /></label>
+              <label>Glass blur ({favoritesIsland.blur}px)<input className="sb-input" type="range" min="0" max="30" value={favoritesIsland.blur} onChange={e => setFavoritesIsland(v => ({ ...v, blur: Number(e.target.value) }))} /></label>
+              <label>Corner radius ({favoritesIsland.radius}px)<input className="sb-input" type="range" min="0" max="32" value={favoritesIsland.radius} onChange={e => setFavoritesIsland(v => ({ ...v, radius: Number(e.target.value) }))} /></label>
+              <label>Icon size ({favoritesIsland.iconSize}px)<input className="sb-input" type="range" min="24" max="128" value={favoritesIsland.iconSize} onChange={e => setFavoritesIsland(v => ({ ...v, iconSize: Number(e.target.value) }))} /></label>
+              <label>Icon gap ({favoritesIsland.gap}px)<input className="sb-input" type="range" min="0" max="16" value={favoritesIsland.gap} onChange={e => setFavoritesIsland(v => ({ ...v, gap: Number(e.target.value) }))} /></label>
+              <label>Game layout<select className="sb-input" value={favoritesIsland.layout} onChange={e => setFavoritesIsland(v => ({ ...v, layout: e.target.value as FavoritesIsland["layout"] }))}><option value="row">Horizontal</option><option value="column">Vertical</option><option value="grid">Grid</option><option value="free">Free placement</option></select></label>
+              {favoritesIsland.layout === "grid" && <label>Grid columns ({favoritesIsland.columns})<input className="sb-input" type="range" min="1" max="8" value={favoritesIsland.columns} onChange={e => setFavoritesIsland(v => ({ ...v, columns: Number(e.target.value) }))} /></label>}
+              {favoritesIsland.layout === "free" && <><label>Area width ({favoritesIsland.freeWidth}px)<input className="sb-input" type="range" min="160" max="700" value={favoritesIsland.freeWidth} onChange={e => setFavoritesIsland(v => ({ ...v, freeWidth: Number(e.target.value) }))} /></label><label>Area height ({favoritesIsland.freeHeight}px)<input className="sb-input" type="range" min="100" max="600" value={favoritesIsland.freeHeight} onChange={e => setFavoritesIsland(v => ({ ...v, freeHeight: Number(e.target.value) }))} /></label></>}
+              <label>Horizontal offset ({favoritesIsland.offsetX}px)<input className="sb-input" type="range" min="0" max="80" value={favoritesIsland.offsetX} onChange={e => setFavoritesIsland(v => ({ ...v, offsetX: Number(e.target.value) }))} /></label>
+              <label>Vertical offset ({favoritesIsland.offsetY}px)<input className="sb-input" type="range" min="0" max="80" value={favoritesIsland.offsetY} onChange={e => setFavoritesIsland(v => ({ ...v, offsetY: Number(e.target.value) }))} /></label>
+            </div>
+            {favoritesIsland.layout === "free" && <p className="sb-muted">Drag game icons in the preview above, then save your changes.</p>}
+            <Button variant="secondary" onClick={() => setFavoritesIsland(FavoritesIslandSchema.parse({}))}>Reset island</Button>
+          </div>
+
           <div className="row-actions" style={{ marginTop: "1rem" }}>
             <Button disabled={saving} onClick={() => void saveCosmetics()}>
               {saving ? "Saving…" : "Save for everyone"}
@@ -949,56 +1073,6 @@ export function UserProfilePage() {
         </div>
       </section>
 
-      <section className="profile-section">
-        <div className="rail-title">
-          <div>
-            <h3>Favorite games</h3>
-            <p className="sb-muted rail-subtitle">
-              {isOwnProfile
-                ? "Synced from your Favorites in SB Launcher (up to 8)."
-                : `Games ${profile.displayName} marked as favorites in SB Launcher.`}
-            </p>
-          </div>
-          {isOwnProfile ? (
-            <Button
-              variant="ghost"
-              disabled={saving}
-              onClick={() => void syncFavoritesToProfile()}
-            >
-              Sync favorites
-            </Button>
-          ) : null}
-        </div>
-        {profile.favoriteGames?.length ? (
-          <div className="grid-games">
-            {profile.favoriteGames.map((game) => (
-              <GameCard
-                key={game.universeId}
-                game={{
-                  universeId: game.universeId,
-                  placeId: game.placeId,
-                  name: game.name,
-                  description: "",
-                  creatorName: "",
-                  playing: 0,
-                  visits: 0,
-                  thumbnailUrl: game.iconUrl ?? null,
-                  iconUrl: game.iconUrl ?? null,
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            title="No favorite games yet"
-            description={
-              isOwnProfile
-                ? "Heart games from Home or game pages, then Sync favorites."
-                : "This player hasn’t shared favorites on their launcher profile."
-            }
-          />
-        )}
-      </section>
 
       <section className="profile-section">
         <div className="rail-title">

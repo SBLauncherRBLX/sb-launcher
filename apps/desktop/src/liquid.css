@@ -10,6 +10,17 @@ html[data-liquid="on"] :is(.sb-card,.content-modal,.surprise-card,.sidebar,.topb
 /* Keep the material, but avoid sampling the backdrop outside the viewport. */
 html[data-liquid="on"] .sb-liquid.sb-liquid-offscreen {backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}
 
+/* A small independent frost makes ordinary surfaces legible without flattening the lens. */
+html[data-liquid="on"] .app-root .sb-card:not(.sb-liquid) {
+  background: color-mix(in srgb, var(--sb-surface-container) 52%, transparent);
+  backdrop-filter: blur(var(--lg-panel-blur, 6px)) saturate(1.08);
+  -webkit-backdrop-filter: blur(var(--lg-panel-blur, 6px)) saturate(1.08);
+}
+html[data-liquid="on"] :is(.sidebar,.topbar,.profile-chip,.account-menu,.content-modal,.surprise-card).sb-liquid:not(.sb-liquid-offscreen) {
+  backdrop-filter: blur(var(--lg-panel-blur, 6px)) var(--lg-filter, blur(8px)) !important;
+  -webkit-backdrop-filter: blur(var(--lg-panel-blur, 6px)) var(--lg-filter, blur(8px)) !important;
+}
+
 html[data-liquid="on"] .nav a {overflow:visible;}
 html[data-liquid="on"] .nav-pill.sb-liquid {pointer-events:none;}
 html[data-liquid="on"] .sb-button.sb-liquid {text-decoration:none;}

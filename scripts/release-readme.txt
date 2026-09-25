@@ -1,4 +1,4 @@
-SB Launcher 3.5.0 — Windows x64
+SB Launcher 3.5.1 — Windows x64
 
 Close any running SB Launcher, then run SB Launcher.exe from this folder.
 Keep the runtime and Assets folders beside the executable.

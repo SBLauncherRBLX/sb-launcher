@@ -5,6 +5,13 @@ $runtime = Join-Path $native "runtime"
 $apiRuntime = Join-Path $runtime "api"
 $webRuntime = Join-Path $runtime "web"
 $release = Join-Path $root "release\native"
+$workspaceBoundary = [IO.Path]::GetFullPath($root).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+foreach ($target in @($runtime, $release)) {
+  $resolvedTarget = [IO.Path]::GetFullPath($target)
+  if (-not $resolvedTarget.StartsWith($workspaceBoundary, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "Unsafe build cleanup target: $resolvedTarget"
+  }
+}
 $appVersion = [string]((Get-Content (Join-Path $root "package.json") -Raw | ConvertFrom-Json).version)
 if ($appVersion -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid app version in package.json: $appVersion" }
 
@@ -121,7 +128,6 @@ pnpm exec esbuild "apps/api/src/index.ts" `
 if ($LASTEXITCODE -ne 0) { throw "API bundle failed." }
 
 Copy-Item (Join-Path $root "apps\api\prisma\schema.prisma") $apiRuntime -Force
-Copy-Item (Join-Path $root "apps\api\prisma\dev.db") (Join-Path $apiRuntime "template.db") -Force
 
 $runtimePackageJson = @'
 {
@@ -155,6 +161,16 @@ npm ci --omit=dev
 if ($LASTEXITCODE -ne 0) { throw "Prisma client install failed." }
 npm install --no-save prisma@6.19.3
 if ($LASTEXITCODE -ne 0) { throw "Prisma CLI install failed." }
+$previousDatabaseUrl = $env:DATABASE_URL
+$templateDb = Join-Path $apiRuntime "template.db"
+[IO.File]::WriteAllBytes($templateDb, [byte[]]@())
+$env:DATABASE_URL = "file:template.db"
+try {
+  npx prisma db push --schema schema.prisma --skip-generate
+  if ($LASTEXITCODE -ne 0) { throw "Clean template database creation failed." }
+} finally {
+  $env:DATABASE_URL = $previousDatabaseUrl
+}
 npx prisma generate --schema schema.prisma
 if ($LASTEXITCODE -ne 0) { throw "Prisma client generation failed." }
 

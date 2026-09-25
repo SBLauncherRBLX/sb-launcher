@@ -16,6 +16,7 @@ import { api } from "../lib/api";
 import { BUNDLED_WALLPAPERS } from "../assets/wallpapers";
 import { Presets3D, Background3D, Effects3D, Layout3D, Scroll3D, Colors3D, Motion3D, Visuals3D } from "../components/Section3DIcons";
 import { MaterialSymbol } from "../components/MaterialSymbol";
+import { SymbolField } from "../components/SymbolField";
 
 function VisualsSection({
   icon,
@@ -614,7 +615,7 @@ export function VisualsPage() {
           </div>
         </VisualsSection>
 
-        <VisualsSection searchQuery={settingsQuery} keywords="grain noise vignette glow particles parallax speed density size opacity" icon={<Effects3D />} title="Effects" subtitle="Grain, glow and particles">
+        <VisualsSection searchQuery={settingsQuery} keywords="grain noise vignette glow particles symbols cursor interaction speed density size opacity" icon={<Effects3D />} title="Effects" subtitle="Grain, glow, particles and symbols">
           <div className="form-grid" style={{ marginTop: "0.5rem" }}>
             {(
               [
@@ -622,6 +623,7 @@ export function VisualsPage() {
                 ["vignette", "Vignette"],
                 ["glow", "Accent glow"],
                 ["particles", "Particles"],
+                ["symbolField", "Interactive symbols"],
                 ["parallax", "Parallax feel"],
               ] as const
             ).map(([key, label]) => (
@@ -659,6 +661,16 @@ export function VisualsPage() {
                 </label>
               </div>
             ) : null}
+            {theme.effects?.symbolField ? <div className="symbol-field-settings">
+              <div className="symbol-field-preview"><SymbolField theme={theme} preview /></div>
+              <p className="sb-muted">The symbols flow in a gentle wave on their own. Move the cursor here to preview a stronger response; faster movement has more impact.</p>
+              <div className="form-grid">
+                <label>Symbol density<select className="sb-input" value={theme.effects.symbolDensity} onChange={e => patchEffects({ symbolDensity: e.target.value as "low" | "medium" | "high" })}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
+                <label>Reaction strength ({theme.effects.symbolStrength.toFixed(2)}×)<input type="range" min={0.2} max={2} step={0.05} value={theme.effects.symbolStrength} onChange={e => patchEffects({ symbolStrength: Number(e.target.value) })} /></label>
+                <label>Cursor radius ({theme.effects.symbolRadius}px)<input type="range" min={70} max={260} step={5} value={theme.effects.symbolRadius} onChange={e => patchEffects({ symbolRadius: Number(e.target.value) })} /></label>
+                <label>Symbol opacity ({Math.round(theme.effects.symbolOpacity * 100)}%)<input type="range" min={0.1} max={0.8} step={0.01} value={theme.effects.symbolOpacity} onChange={e => patchEffects({ symbolOpacity: Number(e.target.value) })} /></label>
+              </div>
+            </div> : null}
           </div>
         </VisualsSection>
 

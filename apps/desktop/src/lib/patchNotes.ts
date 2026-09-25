@@ -22,6 +22,18 @@ export const MAJOR_RELEASE: PatchNoteEntry = {
 
 export const PATCH_NOTES: PatchNoteEntry[] = [
   {
+    version: "3.5.1",
+    date: "2026-09-25",
+    title: "Profiles, rooms & visual polish",
+    items: [
+      "Favorite games can be laid out horizontally, vertically, in a grid, or freely by dragging; tall layouts keep the profile banner intact.",
+      "Room chat, player cards and profile moderation controls have been improved.",
+      "Home shows richer event cards, and private server setup is simpler.",
+      "Liquid Glass surfaces support adjustable blur, with smoother animated background symbols.",
+      "Startup and update overlays received visual and reliability fixes.",
+    ],
+  },
+  {
     version: "3.5.0",
     date: "2026-09-20",
     title: "Material You & unified glass",

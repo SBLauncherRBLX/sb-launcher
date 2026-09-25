@@ -72,7 +72,7 @@ export function PrivateServersPanel({ game }: { game: GameDetails }) {
     }
   }
 
-  async function joinAndMaybeSave(save: boolean) {
+  async function joinAndMaybeSave(save: boolean, joinAfterSave = true) {
     const parsed = parsePrivateServerInvite(inviteInput, game.placeId);
     if (!parsed?.accessCode) {
       setMessage("Paste a private server invite link or access code.");
@@ -112,7 +112,7 @@ export function PrivateServersPanel({ game }: { game: GameDetails }) {
       setBusy(false);
     }
 
-    await joinInvite(parsed.accessCode, placeId);
+    if (!save || joinAfterSave) await joinInvite(parsed.accessCode, placeId);
   }
 
   async function copyLink(server: SavedPrivateServer) {
@@ -167,7 +167,7 @@ export function PrivateServersPanel({ game }: { game: GameDetails }) {
         <div>
           <h3>Private servers</h3>
           <p className="sb-muted rail-subtitle">
-            Join with an invite link or access code. Save servers here to manage them in SB Launcher.
+            Paste an invite link or code to save a server. Join it later from your saved list.
             {!enabled
               ? " Roblox reports VIP create may be off for this experience — invites can still work."
               : " Create/buy VIP stays on the Roblox site."}
@@ -189,28 +189,15 @@ export function PrivateServersPanel({ game }: { game: GameDetails }) {
             disabled={busy}
           />
         </label>
-        <label>
-          Name (optional, when saving)
-          <input
-            className="sb-input"
-            value={labelInput}
-            maxLength={64}
-            placeholder="Friends VIP"
-            onChange={(e) => setLabelInput(e.target.value)}
-            disabled={busy}
-          />
-        </label>
+        <details><summary>Give it a name (optional)</summary><input className="sb-input" aria-label="Server name" value={labelInput} maxLength={64} placeholder="Private server" onChange={(e) => setLabelInput(e.target.value)} disabled={busy}/></details>
         <div className="row-actions">
-          <Button disabled={busy || !inviteInput.trim()} onClick={() => void joinAndMaybeSave(false)}>
-            Join
-          </Button>
           <Button
-            variant="secondary"
             disabled={busy || !inviteInput.trim() || !session?.authenticated}
-            onClick={() => void joinAndMaybeSave(true)}
+            onClick={() => void joinAndMaybeSave(true, false)}
           >
-            Save &amp; join
+            Save server
           </Button>
+          <Button variant="secondary" disabled={busy || !inviteInput.trim()} onClick={() => void joinAndMaybeSave(false)}>Join once</Button>
         </div>
         {!session?.authenticated ? (
           <p className="sb-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
@@ -228,7 +215,7 @@ export function PrivateServersPanel({ game }: { game: GameDetails }) {
         items.length === 0 ? (
           <EmptyState
             title="No saved private servers"
-            description="Paste an invite link above and choose Save & join."
+            description="Paste an invite link above and choose Save server."
           />
         ) : (
           <div className="server-list private-server-list">

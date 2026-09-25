@@ -16,6 +16,7 @@ import {
 } from "../lib/robloxAppIcon";
 import sbLogo from "../assets/sb-logo.png";
 import { MaterialSymbol } from "../components/MaterialSymbol";
+import { CommunityRoles } from "../components/CommunityRoles";
 
 const ROBLOX_APP_ICON_OPTIONS: Array<{
   mode: RobloxAppIconMode;
@@ -502,6 +503,7 @@ export function SettingsPage() {
               Roblox account
             </Button>
           </div>
+          <CommunityRoles />
         </SettingsSection>
 
         <SettingsSection searchQuery={settingsQuery} keywords="roblox player client install path shortcut icon font custom default launcher" icon={<Player3D />} title="Roblox client" subtitle="Player install, shortcut icon and client font">

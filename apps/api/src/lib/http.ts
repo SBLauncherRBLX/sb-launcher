@@ -16,13 +16,14 @@ export async function sleep(ms: number): Promise<void> {
 export async function fetchJson<T>(
   url: string,
   init: RequestInit = {},
-  retries = 3,
+  retries = 1,
 ): Promise<T> {
   let lastError: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch(url, {
         ...init,
+        signal: init.signal ?? AbortSignal.timeout(8_000),
         headers: {
           Accept: "application/json",
           ...(init.headers ?? {}),

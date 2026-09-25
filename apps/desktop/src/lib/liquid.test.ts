@@ -8,9 +8,10 @@ describe("liquid settings", () => {
   });
   it("rejects damaged saved settings and clamps expensive parameters", () => {
     expect(sanitizeLiquid(null)).toEqual(LIQUID_DEFAULTS);
-    const value = sanitizeLiquid({refraction: Infinity, blur: -5, quality: 900, enabled: "false", controls: false});
+    const value = sanitizeLiquid({refraction: Infinity, blur: -5, panelBlur: 100, quality: 900, enabled: "false", controls: false});
     expect(value.refraction).toBe(LIQUID_DEFAULTS.refraction);
     expect(value.blur).toBe(0);
+    expect(value.panelBlur).toBe(18);
     expect(value.quality).toBe(1.5);
     expect(value.enabled).toBe(LIQUID_DEFAULTS.enabled);
     expect(value.controls).toBe(false);

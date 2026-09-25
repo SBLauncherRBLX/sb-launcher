@@ -29,10 +29,7 @@ export async function buildHomeLightPayload(input: {
   friends?: FriendPresence[];
 }): Promise<HomePayload> {
   const historyRows = dedupeHistory(input.history).slice(0, 12);
-  const friendsPlaying = await enrichGames(
-    buildFriendsPlayingRail(input.friends ?? []),
-    "full",
-  ).catch(() => buildFriendsPlayingRail(input.friends ?? []));
+  const friendsPlaying = buildFriendsPlayingRail(input.friends ?? []);
 
   return {
     continuePlaying: historyRows.map((row) => ({
@@ -147,7 +144,7 @@ export async function buildHomePayload(input: {
 }
 
 export async function buildDiscoverPayload() {
-  const categories = await listAllCategories(100);
+  const categories = await listAllCategories(12);
   return { categories };
 }
 

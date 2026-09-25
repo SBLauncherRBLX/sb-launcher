@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@sb/ui";
 import type { AppUpdateInfo } from "../store";
 
@@ -68,7 +69,7 @@ export function UpdateInstallModal({ update, onClose }: Props) {
     setMessage("Update cancelled.");
   }
 
-  return (
+  return createPortal(
     <div
       className="about-update-modal-backdrop"
       role="presentation"
@@ -136,5 +137,5 @@ export function UpdateInstallModal({ update, onClose }: Props) {
         </div>
       </div>
     </div>
-  );
+  , document.body);
 }

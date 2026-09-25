@@ -156,3 +156,29 @@ model PlaySession {
   ended Int @default(0)
   @@index([userId, startedAt], map: "PlaySession_user")
 }
+
+model Ban {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  reason    String?
+  bannedBy  String
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+}
+
+model Mute {
+  id        String   @id @default(cuid())
+  userId    String
+  roomCode  String?
+  reason    String?
+  mutedBy   String
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+  @@unique([userId, roomCode])
+  @@index([userId])
+}
+
+model Admin {
+  userId    String   @id
+  createdAt DateTime @default(now())
+}

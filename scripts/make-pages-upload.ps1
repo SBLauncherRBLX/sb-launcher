@@ -20,6 +20,12 @@ if (-not $setup) { throw "No Setup exe in release/. Run pnpm pack:win first." }
 
 $partsDir = Join-Path $root "docs\site\downloads\parts"
 $uploadDir = Join-Path $root "docs\site\pages-upload"
+$workspaceBoundary = [IO.Path]::GetFullPath($root).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+foreach ($target in @($partsDir, $uploadDir)) {
+  if (-not [IO.Path]::GetFullPath($target).StartsWith($workspaceBoundary, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "Unsafe Pages output path: $target"
+  }
+}
 New-Item $partsDir -ItemType Directory -Force | Out-Null
 New-Item $uploadDir -ItemType Directory -Force | Out-Null
 Get-ChildItem $partsDir -Filter "setup.part*.bin" -ErrorAction SilentlyContinue | Remove-Item -Force

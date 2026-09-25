@@ -129,6 +129,7 @@
 .room-message.is-mine { align-self:flex-end; border-radius:16px 16px 4px 16px; background:color-mix(in srgb,var(--sb-primary) 14%,var(--sb-surface)); }
 .room-message header { display:flex; align-items:baseline; gap:.8rem; justify-content:space-between; }
 .room-message header strong { font-size:.75rem; overflow-wrap:anywhere; }
+.room-message-remove {border:0;background:transparent;color:var(--sb-primary);cursor:pointer;font:inherit;font-size:.68rem;}
 .room-message time { font-size:.65rem; white-space:nowrap; color:var(--sb-text-muted); }
 .room-message p { margin:.3rem 0 0; white-space:pre-wrap; overflow-wrap:anywhere; font-size:.88rem; }
 .room-chat-compose { display:grid; gap:.7rem; border-top:1px solid var(--sb-border); padding-top:1rem; margin-top:.5rem; }

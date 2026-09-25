@@ -1,16 +1,16 @@
 import { create } from "zustand";
 export const LIQUID_DEFAULTS = {
-  enabled: false, refraction: 20, bezel: 18, blur: 0.4, saturation: 1,
+  enabled: false, refraction: 20, bezel: 18, blur: 0.4, panelBlur: 6, saturation: 1,
   tint: 0.06, highlight: 0.17, shadow: 0.2, duration: 320, press: 0.94,
   radius: 48, quality: 1, navigation: true, buttons: true,
-  panels: true, cards: true, controls: true, animate: true, frostedLiquidControls: false,
+  panels: true, controls: true, animate: true, frostedLiquidControls: false,
 };
 export type LiquidSettings = typeof LIQUID_DEFAULTS;
 const key = "sb-liquid-demo-v2";
 export function sanitizeLiquid(input: unknown): LiquidSettings {
   const result = { ...LIQUID_DEFAULTS };
   if (!input || typeof input !== "object") return result;
-  const bounds: Record<string, [number, number]> = {refraction:[0,60],bezel:[4,40],blur:[0,20],saturation:[0,3],tint:[0,0.65],highlight:[0,1],shadow:[0,0.6],duration:[100,800],press:[0.9,1],radius:[8,48],quality:[0.5,1.5]};
+  const bounds: Record<string, [number, number]> = {refraction:[0,60],bezel:[4,40],blur:[0,20],panelBlur:[0,18],saturation:[0,3],tint:[0,0.65],highlight:[0,1],shadow:[0,0.6],duration:[100,800],press:[0.9,1],radius:[8,48],quality:[0.5,1.5]};
   for (const name of Object.keys(result) as (keyof LiquidSettings)[]) {
     const value = (input as Record<string, unknown>)[name];
     if (typeof result[name] === "boolean" && typeof value === "boolean") (result as Record<string, boolean | number>)[name] = value;

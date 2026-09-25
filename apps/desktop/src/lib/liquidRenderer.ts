@@ -89,7 +89,7 @@ export function installLiquidRenderer(initial:LiquidSettings) {
     const geometry=next.bezel!==settings.bezel||next.quality!==settings.quality||next.radius!==settings.radius;
     const optics=next.blur!==settings.blur||next.refraction!==settings.refraction||next.saturation!==settings.saturation;
     settings=next;
-    const nextSelector=[next.navigation&&".nav-pill",next.buttons&&".sb-button,.rail-arrow,.chip,.account-add-button",next.panels&&".topbar,.sidebar,.profile-chip,.account-menu,.content-modal,.surprise-card",next.cards&&".sb-card",next.enabled&&".liquid-preview-lens"].filter(Boolean).join(",");
+    const nextSelector=[next.navigation&&".nav-pill",next.buttons&&".sb-button,.rail-arrow,.chip,.account-add-button",next.panels&&".topbar,.sidebar,.profile-chip,.account-menu,.content-modal,.surprise-card",next.enabled&&".liquid-preview-lens"].filter(Boolean).join(",");
     if(nextSelector!==selector){selector=nextSelector;scheduleScan();}
     if(optics)for(const value of maps.values())optical(value.el);
     if(geometry){clearTimeout(timer);timer=window.setTimeout(()=>{if(disposed)return;controls();for(const el of visible)queue(el);},100);}

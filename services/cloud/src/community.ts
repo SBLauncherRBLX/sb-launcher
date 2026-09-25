@@ -1,6 +1,6 @@
 import { LibraryGameSchema, VisualThemeSchema, ROOM_CHAT_LIMIT, ROOM_MESSAGE_LENGTH, type RoomMessage, type FriendRoom, type WorkshopItem } from "../../../packages/contracts/src/index";
 
-type Identity = { id: string; name: string };
+type Identity = { id: string; name: string; admin?: boolean };
 type StoredTheme = Omit<WorkshopItem, "likes" | "liked"> & { likedBy: string[]; parts?: number };
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { "Content-Type": "application/json" } });
 const fail = (message: string, status = 400) => { throw Object.assign(new Error(message), { status }); };
@@ -39,6 +39,17 @@ export class CommunityHub {
     if (!/^\d+$/.test(user.id)) fail("Sign in required.", 401);
     const storage = this.state.storage;
     const now = Date.now();
+    const role = user.admin ? "admin" : await storage.get<string>(`role:${user.id}`) === "moderator" ? "moderator" : "member";
+    if (action === "roles.me") return { role };
+    if (action === "roles.set") {
+      if (role !== "admin") fail("Admin access required.", 403);
+      const userId = text(input.userId, 30);
+      if (!/^\d+$/.test(userId)) fail("Enter a Roblox user ID.");
+      if (input.role === "moderator") await storage.put(`role:${userId}`, "moderator");
+      else if (input.role === "member") await storage.delete(`role:${userId}`);
+      else fail("Choose Moderator or Member.");
+      return { userId, role: input.role };
+    }
     // In-memory limiter is per durable object instance and avoids a KV write on each poll.
     const bucket = `${user.id}:${Math.floor(now / 60000)}`;
     this.rates.set(bucket, (this.rates.get(bucket) ?? 0) + 1);
@@ -66,11 +77,19 @@ export class CommunityHub {
         member = { id:user.id,name:user.name,ready:false }; room.members.push(member);
         room.launchPlan = null;
       }
-      if (!member) return fail("Join this room with its code first.",403);
-      if (action === "rooms.chat" || action === "rooms.message") {
+      if (!member && !(role !== "member" && (action === "rooms.chat" || action === "rooms.message.delete"))) return fail("Join this room with its code first.",403);
+      if (action === "rooms.chat" || action === "rooms.message" || action === "rooms.message.delete") {
         const chatKey = `chat:${room.code}`;
         const items = await storage.get<RoomMessage[]>(chatKey) ?? [];
         if (action === "rooms.chat") return { items };
+        if (action === "rooms.message.delete") {
+          if (role === "member") fail("Moderator access required.", 403);
+          const id = text(input.id, 80);
+          if (!items.some(item => item.id === id)) fail("Message not found.", 404);
+          const recent = items.filter(item => item.id !== id);
+          await storage.put(chatKey, recent);
+          return { items: recent };
+        }
         const body = typeof input.text === "string" ? input.text.trim() : "";
         const id = typeof input.id === "string" ? input.id : "";
         if (!/^[a-zA-Z0-9-]{16,80}$/.test(id)) fail("Invalid message identifier.");
@@ -84,6 +103,7 @@ export class CommunityHub {
         await storage.put({ [key]: room, [chatKey]: recent });
         return { items: recent };
       }
+      if (!member) return fail("Join this room with its code first.",403);
       if (action === "rooms.get") return room;
       if (action === "rooms.rename") {
         if (room.ownerId !== user.id) fail("Only the host can rename the room.", 403);

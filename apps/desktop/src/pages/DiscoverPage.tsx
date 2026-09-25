@@ -9,6 +9,7 @@ import { LauncherNickBadge } from "../components/LauncherNickBadge";
 import { useAppStore } from "../store";
 
 type SearchTab = "experiences" | "people";
+let discoverCache: DiscoveryCategory[] | null = null;
 
 type CachedSearch =
   | { tab: "experiences"; items: GameSummary[]; cursor: string | null }
@@ -96,7 +97,7 @@ export function DiscoverPage() {
   const q = params.get("q") ?? "";
   const tab = (params.get("tab") === "people" ? "people" : "experiences") as SearchTab;
   const session = useAppStore((s) => s.session);
-  const [categories, setCategories] = useState<DiscoveryCategory[]>([]);
+  const [categories, setCategories] = useState<DiscoveryCategory[]>(() => discoverCache ?? []);
   const [searchItems, setSearchItems] = useState<GameSummary[]>([]);
   const [peopleItems, setPeopleItems] = useState<UserSearchResult[]>([]);
   const [searchCursor, setSearchCursor] = useState<string | null>(null);
@@ -182,6 +183,12 @@ export function DiscoverPage() {
           } else {
             const data = await api.searchGames(q);
             if (!cancelled) {
+              setSearchItems(data.items);
+              setSearchCursor(data.nextCursor);
+              setPeopleItems([]);
+              setPeopleCursor(null);
+              setCategories([]);
+              setLoading(false);
               const items = session?.authenticated
                 ? await applyOwnedFlags(data.items, Boolean(session.capabilities.inventory))
                 : data.items;
@@ -199,9 +206,18 @@ export function DiscoverPage() {
             }
           }
         } else {
-          setLoading(true);
+          setLoading(!discoverCache);
           const data = await api.discover();
           if (!cancelled) {
+            discoverCache = data.categories;
+            setCategories(data.categories);
+            setSearchItems([]);
+            setPeopleItems([]);
+            setSearchCursor(null);
+            setPeopleCursor(null);
+            setActiveSort(null);
+            setSortGames([]);
+            setLoading(false);
             const categoriesWithOwned = session?.authenticated
               ? await applyOwnedToCategories(
                   data.categories,

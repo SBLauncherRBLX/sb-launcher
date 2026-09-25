@@ -19,11 +19,11 @@ export function LiquidGlassDemo() {
     const root=document.documentElement;
     const frostedControls=Boolean(theme.effects?.glass)&&s.frostedLiquidControls;
     const active=s.enabled||frostedControls;
-    const rendererSettings=s.enabled?s:{...s,navigation:false,panels:false,cards:false,buttons:true,controls:true};
+    const rendererSettings=s.enabled?s:{...s,navigation:false,panels:false,buttons:true,controls:true};
     root.dataset.liquid=active ? "on" : "off";
     root.dataset.liquidControls=(s.enabled?s.controls:frostedControls) ? "on" : "off";
     root.dataset.liquidMotion=s.animate&&motion ? "on" : "off";
-    for(const [name,value] of Object.entries({tint:s.tint,highlight:s.highlight,shadow:s.shadow,press:s.press,duration:`${s.duration}ms`,radius:`${s.radius}px`})) root.style.setProperty(`--lg-${name}`,String(value));
+    for(const [name,value] of Object.entries({tint:s.tint,highlight:s.highlight,shadow:s.shadow,press:s.press,duration:`${s.duration}ms`,radius:`${s.radius}px`,"panel-blur":`${s.panelBlur}px`})) root.style.setProperty(`--lg-${name}`,String(value));
     if(active){
       if(!renderer.current)renderer.current=installLiquidRenderer(rendererSettings);
       else renderer.current.update(rendererSettings);
@@ -34,13 +34,13 @@ export function LiquidGlassDemo() {
 }
 const ranges = [
   ["refraction","Refraction",0,60,1], ["bezel","Lens edge width",4,40,1],
-  ["blur","Frost / blur",0,20,0.1], ["saturation","Saturation",0,3,0.05],
+  ["blur","Lens frost / blur",0,20,0.1], ["panelBlur","Panel backdrop blur",0,18,0.5], ["saturation","Saturation",0,3,0.05],
   ["tint","Theme tint",0,0.65,0.01], ["highlight","Rim light",0,1,0.01],
   ["shadow","Shadow depth",0,0.6,0.01], ["radius","Panel corners",8,48,1],
   ["duration","Animation duration (ms)",100,800,10], ["press","Press scale",0.9,1,0.01],
   ["quality","Map resolution",0.5,1.5,0.25],
 ] as const;
-const toggles=[["animate","Elastic animations"],["navigation","Navigation bubble"],["buttons","Buttons"],["controls","Sliders & switches"],["panels","Panels & menus"],["cards","All cards (higher GPU load)"]] as const;
+const toggles=[["animate","Elastic animations"],["navigation","Navigation bubble"],["buttons","Buttons"],["controls","Sliders & switches"],["panels","Panels & menus"]] as const;
 
 export function LiquidPreview({liquid=true}:{liquid?:boolean}) {
   const area=useRef<HTMLDivElement>(null);
@@ -70,7 +70,7 @@ export function LiquidControls(){
 
     <div className="liquid-settings-grid">{toggles.map(([key,label])=><label className="liquid-setting" key={key}><span>{label}</span><input type="checkbox" checked={s[key]} onChange={e=>patch({[key]:e.target.checked})}/></label>)}</div>
     <div className="liquid-settings-grid">{ranges.map(([key,label,min,max,step])=><label className="liquid-setting-range" key={key}><span>{label}<output>{s[key]}</output></span><input type="range" aria-label={label} min={min} max={max} step={step} value={s[key]} onChange={e=>patch({[key]:Number(e.target.value)})}/></label>)}</div>
-    <div className="row-actions"><button className="sb-button" onClick={()=>patch({refraction:18,blur:3,tint:0.16,highlight:0.35,cards:false,quality:0.75})}>Balanced</button><button className="sb-button" onClick={()=>patch({refraction:36,blur:0.5,tint:0.06,highlight:0.7,quality:1})}>Crystal</button><button className="sb-button" onClick={()=>patch({refraction:12,blur:12,tint:0.22,highlight:0.4})}>Frosted</button><button className="sb-button secondary" onClick={()=>{reset();patch({enabled:true});}}>Reset liquid</button></div>
+    <div className="row-actions"><button className="sb-button" onClick={()=>patch({refraction:18,blur:3,tint:0.16,highlight:0.35,quality:0.75})}>Balanced</button><button className="sb-button" onClick={()=>patch({refraction:36,blur:0.5,tint:0.06,highlight:0.7,quality:1})}>Crystal</button><button className="sb-button" onClick={()=>patch({refraction:12,blur:12,tint:0.22,highlight:0.4})}>Frosted</button><button className="sb-button secondary" onClick={()=>{reset();patch({enabled:true});}}>Reset liquid</button></div>
     </>}
   </section>;
 }

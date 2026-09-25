@@ -568,6 +568,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
           launcherAvatarMode: "roblox" as const,
           launcherAvatarUrl: null,
           launcherBanner: null,
+          favoritesIsland: defaultProfileCosmetics().favoritesIsland,
           favoriteGames: [],
         };
       }
@@ -628,6 +629,10 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
         launcherAvatarUrl:
           cosmetics.avatar?.mode === "custom" && safeAvatarUrl ? safeAvatarUrl : null,
         launcherBanner: safeBanner,
+        favoritesIsland: {
+          ...defaultProfileCosmetics().favoritesIsland,
+          ...cosmetics.favoritesIsland,
+        },
         favoriteGames,
       };
     },

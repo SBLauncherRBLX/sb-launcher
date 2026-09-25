@@ -194,7 +194,7 @@ export function GameDetailsPage() {
             >
               {favorited ? "Unfavorite" : "Favorite"}
             </Button>
-            <Link className="sb-button secondary" to={`/journal?game=${game.universeId}`}>
+            <Link className="sb-button secondary game-journal-link" to={`/journal?game=${game.universeId}`}>
               Open journal
             </Link>
           </div>

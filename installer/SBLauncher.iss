@@ -1,5 +1,5 @@
 #define MyAppName "SB Launcher"
-#define MyAppVersion "3.5.0"
+#define MyAppVersion "3.5.1"
 #ifndef MyAppSource
   #define MyAppSource "..\release\native"
 #endif

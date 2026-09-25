@@ -1,10 +1,7 @@
-SB Launcher 3.5.0 — Material You & unified glass
+SB Launcher 3.5.1 — Profiles, rooms & visual polish
 
-- Material You is now the default design with official locally bundled Material Symbols.
-- Frosted and Liquid Glass share one settings section and draggable live preview.
-- Frosted supports Material You or Liquid Glass buttons, switches, and sliders.
-- Liquid Glass reuses refraction maps and skips backdrop processing for offscreen surfaces.
-- Arctic Glass and Pulse Midnight now use theme-colored icons.
-- Search Visuals and game settings with automatically expanded matching sections.
-- Corrected responsive search lighting, centered switch checkmarks, and symmetric input corners.
-- About shows the major release and exactly three latest updates.
+- Favorite games on profiles can be arranged horizontally, vertically, in a grid, or freely by dragging. Tall layouts no longer leave a blank banner.
+- Room chat, player cards and moderation controls have been improved.
+- Home features richer event cards; private server setup is simpler.
+- Liquid Glass surfaces can use adjustable blur, and the animated symbol background runs more smoothly.
+- Startup and update overlays have been refined.

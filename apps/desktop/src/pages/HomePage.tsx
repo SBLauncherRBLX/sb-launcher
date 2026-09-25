@@ -4,31 +4,43 @@ import type { GameSummary, HomePayload } from "@sb/contracts";
 import { Button, EmptyState, LoadingState } from "@sb/ui";
 import { api } from "../lib/api";
 import { GameRail, SurpriseCard } from "../components/GameRail";
+import { HomeEvents } from "../components/HomeEvents";
 import { useAppStore } from "../store";
+import { useStartupHomeReady } from "../components/StartupExperience";
+
+const homeCache = new Map<string, HomePayload>();
 
 export function HomePage() {
   const session = useAppStore((s) => s.session);
-  const [home, setHome] = useState<HomePayload | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = session?.user?.id ?? "guest";
+  const [home, setHome] = useState<HomePayload | null>(() => homeCache.get(cacheKey) ?? null);
+  const [loading, setLoading] = useState(() => !homeCache.has(cacheKey));
   const [error, setError] = useState<string | null>(null);
+  useStartupHomeReady(!loading);
   const navigate = useNavigate();
 
   const loadVersion = useRef(0);
   async function loadHome() {
     const version = ++loadVersion.current;
-    setLoading(true);
+    const cached = homeCache.get(cacheKey) ?? null;
+    setHome(cached);
+    setLoading(!cached);
     setError(null);
+    let hasLightPayload = false;
     try {
       const light = await api.home(true);
       if (version !== loadVersion.current) return;
       setHome(light);
+      homeCache.set(cacheKey, light);
+      hasLightPayload = true;
       setLoading(false);
       const full = await api.home(false);
       if (version !== loadVersion.current) return;
       setHome(full);
+      homeCache.set(cacheKey, full);
     } catch (err) {
       if (version !== loadVersion.current) return;
-      setError(err instanceof Error ? err.message : "Failed to load home");
+      if (!hasLightPayload) setError(err instanceof Error ? err.message : "Failed to load home");
       setLoading(false);
     }
   }
@@ -36,7 +48,7 @@ export function HomePage() {
   useEffect(() => {
     void loadHome();
     return () => { loadVersion.current++; };
-  }, [session?.authenticated]);
+  }, [session?.authenticated, cacheKey]);
 
   async function refreshSurprise() {
     try {
@@ -95,6 +107,7 @@ export function HomePage() {
       />
 
       <GameRail title="Favorites" games={home.favorites} />
+      <HomeEvents games={[...home.continuePlaying, ...home.favorites, ...home.forYou, ...home.upAndComing]} />
 
       <GameRail
         title="Friends Playing"

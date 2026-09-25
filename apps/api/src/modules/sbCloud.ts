@@ -37,6 +37,16 @@ export type ProfileCosmetics = {
     muted: boolean;
     loop: boolean;
   };
+  favoritesIsland?: {
+    visible: boolean; showHeading: boolean;
+    position: "top-right" | "top-left" | "bottom-right" | "bottom-left";
+    surface: "glass" | "solid" | "transparent";
+    color: string; opacity: number; blur: number; radius: number;
+    iconSize: number; gap: number; offsetX: number; offsetY: number; border: boolean;
+    layout: "row" | "column" | "grid" | "free";
+    columns: number; freeWidth: number; freeHeight: number;
+    iconPositions: Record<string, { x: number; y: number }>;
+  };
 };
 
 export type UpdateManifest = {
@@ -64,6 +74,12 @@ export function defaultProfileCosmetics(): ProfileCosmetics {
       height: 280,
       muted: true,
       loop: true,
+    },
+    favoritesIsland: {
+      visible: true, showHeading: true, position: "top-right", surface: "glass",
+      color: "#292634", opacity: 0.75, blur: 10, radius: 16,
+      iconSize: 36, gap: 6, offsetX: 24, offsetY: 18, border: true,
+      layout: "row", columns: 4, freeWidth: 340, freeHeight: 180, iconPositions: {},
     },
   };
 }

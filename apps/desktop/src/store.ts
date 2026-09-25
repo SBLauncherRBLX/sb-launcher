@@ -246,7 +246,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { theme, graphics, session } = get();
     await window.sbDesktop?.setPrefs({ theme, graphics });
     if (session?.authenticated) {
-      await api.savePreferences({ theme, graphics });
+      try {
+        await api.savePreferences({ theme, graphics });
+      } catch {
+        // Cloud is optional — local prefs already saved, don't block UI.
+      }
     }
   },
 

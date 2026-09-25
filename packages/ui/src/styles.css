@@ -708,8 +708,8 @@ input[type="range"] {
   /* Solid CSS stroke (not url(#grad)) — paint servers break under page transforms */
   stroke: var(--sb-accent);
   stroke-width: 3.4;
-  stroke-dasharray: 18 82;
-  animation: sbMarkSnake 1.35s linear infinite;
+  stroke-dasharray: 22 78;
+  animation: sbMarkSnake 1.45s linear infinite;
 }
 
 .sb-loading-label {

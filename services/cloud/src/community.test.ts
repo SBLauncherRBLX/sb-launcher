@@ -5,9 +5,21 @@ function hub(){
   const data=new Map<string,unknown>();let queue=Promise.resolve();
   const state={storage:{get:async(key:string|string[])=>Array.isArray(key)?new Map(key.filter(k=>data.has(k)).map(k=>[k,structuredClone(data.get(k))])):structuredClone(data.get(key)),put:async(key:string|Record<string,unknown>,value?:unknown)=>{if(typeof key==="string")data.set(key,structuredClone(value));else for(const[k,v]of Object.entries(key))data.set(k,structuredClone(v));},delete:async(key:string|string[])=>{for(const k of Array.isArray(key)?key:[key])data.delete(k);},list:async({prefix}:{prefix:string})=>new Map([...data].filter(([key])=>key.startsWith(prefix)).map(([k,v])=>[k,structuredClone(v)])),setAlarm:async()=>{}},blockConcurrencyWhile:(fn:()=>Promise<unknown>)=>{const result=queue.then(fn);queue=result.then(()=>undefined,()=>undefined);return result;}};
   const obj=new CommunityHub(state as unknown as DurableObjectState);
-  return async(user:string,action:string,input:Record<string,unknown>={})=>{const response=await obj.fetch(new Request("https://community/action",{method:"POST",body:JSON.stringify({identity:{id:user,name:`User ${user}`},action,input})}));return {status:response.status,data:await response.json() as any};};
+  return async(user:string,action:string,input:Record<string,unknown>={},admin=false)=>{const response=await obj.fetch(new Request("https://community/action",{method:"POST",body:JSON.stringify({identity:{id:user,name:`User ${user}`,admin},action,input})}));return {status:response.status,data:await response.json() as any};};
 }
 describe("rooms",()=>{
+  it("limits moderator assignment to admins and message removal to moderators",async()=>{
+    const call=hub(),code=(await call("1","rooms.create")).data.code;
+    const id=crypto.randomUUID();
+    await call("1","rooms.message",{code,id,text:"Remove me"});
+    expect((await call("2","roles.set",{userId:"2",role:"moderator"})).status).toBe(403);
+    expect((await call("2","rooms.message.delete",{code,id})).status).toBe(403);
+    expect((await call("1","roles.set",{userId:"2",role:"moderator"},true)).status).toBe(200);
+    expect((await call("2","roles.me")).data.role).toBe("moderator");
+    expect((await call("2","rooms.message.delete",{code,id})).data.items).toHaveLength(0);
+    await call("1","roles.set",{userId:"2",role:"member"},true);
+    expect((await call("2","rooms.chat",{code})).status).toBe(403);
+  });
   it("keeps chat private, uses authenticated names, validates messages and deduplicates retries",async()=>{
     const call=hub(),created=await call("1","rooms.create"),code=created.data.code;
     const payload={code,id:crypto.randomUUID(),text:"Hello squad",authorId:"999",authorName:"Impostor"};

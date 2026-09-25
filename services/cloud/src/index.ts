@@ -4,12 +4,29 @@ export type Env = {
   PLAYERS: KVNamespace;
   META: KVNamespace;
   UPDATE_ADMIN_TOKEN?: string;
+  ADMIN_USER_IDS?: string;
   DEFAULT_DOWNLOAD_URL?: string;
 };
 
 export type BadgeMode = "launcher" | "custom" | "off";
 export type AvatarMode = "roblox" | "custom";
 export type BannerMode = "off" | "image" | "gif" | "video" | "color";
+export type FavoritesIsland = {
+  visible: boolean; showHeading: boolean;
+  position: "top-right" | "top-left" | "bottom-right" | "bottom-left";
+  surface: "glass" | "solid" | "transparent";
+  color: string; opacity: number; blur: number; radius: number;
+  iconSize: number; gap: number; offsetX: number; offsetY: number; border: boolean;
+  layout: "row" | "column" | "grid" | "free";
+  columns: number; freeWidth: number; freeHeight: number;
+  iconPositions: Record<string, { x: number; y: number }>;
+};
+const defaultFavoritesIsland = (): FavoritesIsland => ({
+  visible: true, showHeading: true, position: "top-right", surface: "glass",
+  color: "#292634", opacity: 0.75, blur: 10, radius: 16,
+  iconSize: 36, gap: 6, offsetX: 24, offsetY: 18, border: true,
+  layout: "row", columns: 4, freeWidth: 340, freeHeight: 180, iconPositions: {},
+});
 
 export type ProfileCosmetics = {
   badge: {
@@ -33,6 +50,7 @@ export type ProfileCosmetics = {
     muted: boolean;
     loop: boolean;
   };
+  favoritesIsland?: FavoritesIsland;
 };
 
 export type PlayerRecord = {
@@ -42,6 +60,17 @@ export type PlayerRecord = {
   displayName?: string;
   cosmetics?: ProfileCosmetics;
   favoriteGames?: FavoriteGamePublic[];
+  moderationLocks?: string[];
+  moderationLog?: ModerationEntry[];
+};
+
+type ModerationEntry = {
+  id: string;
+  at: string;
+  adminId: string;
+  action: "remove" | "unlock";
+  scope: string;
+  reason: string;
 };
 
 export type FavoriteGamePublic = {
@@ -97,13 +126,13 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
  * its version is newer than (or equal to) the KV copy.
  */
 const SHIPPED_UPDATE: UpdateManifest = {
-  version: "3.5.0",
-  buildId: "20260921170153",
+  version: "3.5.1",
+  buildId: "20260925193416",
   downloadUrl: "https://sblauncherrblx.github.io/SB-launcher-for-Roblox/",
   notes:
-    "SB Launcher 3.5.0 — Material You & unified glass\n\n- Material You is now the default design with official locally bundled Material Symbols\n- Frosted and Liquid Glass share one settings section and draggable preview\n- Frosted supports Material You or Liquid Glass controls\n- Liquid Glass reuses refraction maps and skips offscreen backdrop work\n- Arctic Glass and Pulse Midnight use theme-colored icons",
-  title: "SB Launcher 3.5.0",
-  publishedAt: "2026-09-21T10:01:53.3834661Z",
+    "SB Launcher 3.5.1 — Profiles, rooms & visual polish\n\n- Arrange favorite games horizontally, vertically, in a grid, or freely by dragging\n- Profile banners adapt to taller game layouts\n- Improved room chat, player cards, moderation, and home events\n- Adjustable Liquid Glass blur and smoother animated symbol background\n- Refined startup and update overlays",
+  title: "SB Launcher 3.5.1",
+  publishedAt: "2026-09-25T12:31:02Z",
 };
 
 function parseSemver(v: string): [number, number, number] | null {
@@ -140,6 +169,7 @@ export function defaultCosmetics(): ProfileCosmetics {
       muted: true,
       loop: true,
     },
+    favoritesIsland: defaultFavoritesIsland(),
   };
 }
 
@@ -162,9 +192,13 @@ export default {
         let body: {action?:unknown;input?:unknown};
         try { body=JSON.parse(raw); } catch { return cors(request,json({error:"Invalid JSON."},400)); }
         if (!body || typeof body.action!=="string" || !body.input || typeof body.input!=="object" || Array.isArray(body.input)) return cors(request,json({error:"Invalid request."},400));
+        if (body.action.startsWith("profiles.")) {
+          return cors(request, await profileModeration(body.action, body.input as Record<string, unknown>, identity.id, env, url.origin));
+        }
         if (!env.COMMUNITY) return cors(request,json({error:"Community service is not configured."},503));
         const hub=env.COMMUNITY.get(env.COMMUNITY.idFromName("sb-community-v1"));
-        return cors(request,await hub.fetch("https://community/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:body.action,input:body.input,identity:{id:identity.id,name:identity.displayName||identity.username||identity.id}})}));
+        const admin = (env.ADMIN_USER_IDS ?? "").split(",").map(id => id.trim()).includes(identity.id);
+        return cors(request,await hub.fetch("https://community/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:body.action,input:body.input,identity:{id:identity.id,name:identity.displayName||identity.username||identity.id,admin}})}));
       }
 
       if (request.method === "GET" && path === "/health") {
@@ -243,6 +277,8 @@ async function registerPlayer(request: Request, env: Env): Promise<Response> {
     displayName: identity.displayName,
     cosmetics: existing?.cosmetics ?? defaultCosmetics(),
     favoriteGames: existing?.favoriteGames ?? [],
+    moderationLocks: existing?.moderationLocks ?? [],
+    moderationLog: existing?.moderationLog ?? [],
   };
 
   await env.PLAYERS.put(key, JSON.stringify(record));
@@ -356,6 +392,91 @@ async function getPlayer(userId: string, env: Env): Promise<Response> {
   });
 }
 
+function isAdminUser(userId: string, env: Env): boolean {
+  return (env.ADMIN_USER_IDS ?? "").split(",").some(id => id.trim() === userId);
+}
+
+function moderationScope(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  if (["badge", "avatar", "banner", "favoritesIsland", "favorites"].includes(value)) return value;
+  return /^game:\d+$/.test(value) ? value : null;
+}
+
+function ownedMediaId(value: string | undefined | null, userId: string, origin: string): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const match = url.pathname.match(/^\/v1\/media\/(\d+)\/([a-zA-Z0-9_-]+)$/);
+    return url.origin === origin && match?.[1] === userId ? match[2] : null;
+  } catch { return null; }
+}
+
+async function profileModeration(
+  action: string, input: Record<string, unknown>, adminId: string, env: Env, origin: string,
+): Promise<Response> {
+  if (!isAdminUser(adminId, env)) return json({ error: "Admin access required." }, 403);
+  const targetId = typeof input.userId === "string" ? input.userId.trim() : "";
+  if (!/^\d{1,20}$/.test(targetId)) return json({ error: "Enter a Roblox user ID." }, 400);
+  const key = PLAYER_PREFIX + targetId;
+  const stored = (await env.PLAYERS.get(key, "json")) as PlayerRecord | null;
+  if (!stored) return json({ error: "Launcher profile not found." }, 404);
+  if (action === "profiles.inspect") {
+    return json({ player: publicPlayer(stored), locks: stored.moderationLocks ?? [], history: [...(stored.moderationLog ?? [])].reverse() });
+  }
+  if (action !== "profiles.remove" && action !== "profiles.unlock") return json({ error: "Unknown profile action." }, 400);
+  if (isAdminUser(targetId, env)) return json({ error: "Administrator profiles cannot be moderated here." }, 403);
+  const scope = moderationScope(input.scope);
+  if (!scope) return json({ error: "Choose a profile element." }, 400);
+  const reason = typeof input.reason === "string" ? input.reason.trim() : "";
+  if (reason.length < 10 || reason.length > 500) return json({ error: "Enter a reason of 10–500 characters." }, 400);
+
+  const record = structuredClone(stored);
+  const locks = new Set(record.moderationLocks ?? []);
+  let removedMediaUrl: string | null | undefined;
+  if (action === "profiles.remove") {
+    const cosmetics = record.cosmetics ?? defaultCosmetics();
+    if (scope === "badge") { removedMediaUrl = cosmetics.badge.customUrl; cosmetics.badge = { mode: "launcher" }; }
+    else if (scope === "avatar") { removedMediaUrl = cosmetics.avatar.customUrl; cosmetics.avatar = { mode: "roblox" }; }
+    else if (scope === "banner") { removedMediaUrl = cosmetics.banner.mediaUrl; cosmetics.banner = defaultCosmetics().banner; }
+    else if (scope === "favoritesIsland") cosmetics.favoritesIsland = { ...defaultFavoritesIsland(), visible: false };
+    else if (scope === "favorites") record.favoriteGames = [];
+    else if (scope.startsWith("game:")) {
+      const universeId = scope.slice(5);
+      if (!(record.favoriteGames ?? []).some(game => game.universeId === universeId)) return json({ error: "That game is not on this profile." }, 404);
+      record.favoriteGames = (record.favoriteGames ?? []).filter(game => game.universeId !== universeId);
+    }
+    record.cosmetics = cosmetics;
+    locks.add(scope);
+  } else {
+    if (!locks.has(scope)) return json({ error: "That element is not blocked." }, 400);
+    locks.delete(scope);
+  }
+  record.moderationLocks = [...locks];
+  const entry: ModerationEntry = {
+    id: crypto.randomUUID(), at: new Date().toISOString(), adminId,
+    action: action === "profiles.remove" ? "remove" : "unlock", scope, reason,
+  };
+  record.moderationLog = [...(record.moderationLog ?? []), entry].slice(-50);
+  await env.PLAYERS.put(key, JSON.stringify(record));
+
+  let mediaDeleted = false;
+  const mediaId = ownedMediaId(removedMediaUrl, targetId, origin);
+  if (mediaId) {
+    const current = record.cosmetics;
+    const stillUsed = [current?.badge.customUrl, current?.avatar.customUrl, current?.banner.mediaUrl].some(url => url === removedMediaUrl);
+    if (!stillUsed) {
+      try {
+        await env.PLAYERS.delete(`${MEDIA_PREFIX}${targetId}:${mediaId}`);
+        const indexKey = MEDIA_INDEX_PREFIX + targetId;
+        const index = (await env.PLAYERS.get(indexKey, "json")) as string[] | null;
+        if (index) await env.PLAYERS.put(indexKey, JSON.stringify(index.filter(id => id !== mediaId)));
+        mediaDeleted = true;
+      } catch { /* The profile reference is removed even if media cleanup hits a KV limit. */ }
+    }
+  }
+  return json({ ok: true, player: publicPlayer(record), locks: record.moderationLocks, history: [...(record.moderationLog ?? [])].reverse(), mediaDeleted });
+}
+
 async function putCosmetics(request: Request, env: Env): Promise<Response> {
   const identity = await requireRobloxIdentity(request, env);
   if (identity instanceof Response) return identity;
@@ -376,6 +497,13 @@ async function putCosmetics(request: Request, env: Env): Promise<Response> {
   }
 
   const cosmetics = mergeCosmetics(base.cosmetics ?? defaultCosmetics(), body);
+  for (const scope of base.moderationLocks ?? []) {
+    if (!["badge", "avatar", "banner", "favoritesIsland"].includes(scope)) continue;
+    const field = scope as "badge" | "avatar" | "banner" | "favoritesIsland";
+    if (JSON.stringify(cosmetics[field]) !== JSON.stringify((base.cosmetics ?? defaultCosmetics())[field])) {
+      return json({ error: `${scope} is restricted by profile moderation.` }, 403);
+    }
+  }
   const record: PlayerRecord = {
     ...base,
     username: identity.username ?? base.username,
@@ -468,7 +596,7 @@ async function getMedia(userId: string, id: string, env: Env): Promise<Response>
     status: 200,
     headers: {
       "Content-Type": contentType,
-      "Cache-Control": "public, max-age=86400",
+      "Cache-Control": "public, max-age=300",
       "X-Content-Type-Options": "nosniff",
       "Content-Disposition": "inline",
     },
@@ -625,6 +753,9 @@ async function putFavorites(request: Request, env: Env): Promise<Response> {
 
   const key = PLAYER_PREFIX + identity.id;
   const existing = (await env.PLAYERS.get(key, "json")) as PlayerRecord | null;
+  const locks = existing?.moderationLocks ?? [];
+  if (locks.includes("favorites") && favoriteGames.length) return json({ error: "Favorite games are restricted by profile moderation." }, 403);
+  if (favoriteGames.some(game => locks.includes(`game:${game.universeId}`))) return json({ error: "One of these games was removed by profile moderation." }, 403);
   const base = existing ?? {
     id: identity.id,
     registeredAt: new Date().toISOString(),
@@ -693,6 +824,34 @@ function mergeCosmetics(
   patch: Partial<ProfileCosmetics>,
 ): ProfileCosmetics {
   const next = structuredClone(current);
+
+  if (patch.favoritesIsland && typeof patch.favoritesIsland === "object") {
+    const value = patch.favoritesIsland;
+    const island = { ...defaultFavoritesIsland(), ...next.favoritesIsland };
+    if (typeof value.visible === "boolean") island.visible = value.visible;
+    if (typeof value.showHeading === "boolean") island.showHeading = value.showHeading;
+    if (["top-right", "top-left", "bottom-right", "bottom-left"].includes(value.position)) island.position = value.position;
+    if (["glass", "solid", "transparent"].includes(value.surface)) island.surface = value.surface;
+    if (typeof value.color === "string" && /^#[0-9a-fA-F]{6}$/.test(value.color)) island.color = value.color;
+    if (typeof value.opacity === "number") island.opacity = clamp(value.opacity, 0, 1);
+    if (typeof value.blur === "number") island.blur = clamp(value.blur, 0, 30);
+    if (typeof value.radius === "number") island.radius = clamp(value.radius, 0, 32);
+    if (typeof value.iconSize === "number") island.iconSize = clamp(value.iconSize, 24, 128);
+    if (typeof value.gap === "number") island.gap = clamp(value.gap, 0, 16);
+    if (value.layout === "row" || value.layout === "column" || value.layout === "grid" || value.layout === "free") island.layout = value.layout;
+    if (Number.isFinite(value.columns)) island.columns = Math.round(clamp(value.columns, 1, 8));
+    if (Number.isFinite(value.freeWidth)) island.freeWidth = clamp(value.freeWidth, 160, 700);
+    if (Number.isFinite(value.freeHeight)) island.freeHeight = clamp(value.freeHeight, 100, 600);
+    if (value.iconPositions && typeof value.iconPositions === "object") {
+      island.iconPositions = Object.fromEntries(Object.entries(value.iconPositions).slice(0, 8)
+        .filter(([id, point]) => /^\d{1,20}$/.test(id) && point && Number.isFinite(point.x) && Number.isFinite(point.y))
+        .map(([id, point]) => [id, { x: clamp(point.x, 0, 1), y: clamp(point.y, 0, 1) }]));
+    }
+    if (typeof value.offsetX === "number") island.offsetX = clamp(value.offsetX, 0, 80);
+    if (typeof value.offsetY === "number") island.offsetY = clamp(value.offsetY, 0, 80);
+    if (typeof value.border === "boolean") island.border = value.border;
+    next.favoritesIsland = island;
+  }
 
   if (patch.badge && typeof patch.badge === "object") {
     const mode = patch.badge.mode;

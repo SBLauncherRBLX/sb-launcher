@@ -11,6 +11,28 @@ export const UserProfileSchema = z.object({
 });
 export type UserProfile = z.infer<typeof UserProfileSchema>;
 
+export const FavoritesIslandSchema = z.object({
+  visible: z.boolean().default(true),
+  showHeading: z.boolean().default(true),
+  position: z.enum(["top-right", "top-left", "bottom-right", "bottom-left"]).default("top-right"),
+  surface: z.enum(["glass", "solid", "transparent"]).default("glass"),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).default("#292634"),
+  opacity: z.number().min(0).max(1).default(0.75),
+  blur: z.number().min(0).max(30).default(10),
+  radius: z.number().min(0).max(32).default(16),
+  iconSize: z.number().min(24).max(128).default(36),
+  gap: z.number().min(0).max(16).default(6),
+  layout: z.enum(["row", "column", "grid", "free"]).default("row"),
+  columns: z.number().int().min(1).max(8).default(4),
+  freeWidth: z.number().min(160).max(700).default(340),
+  freeHeight: z.number().min(100).max(600).default(180),
+  iconPositions: z.record(z.string(), z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) })).default({}),
+  offsetX: z.number().min(0).max(80).default(24),
+  offsetY: z.number().min(0).max(80).default(18),
+  border: z.boolean().default(true),
+}).default({});
+export type FavoritesIsland = z.infer<typeof FavoritesIslandSchema>;
+
 export const UserProfileDetailsSchema = z.object({
   id: z.string(),
   username: z.string(),
@@ -60,6 +82,7 @@ export const UserProfileDetailsSchema = z.object({
     })
     .nullable()
     .optional(),
+  favoritesIsland: FavoritesIslandSchema,
   /** Favorite experiences shared on the launcher profile (max 8). */
   favoriteGames: z
     .array(
@@ -473,6 +496,11 @@ export const ThemeEffectsSchema = z.object({
   particleSize: z.number().min(0.5).max(2.5).default(1),
   particleSpeed: z.number().min(0.25).max(2.5).default(1),
   particleOpacity: z.number().min(0.15).max(1).default(0.75),
+  symbolField: z.boolean().default(false),
+  symbolDensity: z.enum(["low", "medium", "high"]).default("medium"),
+  symbolStrength: z.number().min(0.2).max(2).default(1),
+  symbolRadius: z.number().min(70).max(260).default(160),
+  symbolOpacity: z.number().min(0.1).max(0.8).default(0.38),
   parallax: z.boolean().default(false),
 });
 export type ThemeEffects = z.infer<typeof ThemeEffectsSchema>;
@@ -628,6 +656,11 @@ export const DEFAULT_THEME_EFFECTS: ThemeEffects = {
   particleSize: 1,
   particleSpeed: 1,
   particleOpacity: 0.75,
+  symbolField: false,
+  symbolDensity: "medium",
+  symbolStrength: 1,
+  symbolRadius: 160,
+  symbolOpacity: 0.38,
   parallax: false,
 };
 
